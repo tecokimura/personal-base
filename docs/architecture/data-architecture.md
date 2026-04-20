@@ -187,6 +187,93 @@ MVP では、`選択肢 2. 一部のエンティティだけ履歴を持つ` を
   - Changed At
   - Scope Summary
 
+### 最小カラム案
+
+第 2 フェーズ前半の最小版では、差分本文は持たず、まずは「誰が、いつ、何に対して、何をしたか」を追える形に絞る。
+
+#### `LoginHistory`
+
+- `tenant_id`
+- `employee_id`
+- `logged_in_at`
+- `ip_address`
+- `user_agent`
+
+#### `EditHistory`
+
+- `tenant_id`
+- `entity_type`
+- `entity_id`
+- `action_type`
+- `changed_by_employee_id`
+- `changed_at`
+- `scope_summary`
+
+### `action_type` の第一候補
+
+- `create`
+- `update`
+- `delete`
+- `restore`
+
+補足:
+
+- `login` は `LoginHistory` 側で扱う
+- 差分本文や変更前後 JSON は初期版では持たない
+
+### 閲覧権限の第一候補
+
+- `LoginHistory` と `EditHistory` の閲覧は、まず `HR_ADMIN` のみに許可する
+- `ORG_ADMIN`、`MANAGER`、`EXECUTIVE_VIEWER`、`EMPLOYEE` には初期段階では許可しない
+
+### `EditHistory` の対象エンティティ第一候補
+
+- `Employee`
+- `Employment`
+- `OrganizationLeader`
+- `WorkHistory`
+- `RoleAssignment`
+
+理由:
+
+- 人事台帳、所属、責任者、権限、業務履歴は変更の意味が大きい
+- 日常的に参照しなくても、「記録されている」という抑止力として価値がある
+- 初期段階で対象を広げすぎず、重要変更に絞ることで実装負荷を抑えられる
+
+### 保存先の第一候補
+
+- 監査ログは DB テーブル保存を基本とする
+- ただし、保存先は固定せず、標準出力や syslog のような出力先へ拡張できるようにする
+
+理由:
+
+- 初期の検索や画面閲覧は DB 保存が最も扱いやすい
+- 一方で、運用やインフラ要件によっては標準出力や syslog へ流したくなる
+- そのため、`AuditLogSink` のような抽象化を置き、DB / stdout / syslog を切り替えまたは併用できる形が望ましい
+
+### 将来の出力先候補
+
+- DB テーブル
+- 標準出力
+- syslog
+
+### 保持期間の第一候補
+
+- `LoginHistory` の初期保持期間は `365 日`
+- `EditHistory` の初期保持期間は `1825 日 (5 年)`
+- どちらもシステム設定または管理者向けサービス設定で変更できるようにする
+
+理由:
+
+- `LoginHistory` は件数が増えやすく、直近 1 年あれば運用確認や不正アクセス確認として十分なことが多い
+- `EditHistory` は監査や抑止力として長く残す価値が高い
+- 差分本文を持たない前提なら、`EditHistory` は 5 年保持でも現実的である
+
+### 設定値の第一候補
+
+- `login_history_retention_days`
+- `edit_history_retention_days`
+
 ## 顔写真の保存方式たたき台
 
 顔写真は `Employee` に紐づく表示資産であり、テキスト属性とは性質が異なる。そのため、通常の業務項目と同じ保存方法にすると後で扱いづらくなる。

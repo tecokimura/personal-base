@@ -22,7 +22,7 @@
 
 - 人材情報を「蓄積する場所」ではなく、「意思決定に使える状態へ整える基盤」として捉える
 - 初期は人材データ基盤中心で始める
-- AI による助言機能は将来拡張として扱う
+- AI による助言機能や相談チャットは完成後フェーズの将来拡張として扱う
 
 ### ターゲット
 
@@ -107,31 +107,47 @@
 
 - `profile_free_text` は MVP に含める
 - `profile_free_text` は自己紹介または業務概要を自由に書ける単一欄とする
-- MVP ではプレーンテキスト入力を前提とし、Markdown は将来拡張候補とする
+- `profile_free_text` は本人に加えて `HR_ADMIN` と `MANAGER` が補助更新できる
+- MVP ではプレーンテキスト入力を前提とし、Markdown は第 2 フェーズ以降の拡張候補とする
 - `WorkHistory` は第 2 フェーズで導入し、完成形では必須機能とする
 - `WorkHistory` が必須である理由は、社員本人が自分のこれまでの仕事や履歴を管理、確認できるようにするためである
 - `WorkHistory` の第一候補項目は `年月`, `業務内容`, `開発環境やツール`, `役割`, `開発チーム人数`, `project_code` とする
 - `WorkHistory` は本人に加えて `HR_ADMIN` と `MANAGER` が補助編集できる前提とする
 - `WorkHistory` は最初から `updated_by` を持つ
 - 同僚も `WorkHistory` を閲覧できる前提とする
-- 将来は、直近 `半年から 1 年` 程度は原文表示、それ以前は AI 要約表示へ寄せる方針を持つ
+- `WorkHistory` の AI サマリは、本人のこれまでの業務内容を要約し、他者にスキルをアピールする文章を生成する目的で使う
+- AI サマリは本人以外にも公開してよい情報として扱い、同僚や管理者も閲覧できる前提とする
+- 同僚には、直近 `1 年 (365 日)` までは `WorkHistory` の原文をそのまま表示し、それ以前は AI サマリを表示する
 - `WorkHistory` の直近表示期間は、システム設定または管理者向けサービス設定で変更できる方向とする
+- 本人、`HR_ADMIN`、`MANAGER` は、設定した期間単位のページングで `WorkHistory` の原文を全件閲覧できる方向とする
+- AI サマリは都度生成ではなく、`WorkHistory` 登録・更新時に再生成する方向とする
+- AI サマリは、履歴全体のサマリ文と、利用ツール・技術を表形式または一覧で見せる方向とする
+- AI サマリの文字数は設定値で持ち、実装後に調整できる方向とする
+- 初期推奨値として、キャリアサマリは `180〜280 文字`、スキルアピール文は `70〜120 文字` を目安にする
+- ツール・技術一覧はカテゴリ別の一覧表示を第一候補とする
+- AI サマリの表示順は、`キャリアサマリ` → `スキルアピール文` → `ツール・技術一覧` を第一候補とする
+- `WorkHistory` は履歴書出力を見据え、自由装飾よりも構造化入力を優先する
 - `LoginHistory` と `EditHistory` は第 2 フェーズ前半で導入する推奨とする
+- `LoginHistory` と `EditHistory` の閲覧は `HR_ADMIN` のみに許可する前提とする
+- `EditHistory` の対象エンティティ第一候補は `Employee`, `Employment`, `OrganizationLeader`, `WorkHistory`, `RoleAssignment` とする
+- 監査ログの保存先は DB テーブルを基本としつつ、標準出力や syslog に拡張できる形を第一候補とする
+- 監査ログの最小カラム案は、`LoginHistory = tenant_id / employee_id / logged_in_at / ip_address / user_agent`、`EditHistory = tenant_id / entity_type / entity_id / action_type / changed_by_employee_id / changed_at / scope_summary` とする
+- 監査ログの保持期間第一候補は、`LoginHistory = 365 日`、`EditHistory = 1825 日 (5 年)` とする
+- 監査ログの保持期間は、システム設定または管理者向けサービス設定で変更できる方向とする
 
 ## まだ未決の主論点
 
-- 監査ログをどこまで持つか
-- `profile_free_text` を誰が更新できるか
-- `WorkHistory` の直近表示期間の初期値を半年にするか 1 年にするか
-- Markdown をどの段階で許可するか
+- Markdown を `profile_free_text` にだけ許可するか
+- AI サマリのカテゴリ分けや表示順をどうするか
+- 完成後フェーズで AI アドバイス文や AI 相談チャットをどう扱うか
 
 ## 次に進む論点
 
 優先候補は以下。
 
-1. `WorkHistory` の直近表示期間の初期値を決める
-2. 監査ログをどこまで持つか
-3. `profile_free_text` の更新主体を決める
+1. Markdown をどの段階で許可するか
+2. `WorkHistory` の AI サマリのカテゴリ分けや表示順を詰める
+3. 第 2 フェーズの実装順を整理する
 
 ### マルチテナント方式の現時点推奨
 
