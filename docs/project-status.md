@@ -2,11 +2,13 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-04-17
+- Last Updated: 2026-04-20
 
 ## 目的
 
 この文書は、中断後に短時間でプロジェクトの経緯、目的、現在地、次アクションを把握できるようにするための要約である。
+
+フェーズやマイルストーン全体は [roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md) を正本とする。
 
 ## このプロジェクトで作ろうとしているもの
 
@@ -37,18 +39,58 @@
 
 ### ドメインモデル方針
 
-- 中心エンティティは `Employee`, `Organization`, `Employment`, `RoleAssignment`
+- 中心エンティティは `Employee`, `Organization`, `Employment`, `RoleAssignment`, `OrganizationLeader`
 - `Employment` は独立エンティティとして扱う
 - MVP でも兼務を扱う
 - 役職はマスタ化する
 - `Job Grade` は MVP では持たない
 - 上長の正本は `Employment.Manager Employee ID`
+- 組織責任者は `OrganizationLeader` で別関係として持つ
+
+### 権限モデル方針
+
+- MVP の権限モデルは `RBAC + 組織スコープ`
+- `HR_ADMIN` は全社閲覧・更新
+- `MANAGER` は `ORGANIZATION_TREE` を持つ
+- `MANAGER` は最小範囲の更新権限のみを持つ
+- `ORG_ADMIN` は役職とは別に追加付与できる独立ロールとする
+- `EXECUTIVE_VIEWER` は独立ロールで全社閲覧のみ
+- 役職、兼務、所属、在籍状態の本更新は `HR_ADMIN` のみ
+- 論理削除社員の閲覧・復元は `ORG_ADMIN` のみ
+- `EMPLOYEE` は同一組織社員の基本情報に加え、自己紹介または業務概要の自由記述テキストを閲覧できる方向で整理する
 
 ### 対象データ項目の現時点方針
 
-- `Employee` では、社員番号、氏名、表示名、メールアドレス、生年月日、顔写真、在籍状態を MVP 必須候補としている
+- `Employee` では、社員番号、氏名、表示名、メールアドレス、生年月日、顔写真、`profile_free_text`、在籍状態を MVP 必須候補としている
 - 顔写真はデフォルト画像ありの任意設定
 - 社員番号は未設定者や契約社員も扱えるよう拡張余地を持たせる
+
+### 顔写真保存方針
+
+- DB に画像本体は持たず、参照情報のみを持つ
+- 本番系ではオブジェクトストレージを第一候補とする
+- 開発環境や Docker の最小構成ではローカルファイル保存でも動くようにする
+- 保存先は抽象化し、環境で切り替えられるようにする
+
+### 履歴管理方針
+
+- MVP では全変更の汎用履歴ではなく、重要な対象だけ履歴を持つ
+- `Employment` と `OrganizationLeader` は履歴前提で扱う
+- 主所属/兼務、上長、組織責任者、在籍状態の変化を追えるようにする
+- 履歴は事後対応として組織管理者が補正できるようにする
+- 退職や離任でも物理削除はせず、論理削除で過去データを残す
+- 論理削除社員の閲覧・復元は `ORG_ADMIN` のみが行える
+
+### 社員番号ルール
+
+- `Employee ID` は内部の不変 ID とする
+- `社員番号` は業務表示用の文字列として扱う
+- 既存番号がある場合はその値を優先する
+- 未設定時はプレースホルダ番号を自動付与する
+- 接頭辞は `TEMP / CONT / EXT` を使う
+- `TEMP` は `Temporary`
+- `CONT` は `Contract`
+- `EXT` は `External`
 
 ### 兼務ルール
 
@@ -58,23 +100,44 @@
 - 組織図の標準表示では主所属と兼務の両方を見せる
 - 組織詳細画面でも兼務メンバーを表示する
 - 兼務表示は全社設定で ON/OFF を切り替える
+- 兼務は別組織をまたぐ所属よりも、同一組織内の役割兼任や他部署案件の兼務を中心に扱う
+- 兼務を理由に別組織の閲覧範囲を広げない
+
+### プロフィールと業務履歴方針
+
+- `profile_free_text` は MVP に含める
+- `profile_free_text` は自己紹介または業務概要を自由に書ける単一欄とする
+- MVP ではプレーンテキスト入力を前提とし、Markdown は将来拡張候補とする
+- `WorkHistory` は第 2 フェーズで導入し、完成形では必須機能とする
+- `WorkHistory` が必須である理由は、社員本人が自分のこれまでの仕事や履歴を管理、確認できるようにするためである
+- `WorkHistory` の第一候補項目は `年月`, `業務内容`, `開発環境やツール`, `役割`, `開発チーム人数`, `project_code` とする
+- `WorkHistory` は本人に加えて `HR_ADMIN` と `MANAGER` が補助編集できる前提とする
+- `WorkHistory` は最初から `updated_by` を持つ
+- 同僚も `WorkHistory` を閲覧できる前提とする
+- 将来は、直近 `半年から 1 年` 程度は原文表示、それ以前は AI 要約表示へ寄せる方針を持つ
+- `WorkHistory` の直近表示期間は、システム設定または管理者向けサービス設定で変更できる方向とする
+- `LoginHistory` と `EditHistory` は第 2 フェーズ前半で導入する推奨とする
 
 ## まだ未決の主論点
 
-- 組織責任者を `Organization` に直接持つか
-- 権限スコープの最小単位をどう置くか
-- 社員番号の生成/初期値ルール
-- 顔写真の保存方式
-- 履歴管理を MVP でどこまで持つか
-- マルチテナント方式
+- 監査ログをどこまで持つか
+- `profile_free_text` を誰が更新できるか
+- `WorkHistory` の直近表示期間の初期値を半年にするか 1 年にするか
+- Markdown をどの段階で許可するか
 
 ## 次に進む論点
 
 優先候補は以下。
 
-1. 権限スコープの最小単位
-2. 組織責任者の表現
-3. 社員番号ルール
+1. `WorkHistory` の直近表示期間の初期値を決める
+2. 監査ログをどこまで持つか
+3. `profile_free_text` の更新主体を決める
+
+### マルチテナント方式の現時点推奨
+
+- 推奨は `共有テーブル型を基本にしつつ、単一テナント専用デプロイにも対応できる方式`
+- `tenant_id` は全主要テーブルに持ち、内部の不変 ID として扱う
+- 変更が起こりうる識別子は `tenant_code` や `tenant_slug` のような別項目で吸収する
 
 ## 再開時の読み順
 
@@ -82,3 +145,4 @@
 2. `docs/project-status.md`
 3. `docs/prompts/resume-instructions.md`
 4. `docs/product/domain-model.md`
+5. `docs/architecture/tenancy-and-permissions.md`

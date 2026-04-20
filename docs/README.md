@@ -14,12 +14,13 @@
 
 1. [product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
 2. [product/core-usecases.md](/home/keith/Documents/projects/personal-base/docs/product/core-usecases.md)
-3. [product/domain-model.md](/home/keith/Documents/projects/personal-base/docs/product/domain-model.md)
-4. [product/requirements.md](/home/keith/Documents/projects/personal-base/docs/product/requirements.md)
-5. [architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
-6. [architecture/tenancy-and-permissions.md](/home/keith/Documents/projects/personal-base/docs/architecture/tenancy-and-permissions.md)
-7. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
-8. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
+3. [roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
+4. [product/domain-model.md](/home/keith/Documents/projects/personal-base/docs/product/domain-model.md)
+5. [product/requirements.md](/home/keith/Documents/projects/personal-base/docs/product/requirements.md)
+6. [architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
+7. [architecture/tenancy-and-permissions.md](/home/keith/Documents/projects/personal-base/docs/architecture/tenancy-and-permissions.md)
+8. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
+9. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
 
 ## 文書ステータスの考え方
 

@@ -57,6 +57,7 @@
 - 文書ルール: [docs/prompts/document-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/document-rules.md)
 - 役割分担ルール: [docs/prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
 - プロジェクト状況サマリ: [docs/project-status.md](/home/keith/Documents/projects/personal-base/docs/project-status.md)
+- ロードマップとマイルストーン: [docs/roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
 - 再開手順: [docs/prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
 - 事業・プロダクト観点の入口: [docs/product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
@@ -72,12 +73,9 @@
 
 ## 次に着手すべき論点
 
-- マルチテナント方式をどうするか
-- 人材データの基幹モデルをどう定義するか
-- 権限モデルを RBAC 中心にするか、属性ベースも含めるか
+- `WorkHistory` の直近表示期間の初期値を半年にするか 1 年にするか
 - 監査ログと履歴管理をどの粒度で持つか
-- 一般社員の閲覧権限をどこまで許可するか
-- `社員台帳と組織図` の対象データをどこまで持つか
+- `profile_free_text` の更新主体をどうするか
 
 ## 運用ルール
 
