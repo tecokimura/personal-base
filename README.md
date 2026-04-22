@@ -57,6 +57,7 @@
 - 文書ルール: [docs/prompts/document-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/document-rules.md)
 - 役割分担ルール: [docs/prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
 - プロジェクト状況サマリ: [docs/project-status.md](/home/keith/Documents/projects/personal-base/docs/project-status.md)
+- 決定待ち課題一覧: [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md)
 - ロードマップとマイルストーン: [docs/roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
 - 再開手順: [docs/prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
@@ -73,9 +74,8 @@
 
 ## 次に着手すべき論点
 
-- `profile_free_text` に Markdown を許可するか
-- `WorkHistory` の AI サマリのカテゴリ分けと表示順をどうするか
-- 第 2 フェーズの実装順をどうするか
+- 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
+- 直近の着手順は `WorkHistory` 公開範囲 → `WorkHistory` 最小項目確認 → 初期外部システム一覧
 
 ## 運用ルール
 
