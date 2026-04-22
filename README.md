@@ -31,6 +31,8 @@
     │   └── security.md
     ├── decisions
     │   └── ADR-001-documentation-principles.md
+    ├── setup
+    │   └── initial-bootstrap.md
     ├── prompts
     │   ├── document-rules.md
     │   ├── collaboration-rules.md
@@ -60,6 +62,7 @@
 - 決定待ち課題一覧: [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md)
 - ロードマップとマイルストーン: [docs/roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
 - 実装計画: [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
+- 初期セットアップ手順: [docs/setup/initial-bootstrap.md](/home/keith/Documents/projects/personal-base/docs/setup/initial-bootstrap.md)
 - 再開手順: [docs/prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
 - 事業・プロダクト観点の入口: [docs/product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
