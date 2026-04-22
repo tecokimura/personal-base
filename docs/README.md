@@ -21,6 +21,7 @@
 7. [architecture/tenancy-and-permissions.md](/home/keith/Documents/projects/personal-base/docs/architecture/tenancy-and-permissions.md)
 8. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
 9. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
+10. [implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
 
 ## 文書ステータスの考え方
 

@@ -24,12 +24,14 @@
 2. `docs/roadmap.md` を読む
 3. `docs/project-status.md` を読む
 4. `docs/decision-backlog.md` を読む
-5. `docs/prompts/collaboration-rules.md` を読み、意思決定境界を確認する
-6. `docs/README.md` を読む
-7. 直近で確定済みの内容を `docs/product/vision.md`、`docs/product/target-users.md`、`docs/product/core-usecases.md`、`docs/product/domain-model.md`、`docs/architecture/tenancy-and-permissions.md` で確認する
-8. `docs/decision-backlog.md` の先頭課題から、現在の次ステップを特定する
-9. 選択が必要な論点であれば、選択肢を整理して Keith に確認する
-10. 確定済み内容は文書へ反映し、`README.md`、`docs/roadmap.md`、`docs/project-status.md`、`docs/decision-backlog.md` を必要に応じて更新する
+5. `docs/implementation-plan.md` を読む
+6. `docs/prompts/collaboration-rules.md` を読み、意思決定境界を確認する
+7. `docs/README.md` を読む
+8. 直近で確定済みの内容を `docs/product/vision.md`、`docs/product/target-users.md`、`docs/product/core-usecases.md`、`docs/product/domain-model.md`、`docs/architecture/tenancy-and-permissions.md` で確認する
+9. `docs/decision-backlog.md` の先頭課題、または `implementation-plan.md` の先頭作業から、現在の次ステップを特定する
+10. 論点が曖昧な場合は、確定事項にするか残タスクにするかを Keith に確認する
+11. 選択が必要な論点であれば、選択肢を整理して Keith に確認する
+12. 確定済み内容は文書へ反映し、`README.md`、`docs/roadmap.md`、`docs/project-status.md`、`docs/decision-backlog.md`、`docs/implementation-plan.md` を必要に応じて更新する
 
 ## 現在の再開ポイント
 
@@ -56,7 +58,8 @@
 - 同僚には、直近 `1 年 (365 日)` までは `WorkHistory` の原文をそのまま表示し、それ以前は AI サマリを表示する方向で整理済みである
 - 原文表示の直近期間は設定で変更できる方向で整理済みである
 - 本人、`HR_ADMIN`、`MANAGER` は、設定期間ごとのページングで `WorkHistory` の原文を全件閲覧できる方向で整理済みである
-- `WorkHistory` の AI サマリは MVP や第 2 フェーズでは必須にせず、第 3 フェーズ以降の拡張候補として扱う方向で整理済みである
+- `WorkHistory` の AI サマリは MVP や第 2 フェーズでは必須にせず、`フェーズ 3` の対象として扱う方向で整理済みである
+- `WorkHistory` の AI サマリを `フェーズ 3` に入れる前提条件は、`WorkHistory` 入力運用、原文閲覧ルール、監査ログ運用が最低限安定していることとする方向で整理済みである
 - `WorkHistory` の AI サマリは都度生成ではなく、登録または更新時に再生成する方向で整理済みである
 - AI サマリは、履歴全体のサマリ文と、利用ツール・技術の一覧を見せる方向で整理済みである
 - AI サマリの文字数は設定値で持ち、実装後に調整できる方向で整理済みである
@@ -77,8 +80,16 @@
 - SSO は、顧客要件または導入運用上の必要性が明確になった時点で `第 3 フェーズ以降` の追加候補とする方向で整理済みである
 - 顔写真保存は初期はローカルファイル保存を第一候補とし、将来は別サーバや `S3` 互換ストレージへ切り替え可能にする方向で整理済みである
 - メール送信基盤は初期外部システムに含めず、必要になった時点で追加する方向で整理済みである
+- 初期の外部システム一覧は `ローカルファイル保存` と `CSV 取込 / CSV 出力` を第一候補とする方向で整理済みである
+- 将来追加候補はフェーズ確定ではなく、現時点で想定している候補としてのみ扱う方向で整理済みである
 - 完成後フェーズでは、AI アドバイス文や AI 相談チャットも将来拡張候補として扱う方向である
+- AI アドバイス文、AI 相談チャット、AI 検索 / 推薦は `フェーズ 4` の候補として扱う方向で整理済みである
+- `フェーズ 4` の AI 機能優先順位は、`AI 検索 / 推薦` → `AI アドバイス文` → `AI 相談チャット` の順で整理済みである
+- `AI 検索 / 推薦` は必要機能として扱うが、AI を使うか通常検索拡張で始めるかは未確定のまま残す方向で整理済みである
+- `MVP` の実装順と `第 2 フェーズ` までの確定実装順は `implementation-plan.md` を正本として整理済みである
+- `MVP` の着手単位、チケット粒度、テストケース記述を各単位とセットで進める方針は `implementation-plan.md` に確定事項として整理済みである
 - 次は [decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) の先頭課題から順に処理する
+- 曖昧な論点は、確定事項にするか残タスクにするかを Keith に確認してから進める
 
 ## 再開時の注意
 

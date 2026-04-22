@@ -49,7 +49,7 @@
 | 事業・プロダクトの骨子 | In Progress | Vision、Target Users、Core Use Cases の主要方針を反映済み |
 | 技術設計の骨子 | In Progress | 技術検討用の章立てを作成済み |
 | 詳細要件定義 | Not Started | 各ユースケースと業務フローの深掘りが必要 |
-| 実装計画 | Not Started | MVP範囲と開発順序は未整理 |
+| 実装計画 | In Progress | MVP と第 2 フェーズの実装順、着手単位、チケット粒度は整理済み。次は詳細設計 |
 
 ## まず見る場所
 
@@ -59,6 +59,7 @@
 - プロジェクト状況サマリ: [docs/project-status.md](/home/keith/Documents/projects/personal-base/docs/project-status.md)
 - 決定待ち課題一覧: [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md)
 - ロードマップとマイルストーン: [docs/roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
+- 実装計画: [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
 - 再開手順: [docs/prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
 - 事業・プロダクト観点の入口: [docs/product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
@@ -75,7 +76,8 @@
 ## 次に着手すべき論点
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
-- 直近の着手順は `WorkHistory` 公開範囲 → `WorkHistory` 最小項目確認 → 初期外部システム一覧
+- 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
+- 直近は `implementation-plan.md` の確定実装順と着手単位を前提に、`認証・認可基盤` の詳細設計へ進む段階に入っている
 
 ## 運用ルール
 
