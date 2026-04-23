@@ -57,16 +57,34 @@
 - `MANAGER` は `ORGANIZATION_TREE` を持つ
 - `MANAGER` は最小範囲の更新権限のみを持つ
 - `MANAGER` の閲覧判定は `ORGANIZATION_TREE` 配下の主所属と兼務の両方を含める
+- `MANAGER` の通常社員に対する閲覧項目は `ORG_ADMIN` と同一にする
 - `ORG_ADMIN` は役職とは別に追加付与できる独立ロールとする
 - `ORG_ADMIN` の基本閲覧範囲は `ORGANIZATION_TREE` とし、必要に応じて複数 `RoleAssignment` で広げる
+- `ORG_ADMIN` の通常社員に対する閲覧項目は `MANAGER` と同一にする
 - `EXECUTIVE_VIEWER` は独立ロールで全社閲覧のみ
-- `EXECUTIVE_VIEWER` は全社の社員基本情報、`profile_free_text`、`WorkHistory` 原文を閲覧できる
+- `EXECUTIVE_VIEWER` は通常社員に対して `HR_ADMIN` と同一の閲覧項目を持つ
+- `EXECUTIVE_VIEWER` は全社の社員基本情報、顔写真、`profile_free_text`、`WorkHistory` 原文を閲覧できる
+- `MANAGER` / `ORG_ADMIN` / `HR_ADMIN` / `EXECUTIVE_VIEWER` は連絡先メールアドレスを閲覧できる
+- `HR_ADMIN` と `EXECUTIVE_VIEWER` の差分は、更新権限と論理削除社員の閲覧 / 復元に置く
+- `HR_ADMIN` と `EXECUTIVE_VIEWER` は過去の所属履歴も閲覧できる
+- `HR_ADMIN` は `UserAccount` の有効 / 無効状態を閲覧できる
+- `EXECUTIVE_VIEWER` は `UserAccount` の有効 / 無効状態を閲覧しない
 - 役職、兼務、所属、在籍状態の本更新は `HR_ADMIN` のみ
 - 論理削除社員の閲覧・復元は `HR_ADMIN` と `ORG_ADMIN` に許可する
+- 論理削除は退職管理の主手段ではなく、誤登録や無効化のための例外的な管理機能として扱う方向で整理する
 - `EMPLOYEE` は同一組織社員の基本情報に加え、自己紹介または業務概要の自由記述テキストを閲覧できる方向で整理する
 - `EMPLOYEE` は同一テナント内の全社組織図を閲覧できる
-- `EMPLOYEE` は主所属が同じ社員の氏名、表示名、主所属、兼務、役職、顔写真、`profile_free_text`、`WorkHistory` を閲覧できる
-- `EMPLOYEE` には生年月日、社員番号、雇用区分、論理削除状態、更新者 / 更新日時の内部メタ情報を同僚向けには見せない
+- `EMPLOYEE` は主所属が同じ社員の氏名、表示名、メールアドレス、入社日、主所属、兼務、役職、上長、部門長 / 副部門長、顔写真、`profile_free_text`、`WorkHistory` を閲覧できる
+- `EMPLOYEE` に見せる `profile_free_text` は全文表示とする
+- `EMPLOYEE` は同僚の `WorkHistory` 全件にアクセスできる
+- 標準表示では直近 `1 年 (365 日)` の原文を表示し、それ以前は `AI サマリ` を表示する
+- 過去原文も、詳細表示やページングでたどれる前提とする
+- `EMPLOYEE` には生年月日、社員番号、雇用区分、論理削除状態、`UserAccount` の有効 / 無効状態、更新者 / 更新日時の内部メタ情報を同僚向けには見せない
+- `MANAGER` と `ORG_ADMIN` は通常社員に対して同一の閲覧項目を持ち、生年月日も含める
+- `MANAGER` と `ORG_ADMIN` は過去の所属履歴も補助情報として閲覧できる
+- ただし、生年月日の表示範囲は後続フェーズ終盤で再検討する
+- `updated_by` / `updated_at` のような更新メタ情報は、現時点では `HR_ADMIN` を含め通常 UI に表示しない
+- `HR_ADMIN` 向けの更新メタ情報表示は、将来の監査画面や管理画面で再検討する
 
 ### 技術アーキテクチャ方針
 
@@ -108,10 +126,12 @@
 ### 履歴管理方針
 
 - MVP では全変更の汎用履歴ではなく、重要な対象だけ履歴を持つ
-- `Employment` と `OrganizationLeader` は履歴前提で扱う
-- 主所属/兼務、上長、部門長 / 副部門長、在籍状態の変化を追えるようにする
+- `OrganizationLeader` は履歴前提で扱う
+- `Employment` は現在所属の正本とし、過去所属履歴は管理補助情報として必要最小限で扱う
+- 主所属/兼務、上長、部門長 / 副部門長、在籍状態の現在値を正本管理できるようにする
 - 履歴は事後対応として組織管理者が補正できるようにする
-- 退職や離任でも物理削除はせず、論理削除で過去データを残す
+- 退職や離任でも物理削除はせず、在籍状態と履歴で過去データを残す
+- 論理削除は退職管理とは分離し、誤登録や無効化の例外用途として残す
 - 論理削除社員の閲覧・復元は `HR_ADMIN` と `ORG_ADMIN` が行える
 
 ### 社員番号ルール
@@ -158,6 +178,7 @@
 - `WorkHistory` では Markdown のような自由装飾を入れず、構造化入力を優先する
 - `WorkHistory` は第 2 フェーズで導入し、完成形では必須機能とする
 - `WorkHistory` が必須である理由は、社員本人が自分のこれまでの仕事や履歴を管理、確認できるようにするためである
+- 業務実績の履歴は `WorkHistory` を主に参照し、過去所属履歴は補助情報として扱う
 - `WorkHistory` の第一候補項目は `年月`, `業務内容`, `開発環境やツール`, `役割`, `開発チーム人数`, `project_code` とする
 - `project_code` は第 2 フェーズでは任意項目とする
 - `WorkHistory` は本人に加えて `HR_ADMIN` と `MANAGER` が補助編集できる前提とする
@@ -169,12 +190,12 @@
 - `MANAGER` は `ORGANIZATION_TREE` 配下社員の `WorkHistory` 原文を全件閲覧できる
 - `EMPLOYEE` は主所属が同じ同僚の `WorkHistory` 原文を閲覧できる
 - `ORG_ADMIN` は第 2 フェーズでは `WorkHistory` 専用の閲覧主体に含めない
-- `EXECUTIVE_VIEWER` は第 2 フェーズでは `WorkHistory` 閲覧対象に含めない
+- `EXECUTIVE_VIEWER` は第 2 フェーズでも `WorkHistory` 閲覧対象に含める
 - 論理削除社員の `WorkHistory` は `HR_ADMIN` と `ORG_ADMIN` のみ閲覧できる
 - `WorkHistory` の AI サマリは、本人のこれまでの業務内容を要約し、他者にスキルをアピールする文章を生成する目的で使う
 - AI サマリは本人以外にも公開してよい情報として扱い、同僚や管理者も閲覧できる前提とする
-- 同僚には、直近 `1 年 (365 日)` までは `WorkHistory` の原文をそのまま表示し、それ以前は AI サマリを表示する
-- `WorkHistory` の直近表示期間は、システム設定または管理者向けサービス設定で変更できる方向とする
+- 同僚は `WorkHistory` 全件にアクセスできるが、標準表示は `直近 1 年の原文 + それ以前の AI サマリ` を第一候補とする
+- 過去原文は、詳細表示やページングでたどれる前提とする
 - 本人、`HR_ADMIN`、`MANAGER` は、設定した期間単位のページングで `WorkHistory` の原文を全件閲覧できる方向とする
 - AI サマリは MVP や第 2 フェーズの必須対象には置かず、`フェーズ 3` の対象とする
 - `WorkHistory` の AI サマリを `フェーズ 3` に入れる前提条件は、`WorkHistory` 入力運用、原文閲覧ルール、監査ログ運用が最低限安定していることとする
@@ -206,6 +227,7 @@
 
 1. `認証・認可基盤` を確定した実装開始順で着手する
 2. `閲覧権限制御` の詳細設計を進める
+3. `退職者 / 休職者` の表示と無効化、退職後アカウント停止の詳細設計を進める
 
 ### マルチテナント方式の現時点推奨
 

@@ -35,7 +35,7 @@
 
 ## 現在の再開ポイント
 
-現時点の次論点は `閲覧権限制御` の詳細設計である。
+現時点の次論点は `閲覧権限制御` の棚卸しと残り未決項目の整理である。
 
 理由:
 
@@ -105,7 +105,13 @@
 - `EXECUTIVE_VIEWER` は全社の社員基本情報、`profile_free_text`、`WorkHistory` 原文を閲覧できる方向で整理済みである
 - 論理削除社員の閲覧・復元は `ORG_ADMIN` に加えて `HR_ADMIN` にも許可する方向で整理済みである
 - 組織図の `部門長 / 副部門長`, `上長`, `主所属 / 兼務` の最終的な見せ方は実装後のデザイン確認で見直す前提である
-- 次は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) の先頭課題である `閲覧権限制御` を進める
+- `閲覧権限制御` では、`EMPLOYEE` の同僚閲覧、`MANAGER / ORG_ADMIN` の通常閲覧、`HR_ADMIN / EXECUTIVE_VIEWER` の差分の大半を整理済みである
+- `EMPLOYEE` には、同僚の氏名、表示名、メールアドレス、入社日、主所属、兼務、役職、上長、部門長 / 副部門長、顔写真、`profile_free_text`、`WorkHistory` を見せる方向で整理済みである
+- `EMPLOYEE` の `WorkHistory` は全件アクセス可能だが、標準表示は `直近 1 年の原文 + それ以前の AI サマリ` を第一候補として整理済みである
+- `MANAGER / ORG_ADMIN` は通常社員に対して同一の閲覧項目を持ち、過去の所属履歴も補助情報として閲覧できる方向で整理済みである
+- `HR_ADMIN / EXECUTIVE_VIEWER` は通常社員に対して同一の閲覧項目を持ち、過去の所属履歴も閲覧できる方向で整理済みである
+- `HR_ADMIN` のみ `UserAccount` の有効 / 無効状態を閲覧でき、他ロールには見せない方向で整理済みである
+- 次は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) の先頭課題である `閲覧権限制御` を棚卸しし、未決項目だけを洗い出す
 - 曖昧な論点は、確定事項にするか残タスクにするかを Keith に確認してから進める
 
 ## 再開時の注意
