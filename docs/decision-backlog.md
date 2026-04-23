@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-04-22
+- Last Updated: 2026-04-23
 
 ## 目的
 
@@ -12,12 +12,14 @@
 
 ## 現在の決定待ち課題
 
-- 現時点で管理している決定待ち課題はない
+1. `閲覧権限制御` の詳細設計
+   - `HR_ADMIN`, `MANAGER`, `ORG_ADMIN`, `EXECUTIVE_VIEWER`, `EMPLOYEE` の閲覧境界を詰める
+   - 社員台帳、組織図、`profile_free_text`, `WorkHistory`, 論理削除社員の見え方を整理する
 
 ## 次に着手する推奨順
 
-1. `認証・認可基盤` の詳細設計
-2. `認証・認可基盤` のチケット分解
+1. `閲覧権限制御` の詳細設計
+2. `認証・認可基盤` の実装着手
 
 ## 再開時の使い方
 

@@ -34,7 +34,7 @@
 - `ORG_ADMIN` を独立ロールとして扱う
 - 経営層は `EXECUTIVE_VIEWER` という独立ロールで扱う
 - 役職変更、兼務変更、所属変更などの本更新は `HR_ADMIN` のみが行う
-- 論理削除された社員の閲覧・復元は `ORG_ADMIN` のみが行えるようにする
+- 論理削除された社員の閲覧・復元は `HR_ADMIN` と `ORG_ADMIN` に許可する
 
 ## 検討した選択肢
 
@@ -211,10 +211,10 @@
 
 | ロール | 主目的 | 閲覧範囲 | 更新範囲 | 第 2 フェーズの `WorkHistory` | 持たせない権限 |
 |---|---|---|---|---|---|
-| `HR_ADMIN` | 人事台帳の正本管理 | `TENANT_ALL` | 社員台帳の本更新、所属、兼務、役職、在籍状態の本更新 | 全社員の原文全件閲覧 | 特になし。最上位の業務管理ロール |
+| `HR_ADMIN` | 人事台帳の正本管理 | `TENANT_ALL` | 社員台帳の本更新、所属、兼務、役職、在籍状態の本更新、論理削除社員の閲覧・復元 | 全社員の原文全件閲覧 | 特になし。最上位の業務管理ロール |
 | `MANAGER` | 配下組織の閲覧と現場運用 | `ORGANIZATION_TREE` | 最小範囲の補助更新。表示名、顔写真支援、配下の `Manager Employee ID`、軽微な組織運用補助 | `ORGANIZATION_TREE` 配下の原文全件閲覧 | 役職、兼務、所属、在籍状態の本更新 |
 | `ORG_ADMIN` | 組織運用管理 | `ORGANIZATION_TREE` | 組織運用に関わる管理補助、論理削除社員の閲覧・復元 | 専用閲覧主体には含めない | 人事台帳の本更新 |
-| `EXECUTIVE_VIEWER` | 経営層向けの全社閲覧 | `TENANT_ALL` | なし | 第 2 フェーズでは対象外 | すべての更新権限 |
+| `EXECUTIVE_VIEWER` | 経営層向けの全社閲覧 | `TENANT_ALL` | なし | 全社の原文閲覧を許可する | すべての更新権限 |
 | `EMPLOYEE` | 本人情報と近い同僚情報の閲覧 | `SELF` を基本とし、後続で同一組織へ拡張 | 自己入力系の更新を中心 | 主所属が同じ同僚の原文閲覧 | 全社閲覧、人事台帳の本更新 |
 
 ### 役割の意味の固定
@@ -223,12 +223,14 @@
   - 人事マスタの正本を扱う全社管理者
 - `MANAGER`
   - 配下組織のメンバーを見て、現場で必要な最小限の運用を行う管理職
+  - 閲覧判定は `ORGANIZATION_TREE` 配下の主所属と兼務の両方を含める
 - `ORG_ADMIN`
   - 役職とは別に付与される組織運用ロール
   - 人事マスタの正本は持たず、組織運用と論理削除社員対応を担う
+  - 基本閲覧範囲は `ORGANIZATION_TREE` とし、必要に応じて複数 `RoleAssignment` で広げる
 - `EXECUTIVE_VIEWER`
   - 経営層向けの全社閲覧ロール
-  - 更新は行わず、全社の社員情報と組織状況を俯瞰する
+  - 更新は行わず、全社の社員情報、`profile_free_text`、`WorkHistory` 原文を閲覧する
 - `EMPLOYEE`
   - 一般社員ロール
   - 本人情報を中心に見つつ、後続で同一組織の同僚情報も閲覧する
@@ -266,6 +268,8 @@
 #### `EXECUTIVE_VIEWER`
 
 - 全社の社員と組織を閲覧できる
+- `profile_free_text` を閲覧できる
+- `WorkHistory` 原文を閲覧できる
 - 更新権限は持たない
 
 #### `EMPLOYEE`
@@ -298,7 +302,7 @@
 - `EXECUTIVE_VIEWER` は独立ロールとして定義する
 - `EXECUTIVE_VIEWER` は全社閲覧のみを行い、更新権限は持たない
 - 役職、兼務、所属、在籍状態の本更新は `HR_ADMIN` のみとする
-- 論理削除社員の閲覧・復元は `ORG_ADMIN` に許可する
+- 論理削除社員の閲覧・復元は `HR_ADMIN` と `ORG_ADMIN` に許可する
 
 ## `WorkHistory` の公開範囲の確定事項
 
@@ -312,13 +316,14 @@
   - 全社員の `WorkHistory` 原文を全件閲覧できる
 - `MANAGER`
   - 自分の `ORGANIZATION_TREE` 配下社員の `WorkHistory` 原文を全件閲覧できる
+  - 判定には主所属と兼務の両方を含める
 - `EMPLOYEE`
   - 主所属が同じ同僚の `WorkHistory` 原文を閲覧できる
 - `ORG_ADMIN`
   - 第 2 フェーズでは `WorkHistory` 専用の閲覧主体に含めない
   - `WorkHistory` 原文閲覧が必要な場合は、`MANAGER` または別ロール付与で扱う
 - `EXECUTIVE_VIEWER`
-  - 第 2 フェーズでは `WorkHistory` 閲覧対象に含めない
+  - 全社の `WorkHistory` 原文を閲覧できる
 
 ### 補足ルール
 
@@ -326,6 +331,28 @@
 - 兼務を理由に閲覧範囲を広げない
 - `EMPLOYEE` の閲覧判定は主所属ベースで行う
 - 論理削除社員の `WorkHistory` は `HR_ADMIN` と `ORG_ADMIN` のみ閲覧できる
+- `EXECUTIVE_VIEWER` には論理削除社員の原文閲覧を許可しない
+
+### `EMPLOYEE` の同僚閲覧方針
+
+- `EMPLOYEE` は主所属が同じ社員の基本プロフィールと `WorkHistory` を閲覧できる
+- 同僚閲覧で見せる対象は、氏名、表示名、主所属、兼務、役職、顔写真、`profile_free_text`、`WorkHistory` とする
+- 生年月日、社員番号、雇用区分、論理削除状態、更新者 / 更新日時の内部メタ情報は同僚閲覧に含めない
+- 将来フェーズで、本人が `同一組織のみ公開` や `社内公開` を選べる拡張余地は残す
+
+### `MANAGER` の閲覧方針
+
+- `MANAGER` は `ORGANIZATION_TREE` 配下の社員を閲覧できる
+- 判定には主所属と兼務の両方を含める
+- ただし、`EMPLOYEE` の同僚閲覧は引き続き主所属ベースで扱う
+
+### `ORG_ADMIN` の閲覧方針
+
+- `ORG_ADMIN` の基本閲覧範囲は `ORGANIZATION_TREE` とする
+- 判定には主所属と兼務の両方を含める
+- 広い範囲が必要な場合は複数 `RoleAssignment` で対応する
+- 全社閲覧が必要な場合は `HR_ADMIN` を使う
+- そのため、`ORG_ADMIN`、`HR_ADMIN`、`ORG_ADMIN + HR_ADMIN` を分けて扱える前提とする
 
 ## `MANAGER` / `ORG_ADMIN` 更新権限のたたき台
 

@@ -27,6 +27,9 @@
     │   ├── system-context.md
     │   ├── application-architecture.md
     │   ├── data-architecture.md
+    │   ├── employee-directory-management.md
+    │   ├── organization-management.md
+    │   ├── organization-chart-display.md
     │   ├── tenancy-and-permissions.md
     │   └── security.md
     ├── decisions
@@ -67,6 +70,9 @@
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
 - 事業・プロダクト観点の入口: [docs/product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
 - 技術設計の入口: [docs/architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
+- 組織管理の詳細設計: [docs/architecture/organization-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-management.md)
+- 社員台帳管理の詳細設計: [docs/architecture/employee-directory-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/employee-directory-management.md)
+- 組織図表示の詳細設計: [docs/architecture/organization-chart-display.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-chart-display.md)
 
 ## 進め方
 
@@ -80,7 +86,7 @@
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- 直近は `implementation-plan.md` の確定実装順と着手単位を前提に、`認証・認可基盤` の詳細設計へ進む段階に入っている
+- 直近は `認証・認可基盤` の実装着手と並行して、`閲覧権限制御` の詳細設計を詰める段階に入っている
 
 ## 運用ルール
 
