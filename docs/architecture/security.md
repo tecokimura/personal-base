@@ -57,6 +57,18 @@
 
 - ログイン成功時は Cookie ベースでサーバ側セッションを発行する
 - Cookie に載せる値はランダムなセッショントークンとし、DB にはそのハッシュのみを保存する
+- 認証 Cookie は `HttpOnly` を前提にする
+- 開発時は `http://localhost:3000` から `http://localhost:3001` への `CORS + credentials: include` を前提にする
+- `backend` 側では `Access-Control-Allow-Credentials: true` を有効にする
+- 開発時の Cookie 属性は `SameSite=Lax` を基本にし、`Secure` は本番で有効化する
+- 本番では可能な限り同一オリジン寄せを前提にする
+- 環境変数は `.env.example` を正本の雛形とし、実値は `.env` または `.env.local` で管理する
+- 秘密値は git に含めない
+- `frontend` で公開してよい値のみ `NEXT_PUBLIC_` を付ける
+- `DATABASE_URL`, `DB_PASSWORD`, `SESSION_SECRET` などの秘密値は `backend` 側だけで使う
+- ディレクトリごとの `.env` 配置は、まずルート `.env` を正本にする
+- `apps/frontend/.env.local` は必要時のローカル上書きとして使えるようにする
+- `apps/backend` 個別の `.env` は必要になるまで作らない
 - セッションの保持先は DB とし、少なくとも `user_account_id`, `tenant_id`, `expires_at`, `revoked_at` を追えるようにする
 - セッション発行時には、だれに、いつ、どこまで有効なセッションを発行したかを DB に記録する
 - MVP のセッション有効期限は固定値 `14 日` を第一候補とする

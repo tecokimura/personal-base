@@ -88,7 +88,7 @@
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
 - 直近は `技術選定` を優先し、`Docker Compose + PostgreSQL + NestJS + Next.js + Prisma + TypeScript + pnpm` の初期方針を起点にスタックを固める
 - `TypeScript` を使う実装では `any` を使わないことを厳守する
-- `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm` は確定済みであり、次は `Docker Compose` のサービス分割とディレクトリ構成の確定へ進む
+- `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みであり、次は技術選定の残件整理へ進む
 
 ## 運用ルール
 

@@ -20,6 +20,35 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 - ORM / マイグレーションは `Prisma` で進める
 - リポジトリ構成は `1 リポジトリ` で進める
 - Node.js のパッケージマネージャは `pnpm` で進める
+- Lint / Format は `ESLint + Prettier` で進める
+- `TypeScript` の `any` 禁止は lint でも検出する
+- テスト基盤は、単体テスト / 統合テストに `Vitest`、E2E に `Playwright` を使う
+- UI は `Tailwind CSS + 最小自前コンポーネント` を基本にする
+- 初期は `Button`, `Input`, `Select`, `Dialog`, `Table`, `Badge` など必要最小限だけ整える
+- 追加部品が必要になった場合は `shadcn/ui` を候補にする
+- `MUI` と `Ant Design` は初期採用しない
+- スタイリング基盤は `Tailwind CSS` で進める
+- ディレクトリ構成は `apps/frontend`, `apps/backend`, `docs/`, ルートの `compose.yml`, `package.json`, `pnpm-workspace.yaml`, `.env.example` を基本にする
+- `Docker Compose` の初期サービスは `frontend`, `backend`, `db` に絞る
+- `packages/` は必要になるまで作らない
+- `frontend` と `backend` は `REST API` で通信する
+- 開発時の基本ポートは `frontend=3000`, `backend=3001`, `db=5432` にする
+- `backend` の API は `/api` プレフィックスを前提にする
+- `frontend` は環境変数で API 接続先を持つ
+- 認証は `HttpOnly Cookie` を前提にする
+- 開発時は `http://localhost:3000` から `http://localhost:3001` への `CORS + credentials: include` を前提にする
+- `backend` 側では `Access-Control-Allow-Credentials: true` を有効にする
+- 開発時の Cookie 属性は `SameSite=Lax` を基本にし、`Secure` は本番で有効化する
+- 本番では可能な限り同一オリジン寄せを前提にする
+- 環境変数は `.env.example` を正本の雛形とし、実値は `.env` または `.env.local` で管理する
+- 秘密値は git に含めない
+- `frontend` で公開してよい値のみ `NEXT_PUBLIC_` を付ける
+- `DATABASE_URL`, `DB_PASSWORD`, `SESSION_SECRET` などの秘密値は `backend` 側だけで使う
+- Compose でも `.env` を読む前提にする
+- 本番の secrets は将来デプロイ先の secret 機構へ寄せる
+- ディレクトリごとの `.env` 配置は、まずルート `.env` を正本にする
+- `apps/frontend/.env.local` は必要時のローカル上書きとして使えるようにする
+- `apps/backend` 個別の `.env` は必要になるまで作らない
 
 ## 決定事項
 

@@ -99,6 +99,21 @@
 - ORM / マイグレーションは `Prisma` で進める方針で確定済みである
 - リポジトリ構成は `1 リポジトリ` で進める方針で確定済みである
 - Node.js のパッケージマネージャは `pnpm` で進める方針で確定済みである
+- Lint / Format は `ESLint + Prettier` で進め、`TypeScript` の `any` 禁止は lint でも検出する方針で確定済みである
+- テスト基盤は、単体テスト / 統合テストに `Vitest`、E2E に `Playwright` を使う方針で確定済みである
+- UI は `Tailwind CSS + 最小自前コンポーネント` を基本にし、初期は `Button`, `Input`, `Select`, `Dialog`, `Table`, `Badge` など必要最小限を整え、追加部品が必要になった場合は `shadcn/ui` を候補にし、`MUI` と `Ant Design` は初期採用しない方針で確定済みである
+- スタイリング基盤は `Tailwind CSS` で進める方針で確定済みである
+- ディレクトリ構成は `apps/frontend`, `apps/backend`, `docs/`, ルートの `compose.yml`, `package.json`, `pnpm-workspace.yaml`, `.env.example` を基本にする方針で確定済みである
+- `Docker Compose` の初期サービスは `frontend`, `backend`, `db` に絞り、`packages/` は必要になるまで作らない方針で確定済みである
+- `frontend` と `backend` は `REST API` で通信し、開発時の基本ポートは `frontend=3000`, `backend=3001`, `db=5432`、`backend` の API は `/api` プレフィックスを前提にする方針で確定済みである
+- `frontend` は環境変数で API 接続先を持つ方針で確定済みである
+- 認証は `HttpOnly Cookie` を前提にし、開発時は `http://localhost:3000` から `http://localhost:3001` への `CORS + credentials: include` を使う方針で確定済みである
+- `backend` 側では `Access-Control-Allow-Credentials: true` を有効にし、開発時の Cookie 属性は `SameSite=Lax`、`Secure` は本番で有効化する方針で確定済みである
+- 本番では可能な限り同一オリジン寄せを前提にする方針で確定済みである
+- 環境変数は `.env.example` を正本の雛形とし、実値は `.env` または `.env.local` で管理し、秘密値は git に含めない方針で確定済みである
+- `frontend` で公開してよい値のみ `NEXT_PUBLIC_` を付け、`DATABASE_URL`, `DB_PASSWORD`, `SESSION_SECRET` などは `backend` 側だけで使う方針で確定済みである
+- Compose でも `.env` を読み、本番の secrets は将来デプロイ先の secret 機構へ寄せる方針で確定済みである
+- ディレクトリごとの `.env` 配置は、まずルート `.env` を正本にし、`apps/frontend/.env.local` は必要時のローカル上書き、`apps/backend` 個別の `.env` は必要になるまで作らない方針で確定済みである
 - `TypeScript` を使う実装では `any` を使わないことを厳守する方向で整理済みである
 - `MVP` の着手単位、チケット粒度、テストケース記述を各単位とセットで進める方針は `implementation-plan.md` に確定事項として整理済みである
 - `認証・認可基盤` のチケット分解、実装開始順、最初の動く縦切り、次の着手単位へ進む条件は `implementation-plan.md` に整理済みである
@@ -124,7 +139,7 @@
 - 復帰時の `UserAccount` 再有効化は明示操作で行い、所属は自動復元せず `HR_ADMIN` が再設定する
 - 論理削除は退職管理とは分離し、必要なら在籍状態には `削除` の状態値を使う
 - 論理削除社員の詳細でも過去所属履歴は参照できる
-- 次は `技術選定` を進め、`Docker Compose` のサービス分割とディレクトリ構成を確認する
+- 次は `技術選定` の残件整理を行い、主要論点を完了扱いにできるかを確認する
 - 曖昧な論点は、確定事項にするか残タスクにするかを Keith に確認してから進める
 
 ## 再開時の注意
