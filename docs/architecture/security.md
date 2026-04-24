@@ -150,11 +150,147 @@
 - `TENANT_ALL` と `SELF` は `scope_id = 0` とする
 - `ORGANIZATION` と `ORGANIZATION_TREE` は `scope_id = organization_id` とする
 
+### 数値コードの第一候補
+
+- 主キー / 外部キーは `integer` を前提にする
+- 状態値 / 種別値は `smallint` を前提にする
+- 列挙値は将来の途中追加に備え、`10, 20, 30...` の刻みで定義する
+
+#### `UserAccount.status`
+
+- `10 = ACTIVE`
+- `20 = SUSPENDED`
+- `30 = DISABLED`
+
+#### `RoleAssignment.role_type`
+
+- `10 = HR_ADMIN`
+- `20 = MANAGER`
+- `30 = ORG_ADMIN`
+- `40 = EXECUTIVE_VIEWER`
+- `50 = EMPLOYEE`
+
+#### `RoleAssignment.scope_type`
+
+- `10 = TENANT_ALL`
+- `20 = SELF`
+- `30 = ORGANIZATION`
+- `40 = ORGANIZATION_TREE`
+
 ### 初回 `HR_ADMIN` 作成の第一候補
 
 - 初回テナント作成と初回 `HR_ADMIN` 作成は、MVP では管理コマンドまたは Seed で行う
 - 管理画面の作成は初期必須にしない
 - 手順と追加設定方法は、運用者向けのセットアップ文書へ明記する
+
+### 認証・認可 API の第一候補
+
+- MVP の最小 API は `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`, `GET /api/me/roles` の 4 本を第一候補とする
+- `POST /api/auth/login` は `login_identifier + password` を受け取り、成功時に `HttpOnly Cookie` でサーバ側セッションを発行する
+- `POST /api/auth/logout` は現在セッションを失効し、Cookie を削除する
+- `GET /api/auth/session` は現在の認証状態と最小ユーザー情報を返す
+- `GET /api/me/roles` は現在ユーザーの有効ロール一覧を返す
+- セッショントークンはレスポンス body に返さず、Cookie のみで扱う
+
+### エラーレスポンスの第一候補
+
+- 失敗レスポンスは共通で `error.code`, `error.message`, `error.details` を持つ JSON 形式を使う
+- `error.code` は機械判定用、`error.message` は画面表示用、`error.details` は追加情報用とする
+- HTTP ステータスは一般的な意味に合わせて使い分ける
+- `400` は入力不正
+- `401` は未認証
+- `403` は権限不足または他テナント拒否
+- `404` は対象なし
+- `409` は重複または状態競合
+- `500` は想定外障害
+
+### 認証状態遷移の第一候補
+
+#### ログイン成功時
+
+- `UserAccount.status = ACTIVE` であることを前提にする
+- `login_identifier + password` の一致を確認する
+- 成功時は `Session` を新規作成する
+- `session_token_hash` を保存する
+- `expires_at` はアプリ設定で一元管理するセッション有効期限を使って計算する
+- `revoked_at` は `NULL` とする
+- `UserAccount.last_logged_in_at` を更新する
+- `UserAccount.updated_at` を更新する
+- `HttpOnly Cookie` を返す
+- 既存セッションはこの時点では失効させず、同時ログインを許可する
+
+- セッション有効期限のような業務設定値は、環境変数ではなくアプリ内の設定ファイルまたは設定モジュールで一元管理する
+- `14 日` は初期推奨値に留め、コード中にマジックナンバーで直接書かない
+
+#### ログアウト時
+
+- 現在の `Session` を特定する
+- `revoked_at` に現在時刻を入れる
+- `updated_at` を更新する
+- Cookie を削除する
+- `UserAccount` 側の状態は変更しない
+
+#### `退職` / `休職` 時
+
+- `Employment.status` を `退職` または `休職` に更新する
+- 対応する `UserAccount.status` を `DISABLED` に更新する
+- 有効な `Session` をすべて失効する
+- 通常画面からは非表示にする
+- 在籍終了者一覧からのみ参照できるようにする
+
+#### 復帰時
+
+- `Employment.status` を在職中へ戻す
+- `UserAccount.status` は明示操作で `ACTIVE` に戻す
+- セッションは自動復元しない
+- 再ログイン時に新しい `Session` を発行する
+- 所属は自動復元せず、`HR_ADMIN` が正しい所属を再設定する
+
+### 認証 DTO の第一候補
+
+- 最初に作る DTO は `LoginRequestDto`, `AuthSessionResponseDto`, `RoleItemDto`, `MyRolesResponseDto`, `ApiErrorResponseDto` の最小構成を第一候補とする
+
+#### `LoginRequestDto`
+
+- `loginIdentifier: string`
+- `password: string`
+- `loginIdentifier` は必須、空文字不可、最大 `255`
+- `password` は必須、空文字不可、最大 `255`
+
+#### `AuthSessionResponseDto`
+
+- 認証済み:
+  - `authenticated: true`
+  - `userAccountId: number`
+  - `employeeId: number`
+  - `tenantId: number`
+  - `displayName: string`
+- 未認証:
+  - `authenticated: false`
+
+- `authenticated` を判別子にした union 型の shape を第一候補とする
+
+#### `RoleItemDto`
+
+- `roleType: number`
+- `roleName: string`
+- `scopeType: number`
+- `scopeName: string`
+- `scopeId: number`
+
+- 数値コードと名前の両方を返す shape を第一候補とする
+
+#### `MyRolesResponseDto`
+
+- `roles: RoleItemDto[]`
+
+#### `ApiErrorResponseDto`
+
+- `error.code: string`
+- `error.message: string`
+- `error.details: Record<string, unknown>`
+
+- `details` は常に持つ shape を第一候補とする
 
 ### SSO を追加する条件の第一候補
 
