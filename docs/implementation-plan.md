@@ -119,6 +119,25 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 - `AuthorizationService` が利用できる
 - 他テナント拒否の最低限確認ができる
 
+#### `認証・認可基盤` の最初の実装着手単位
+
+1. `Prisma schema` に `UserAccount / Session / RoleAssignment` を追加する
+   - 完了条件:
+   - 3 モデルが schema に入っている
+   - relation, unique, index が入っている
+   - `integer / smallint / nullable` 方針が反映されている
+2. 認証・認可基盤の最初の migration を作る
+   - 完了条件:
+   - `UserAccount / Session / RoleAssignment` の migration が 1 本ある
+   - `CHECK` 制約が SQL に追記されている
+   - DB 作成後に最低限の整合が取れている
+3. `UserAccount / Session / RoleAssignment` の repository / service 基盤を作る
+   - 完了条件:
+   - `UserAccount` を取得できる
+   - `Session` を作成 / 失効できる
+   - `RoleAssignment` を有効期間込みで取得できる
+   - 以後の auth API で使える service の入口がある
+
 ### `2. 組織と社員台帳の基本 CRUD`
 
 - `Organization`

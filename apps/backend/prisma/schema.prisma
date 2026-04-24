@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserAccount {
+  id              Int              @id @default(autoincrement())
+  tenantId        Int
+  employeeId      Int
+  loginIdentifier String           @db.VarChar(255)
+  passwordHash    String           @db.VarChar(255)
+  status          Int              @db.SmallInt
+  lastLoggedInAt  DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessions        Session[]
+  roleAssignments RoleAssignment[]
+
+  @@unique([tenantId, employeeId])
+  @@unique([tenantId, loginIdentifier])
+  @@index([tenantId])
+}
+
+model Session {
+  id               Int         @id @default(autoincrement())
+  tenantId         Int
+  userAccountId    Int
+  sessionTokenHash String      @db.VarChar(255)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  userAccount      UserAccount @relation(fields: [userAccountId], references: [id])
+
+  @@index([tenantId])
+  @@index([userAccountId])
+  @@index([expiresAt])
+}
+
+model RoleAssignment {
+  id            Int         @id @default(autoincrement())
+  tenantId      Int
+  userAccountId Int
+  roleType      Int         @db.SmallInt
+  scopeType     Int         @db.SmallInt
+  scopeId       Int
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userAccount   UserAccount @relation(fields: [userAccountId], references: [id])
+
+  @@index([tenantId])
+  @@index([userAccountId])
+  @@index([roleType])
+  @@index([scopeType, scopeId])
+}

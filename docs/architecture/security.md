@@ -204,6 +204,102 @@
 - `409` は重複または状態競合
 - `500` は想定外障害
 
+### `Prisma schema / migration` 方針の第一候補
+
+- テーブル、型、外部キー、一意制約、`NOT NULL`、index は `Prisma schema` を正本にする
+- `CHECK (scope_id >= 0)` のような補助制約は migration SQL で補う
+- enum は DB enum を使わず、当面は `smallint` の数値コードで管理する
+- コード値の意味はアプリ側の定数または型で一元管理する
+- `Prisma Migrate` を正本にし、生成された migration SQL に必要な `CHECK` 制約を追記する
+- 最初の認証・認可基盤 migration は `UserAccount`, `Session`, `RoleAssignment` を 1 本にまとめる
+
+### `Prisma schema` モデルの第一候補
+
+#### `UserAccount`
+
+- `id`
+- `tenantId`
+- `employeeId`
+- `loginIdentifier`
+- `passwordHash`
+- `status`
+- `lastLoggedInAt`
+- `createdAt`
+- `updatedAt`
+
+- `id` は `Int @id @default(autoincrement())`
+- `status` は `Int @db.SmallInt`
+- `lastLoggedInAt` は `DateTime?`
+- `createdAt` は `DateTime @default(now())`
+- `updatedAt` は `DateTime @updatedAt`
+- `sessions` と `roleAssignments` の relation を持つ
+- `employeeId -> Employee.id` の明示 relation を持つ
+- `@@unique([tenantId, employeeId])`
+- `@@unique([tenantId, loginIdentifier])`
+- `@@index([tenantId])`
+
+#### `Session`
+
+- `id`
+- `tenantId`
+- `userAccountId`
+- `sessionTokenHash`
+- `expiresAt`
+- `revokedAt`
+- `createdAt`
+- `updatedAt`
+
+- `id` は `Int @id @default(autoincrement())`
+- `revokedAt` は `DateTime?`
+- `userAccount` は `UserAccount` への relation を持つ
+- `@@index([tenantId])`
+- `@@index([userAccountId])`
+- `@@index([expiresAt])`
+
+#### `RoleAssignment`
+
+- `id`
+- `tenantId`
+- `userAccountId`
+- `roleType`
+- `scopeType`
+- `scopeId`
+- `effectiveFrom`
+- `effectiveTo`
+- `createdAt`
+- `updatedAt`
+
+- `id` は `Int @id @default(autoincrement())`
+- `roleType` は `Int @db.SmallInt`
+- `scopeType` は `Int @db.SmallInt`
+- `effectiveTo` は `DateTime?`
+- `userAccount` は `UserAccount` への relation を持つ
+- `@@index([tenantId])`
+- `@@index([userAccountId])`
+- `@@index([roleType])`
+- `@@index([scopeType, scopeId])`
+
+#### `Prisma schema` に書くもの / migration SQL に回すもの
+
+- `Prisma schema` に書く:
+  - 主キー
+  - 外部キー
+  - 一意制約
+  - index
+  - 型
+  - nullable / not null
+- migration SQL に回す:
+  - `CHECK (scope_id >= 0)`
+  - `CHECK (status > 0)`
+  - `CHECK (role_type > 0)`
+  - `CHECK (scope_type > 0)`
+
+### `Employee` との relation の第一候補
+
+- `UserAccount.employeeId -> Employee.id` の明示 relation を貼る
+- `UserAccount` は `Employee` に対して 1:1 前提で扱う
+- 一意制約は `@@unique([tenantId, employeeId])` で表現する
+
 ### 認証状態遷移の第一候補
 
 #### ログイン成功時
