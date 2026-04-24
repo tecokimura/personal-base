@@ -14,7 +14,12 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 
 - `MVP` の中心ユースケースは `社員台帳と組織図の一元管理`
 - `第 2 フェーズ` で `WorkHistory`、`LoginHistory`、`EditHistory` を入れる
-- 技術方針は `モジュラモノリス + PostgreSQL + RBAC + 組織スコープ`
+- 技術方針は `モジュラモノリス + Docker Compose + PostgreSQL + NestJS + Next.js + Prisma + TypeScript + RBAC + 組織スコープ`
+- `TypeScript` を使う実装では `any` を使わないことを厳守する
+- バックエンドは `NestJS + TypeScript`、フロントエンドは `Next.js + TypeScript` で進める
+- ORM / マイグレーションは `Prisma` で進める
+- リポジトリ構成は `1 リポジトリ` で進める
+- Node.js のパッケージマネージャは `pnpm` で進める
 
 ## 決定事項
 

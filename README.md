@@ -86,7 +86,9 @@
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- 直近は `認証・認可基盤` の実装着手と並行して、`閲覧権限制御` の詳細設計を棚卸しし、残り未決項目を整理する段階に入っている
+- 直近は `技術選定` を優先し、`Docker Compose + PostgreSQL + NestJS + Next.js + Prisma + TypeScript + pnpm` の初期方針を起点にスタックを固める
+- `TypeScript` を使う実装では `any` を使わないことを厳守する
+- `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm` は確定済みであり、次は `Docker Compose` のサービス分割とディレクトリ構成の確定へ進む
 
 ## 運用ルール
 
