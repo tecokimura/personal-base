@@ -13,19 +13,20 @@
 
 ## おすすめの読み順
 
-1. [product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
-2. [product/core-usecases.md](/home/keith/Documents/projects/personal-base/docs/product/core-usecases.md)
-3. [roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
-4. [product/domain-model.md](/home/keith/Documents/projects/personal-base/docs/product/domain-model.md)
-5. [product/requirements.md](/home/keith/Documents/projects/personal-base/docs/product/requirements.md)
-6. [architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
-7. [architecture/tenancy-and-permissions.md](/home/keith/Documents/projects/personal-base/docs/architecture/tenancy-and-permissions.md)
-8. [architecture/organization-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-management.md)
-9. [architecture/employee-directory-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/employee-directory-management.md)
-10. [architecture/organization-chart-display.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-chart-display.md)
-11. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
-12. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
-13. [implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
+1. [current-position.md](/home/keith/Documents/projects/personal-base/docs/current-position.md)
+2. [product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
+3. [product/core-usecases.md](/home/keith/Documents/projects/personal-base/docs/product/core-usecases.md)
+4. [roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
+5. [product/domain-model.md](/home/keith/Documents/projects/personal-base/docs/product/domain-model.md)
+6. [product/requirements.md](/home/keith/Documents/projects/personal-base/docs/product/requirements.md)
+7. [architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
+8. [architecture/tenancy-and-permissions.md](/home/keith/Documents/projects/personal-base/docs/architecture/tenancy-and-permissions.md)
+9. [architecture/organization-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-management.md)
+10. [architecture/employee-directory-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/employee-directory-management.md)
+11. [architecture/organization-chart-display.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-chart-display.md)
+12. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
+13. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
+14. [implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
 
 ## 文書ステータスの考え方
 
