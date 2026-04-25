@@ -86,15 +86,14 @@
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- 直近は `技術選定` の主要論点がほぼ揃っており、`認証・認可基盤` の実装前技術設計も主要部分は整理済みである
+- 直近は `認証・認可基盤` の実装フェーズに入っており、最初の `Prisma schema` 着手まで進んでいる
 - `TypeScript` を使う実装では `any` を使わないことを厳守する
 - `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みである
 - `認証・認可基盤` では、主要テーブル方針、コード表方針、最小 API、最小 DTO、ログイン / ログアウト / 退職休職 / 復帰の状態遷移まで整理済みである
-- 次は `認証・認可基盤` の最初の実装着手 3 件
-  - `Prisma schema`
-  - 初回 migration
-  - repository / service 基盤
-  を順に進める
+- 次は `認証・認可基盤` の実装を続ける
+  - `Employee` の最小 Prisma モデル追加
+  - `UserAccount.employeeId -> Employee.id` relation を実コードへ反映
+  - その後に初回 migration へ進む
 
 ## 運用ルール
 

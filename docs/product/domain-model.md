@@ -24,9 +24,10 @@
 
 ## 決定事項
 
-- MVP の中心エンティティは `Employee`, `Organization`, `Employment`, `RoleAssignment` とする
+- MVP の中心エンティティは `Employee`, `UserAccount`, `Session`, `Organization`, `Employment`, `RoleAssignment` とする
 - MVP では組織責任者を表すために `OrganizationLeader` を追加する
 - `Employee` を社員本人の基本単位とし、組織所属や権限は別概念として切り分ける
+- 認証主体は `Employee` から分離し、`UserAccount` で扱う
 - `Organization` は組織図を表す階層構造として扱う
 - 雇用情報や在籍状態は `Employee` にべた書きせず、`Employment` として独立させる
 - MVP でも兼務を扱う
@@ -57,6 +58,46 @@
 - 雇用区分
 - 在籍状態
 - 直属上長に相当する社員参照
+
+#### `UserAccount`
+
+認証情報とログイン可否を表すエンティティ。
+
+想定項目候補:
+
+- UserAccount ID
+- Employee ID
+- Login Identifier
+- Password Hash
+- Is Active
+- Last Logged In At
+
+補足:
+
+- `Login Identifier` は連絡先とは別の、ログインに使う一意な文字列とする
+- 現時点ではメールアドレス形式の文字列を入れてよいが、項目名に `email` は使わない
+- 通知や連絡先として使う値は `Employee.email` 側で管理し、誤用を防ぐ
+
+#### `Session`
+
+ログインセッションを表すエンティティ。
+
+想定項目候補:
+
+- Session ID
+- UserAccount ID
+- Tenant ID
+- Issued At
+- Expires At
+- Revoked At
+- Last Accessed At
+- IP Address
+- User Agent
+
+補足:
+
+- セッション発行履歴は DB に残し、どのユーザーに、いつ、どこまで有効なセッションを発行したかを追えるようにする
+- 将来の管理画面からの強制セッション失効に備え、`Revoked At` を持つ
 
 #### `Organization`
 
@@ -102,6 +143,11 @@
 - Effective From
 - Effective To
 
+補足:
+
+- 1 ユーザーは複数の `RoleAssignment` を同時保持できる
+- 認可判定時は、同一 `tenant_id` 内で有効な `RoleAssignment` をすべて評価する
+
 #### `OrganizationLeader`
 
 組織責任者を表す関係エンティティ。
@@ -120,6 +166,8 @@
 ### エンティティ関係の第一候補
 
 - `Employee` 1 : N `Employment`
+- `Employee` 1 : 1 `UserAccount`
+- `UserAccount` 1 : N `Session`
 - `Organization` 1 : N `Employment`
 - `Organization` は自己参照で親子階層を持つ
 - `Organization` 1 : N `OrganizationLeader`
