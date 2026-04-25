@@ -59,6 +59,7 @@
 ## まず見る場所
 
 - 設計の進め方: [docs/README.md](/home/keith/Documents/projects/personal-base/docs/README.md)
+- 全体ゴールと現在地の一覧: [docs/current-position.md](/home/keith/Documents/projects/personal-base/docs/current-position.md)
 - 文書ルール: [docs/prompts/document-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/document-rules.md)
 - 役割分担ルール: [docs/prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
 - プロジェクト状況サマリ: [docs/project-status.md](/home/keith/Documents/projects/personal-base/docs/project-status.md)
@@ -102,6 +103,7 @@
 - 重要な設計判断は ADR として残す
 - 一度に複数の論点を混ぜず、1 ドキュメント 1 主題で進める
 - 選択肢がある判断は、必ずあなたに確認してから確定する
+- Git ブランチ運用は [docs/prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md) の `Git ブランチ運用ルール` を正本とする
 
 ## 更新の仕方
 
