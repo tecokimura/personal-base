@@ -25,8 +25,9 @@
 10. [architecture/employee-directory-management.md](/home/keith/Documents/projects/personal-base/docs/architecture/employee-directory-management.md)
 11. [architecture/organization-chart-display.md](/home/keith/Documents/projects/personal-base/docs/architecture/organization-chart-display.md)
 12. [prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
-13. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
-14. [implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
+13. [prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md)
+14. [prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
+15. [implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md)
 
 ## 文書ステータスの考え方
 
@@ -50,6 +51,7 @@
 - 後で振り返るべき判断は `decisions/`
 - 会話の進め方や書き方のルールは `prompts/`
 - 役割分担と意思決定境界は `prompts/collaboration-rules.md`
+- Backlog の運用ルールと `docs/` との役割分担は `prompts/backlog-operation-rules.md`
 - セッション再開手順は `prompts/resume-instructions.md`
 
 ## 更新時の基本方針

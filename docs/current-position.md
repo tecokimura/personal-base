@@ -20,7 +20,7 @@
 | 現在マイルストーン | `M2. 実装開始可能な設計一式` |
 | 現在の着手単位 | `認証・認可基盤` |
 | 現在の実装開始点 | `Prisma schema` の拡張 |
-| 次の具体作業 | `Employee` の最小 Prisma モデル追加と `UserAccount.employeeId -> Employee.id` relation 反映 |
+| 次の具体作業 | `認証・認可基盤` 完了。次は `組織管理` の詳細設計・実装着手 |
 
 ## ゴールから現在地まで
 
@@ -41,7 +41,7 @@
   Prisma schema の実装を進める段階
     ↓
 次の 1 手
-  Employee モデル追加 -> UserAccount relation 反映 -> 初回 migration
+  初回 auth migration 作成 (PMO_PJPERSONALBASE-13)
 ```
 
 ## フェーズ進行の見取り図
@@ -76,10 +76,10 @@
 | `UserAccount / Session / RoleAssignment` のデータモデル整理 | Done |
 | ログイン / ログアウト / セッション検証の仕様整理 | Done |
 | ロール方針、状態遷移、最小 API / DTO 整理 | Done |
-| `Employee` 最小モデル追加 | Next |
-| `UserAccount.employeeId -> Employee.id` relation 反映 | Next |
-| 初回 migration 作成 | After Next |
-| repository / service 基盤作成 | Later |
+| `Employee` 最小モデル追加 | Done |
+| `UserAccount.employeeId -> Employee.id` relation 反映 | Done |
+| 初回 migration 作成 | Done |
+| repository / service 基盤作成 | Done |
 
 ## 直近で迷ったらここを見る
 

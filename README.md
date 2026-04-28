@@ -54,7 +54,7 @@
 | 事業・プロダクトの骨子 | In Progress | Vision、Target Users、Core Use Cases の主要方針を反映済み |
 | 技術設計の骨子 | In Progress | 技術検討用の章立てを作成済み |
 | 詳細要件定義 | Not Started | 各ユースケースと業務フローの深掘りが必要 |
-| 実装計画 | In Progress | MVP と第 2 フェーズの実装順、着手単位、チケット粒度は整理済み。次は詳細設計 |
+| 実装計画 | In Progress | MVP と第 2 フェーズの実装順、着手単位、チケット粒度は整理済み。Backlog 初期起票を開始し、次は認証・認可基盤の実装着手 |
 
 ## まず見る場所
 
@@ -62,6 +62,7 @@
 - 全体ゴールと現在地の一覧: [docs/current-position.md](/home/keith/Documents/projects/personal-base/docs/current-position.md)
 - 文書ルール: [docs/prompts/document-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/document-rules.md)
 - 役割分担ルール: [docs/prompts/collaboration-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/collaboration-rules.md)
+- Backlog運用ルール: [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md)
 - プロジェクト状況サマリ: [docs/project-status.md](/home/keith/Documents/projects/personal-base/docs/project-status.md)
 - 決定待ち課題一覧: [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md)
 - ロードマップとマイルストーン: [docs/roadmap.md](/home/keith/Documents/projects/personal-base/docs/roadmap.md)
@@ -92,9 +93,14 @@
 - `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みである
 - `認証・認可基盤` では、主要テーブル方針、コード表方針、最小 API、最小 DTO、ログイン / ログアウト / 退職休職 / 復帰の状態遷移まで整理済みである
 - 次は `認証・認可基盤` の実装を続ける
-  - `Employee` の最小 Prisma モデル追加
-  - `UserAccount.employeeId -> Employee.id` relation を実コードへ反映
-  - その後に初回 migration へ進む
+  - `Employee` 最小モデル追加と `UserAccount.employeeId -> Employee.id` relation 反映: 完了
+  - 初回 auth migration の作成 (`PMO_PJPERSONALBASE-13`): 完了
+  - repository / service 基盤の作成 (`PMO_PJPERSONALBASE-15`): 完了
+  - ログイン / ログアウト / セッション検証 API の実装 (`PMO_PJPERSONALBASE-16`): 完了
+  - AuthorizationService とロール判定基盤の実装 (`PMO_PJPERSONALBASE-17`): 完了
+  - 初回 HR_ADMIN 作成コマンド・管理 API・テスト整備 (`PMO_PJPERSONALBASE-18`): 完了
+  - `認証・認可基盤` の実装完了。次は `組織管理` の詳細設計・実装へ進む
+- Backlog の実行管理は `PMO_PJPERSONALBASE` を使い、運用ルールの正本は [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 
 ## 運用ルール
 

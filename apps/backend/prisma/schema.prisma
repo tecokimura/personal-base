@@ -7,16 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// enrollmentStatus: 10=在職, 20=休職, 30=退職
+// isDeleted: 誤登録・無効化のための例外的な論理削除フラグ（退職管理とは分離）
+model Employee {
+  id               Int          @id @default(autoincrement())
+  tenantId         Int
+  enrollmentStatus Int          @db.SmallInt
+  isDeleted        Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  userAccount      UserAccount?
+
+  @@index([tenantId])
+  @@index([enrollmentStatus])
+}
+
+// status: 1=有効, 2=無効
 model UserAccount {
   id              Int              @id @default(autoincrement())
   tenantId        Int
-  employeeId      Int
+  employeeId      Int              @unique
   loginIdentifier String           @db.VarChar(255)
   passwordHash    String           @db.VarChar(255)
   status          Int              @db.SmallInt
   lastLoggedInAt  DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  employee        Employee         @relation(fields: [employeeId], references: [id])
   sessions        Session[]
   roleAssignments RoleAssignment[]
 
@@ -36,11 +53,14 @@ model Session {
   updatedAt        DateTime    @updatedAt
   userAccount      UserAccount @relation(fields: [userAccountId], references: [id])
 
+  @@unique([sessionTokenHash])
   @@index([tenantId])
   @@index([userAccountId])
   @@index([expiresAt])
 }
 
+// roleType: 1=HR_ADMIN, 2=MANAGER, 3=ORG_ADMIN, 4=EXECUTIVE_VIEWER, 5=EMPLOYEE
+// scopeType: 1=SELF, 2=ORGANIZATION, 3=ORGANIZATION_TREE, 4=TENANT_ALL
 model RoleAssignment {
   id            Int         @id @default(autoincrement())
   tenantId      Int

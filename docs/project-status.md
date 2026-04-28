@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-04-24
+- Last Updated: 2026-04-27
 
 ## 目的
 
@@ -39,6 +39,15 @@
 - `MVP` から `第 2 フェーズ` までの実装順は `implementation-plan.md` に確定事項として整理済み
 - `MVP` の着手単位とチケット粒度、テストケース記述を各単位とセットで進める方針は `implementation-plan.md` に確定事項として整理済み
 - `認証・認可基盤` の初期テストケース候補は `auth-authorization-test-cases.md` に整理済みである
+
+### Backlog 管理状況
+
+- Backlog プロジェクト `PMO_PJPERSONALBASE` の初期設定を開始済み
+- Backlog 運用ルールの正本は [prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
+- 初期マイルストーンとして `MVP-基盤構築`、`MVP-業務コア実装`、`Phase 2-拡張機能` を作成済み
+- `implementation-plan.md` の着手単位を基準に、MVP の親課題を作成済み
+- 直近着手対象として `認証・認可基盤` の子課題を起票済み
+- 仕様、設計、ロードマップ、運用ルールの正本は常に `docs/` とし、Backlog は進捗管理と実行管理に使う
 
 ### ドメインモデル方針
 
@@ -283,9 +292,9 @@
 
 優先候補は以下。
 
-1. `認証・認可基盤` の実装を続け、`Employee` の最小 Prisma モデルを追加する
-2. `UserAccount.employeeId -> Employee.id` relation を実コードへ反映する
-3. その後に初回 migration へ進む
+1. `Employee` 最小 Prisma モデル追加と `UserAccount.employeeId -> Employee.id` relation 反映: 完了
+2. 次は初回 auth migration の作成 (`PMO_PJPERSONALBASE-13`) へ進む
+3. その後に repository / service 基盤 (`PMO_PJPERSONALBASE-15`) へ進む
 4. `認証・認可基盤` の API 実装へ入る
 5. `TypeScript` を使う領域では `any` を使わない実装ルールを維持する
 

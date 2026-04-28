@@ -40,7 +40,67 @@
 - `ORG_ADMIN` と `HR_ADMIN` は同一ユーザーへ同時付与できる
 - 組織スコープ付きロールは `scope_type` と `scope_id` を明示して付与する
 
-## 備考
+## コマンド実行例
 
-- 具体的なコマンド名とオプションは実装時に確定する
-- 実装後は、この文書へ実行例を追記する
+### 前提条件
+
+- `DATABASE_URL` 環境変数が設定済みであること
+- `prisma migrate deploy`（または `prisma migrate dev`）でマイグレーション適用済みであること
+
+### 初回 HR_ADMIN 作成
+
+```bash
+# apps/backend ディレクトリで実行
+pnpm create-hr-admin \
+  --tenantId=1 \
+  --loginIdentifier=admin@example.com \
+  --password=<初期パスワード>
+```
+
+成功時の出力例：
+```
+HR_ADMIN created: employeeId=1, userAccountId=1, tenantId=1
+```
+
+**注意事項：**
+- 同じ `tenantId` + `loginIdentifier` の組み合わせが既存の場合はエラーになる
+- パスワードは bcryptjs でハッシュ化して保存される
+- 作成後は速やかに本人にパスワードを伝え、変更を促すこと（パスワード変更 API は後続フェーズで実装）
+
+### 追加 HR_ADMIN / ロール割当
+
+初回 HR_ADMIN でログイン後、管理 API でロールを追加付与する。
+
+```
+POST /api/admin/role-assignments
+Cookie: session_token=<セッショントークン>
+Content-Type: application/json
+
+{
+  "targetUserAccountId": 2,
+  "roleType": 1,       // 1=HR_ADMIN, 2=MANAGER, 3=ORG_ADMIN, 4=EXECUTIVE_VIEWER, 5=EMPLOYEE
+  "scopeType": 4,      // 1=SELF, 2=ORGANIZATION, 3=ORGANIZATION_TREE, 4=TENANT_ALL
+  "scopeId": 0,        // 非組織スコープは 0。組織スコープは organization_id を指定
+  "effectiveFrom": "2026-04-28T00:00:00.000Z"
+}
+```
+
+### ロール失効
+
+```
+DELETE /api/admin/role-assignments/:id
+Cookie: session_token=<セッショントークン>
+```
+
+### 論理削除社員の一覧・復元
+
+```
+# 論理削除社員一覧（HR_ADMIN または ORG_ADMIN）
+GET /api/admin/employees/deleted
+
+# 復元
+PATCH /api/admin/employees/:id/restore
+
+# 論理削除
+PATCH /api/admin/employees/:id/soft-delete
+```
