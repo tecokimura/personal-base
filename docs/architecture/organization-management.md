@@ -2,7 +2,7 @@
 
 - Status: In Review
 - Owner: Keith / Codex
-- Last Updated: 2026-04-22
+- Last Updated: 2026-04-29
 
 ## 目的
 
@@ -23,6 +23,7 @@
 - `tenant_id` は全主要テーブルに持ち、他テナント越境を許可しない
 - `OrganizationLeader` は履歴前提で扱う
 - MVP では `HR_ADMIN` を本更新主体とし、`ORG_ADMIN` は組織運用補助にとどめる
+- `organization_code` は MVP では任意項目として扱う
 
 ## 決定事項
 
@@ -67,13 +68,16 @@ MVP の `Organization` は以下を持つ。
 補足:
 
 - `organization_code` は MVP では `あると望ましい` だが、初期投入や外部連携を見据えて持つ
+- `organization_code` は MVP では任意項目とし、未設定を許可する
 - `parent_organization_id = 0` は使わず、ルート組織は `NULL` とする
 - `updated_by` は `HR_ADMIN` または許可された運用主体を保持する
+- `updated_by` は MVP では `Int` 型で保持し、外部キー制約は張らずアプリケーション側で保証する
 
 ### `Organization` の制約
 
 - `tenant_id + id` を内部識別の基本とする
-- `tenant_id + organization_code` は一意とする。ただし、`organization_code` を必須にするかは `Open Questions` とする
+- `tenant_id + organization_code` は一意とする
+- `organization_code` は MVP では必須にしない
 - 親組織は同一 `tenant_id` の `Organization` のみ参照できる
 - 自己親子参照は禁止する
 - 循環参照は禁止する
@@ -94,12 +98,14 @@ MVP の `Organization` は以下を持つ。
 - 無効組織も履歴参照では残す
 - 無効化された組織は、新規所属先や新規の部門長 / 副部門長割当の対象にしない
 - 既存履歴の表示では無効組織も参照可能とする
+- 通常の組織一覧 / ツリー取得 API は `is_active = true` のみ返し、無効組織は専用フィルタや履歴参照で扱う
 
 ### 組織無効化の前提条件
 
 - 配下に有効な子組織が残っている場合は無効化できない
 - 主所属 / 兼務を問わず有効な `Employment` が残っている場合は無効化できない
 - 有効な `OrganizationLeader` が残っている場合は、先に終了処理を行う
+- `Employment` に対する無効化チェックは `社員台帳管理` フェーズで追加し、`組織管理` フェーズでは TODO として先送りする
 
 ### `OrganizationLeader` の項目
 
@@ -125,6 +131,8 @@ MVP の `OrganizationLeader` は以下を持つ。
 - `leader_type` は MVP では単純化し、表示上の意味は `部門長` と `副部門長` に寄せる
 - `is_primary_leader = true` は同一組織・同一時点で 1 件だけ許可する
 - 同一社員が同一組織に複数の部門長種別で入ることは MVP では避ける
+- `leader_type` の数値コードは `1 = 部門長`, `2 = 副部門長` とする
+- `status` の数値コードは `1 = 有効`, `2 = 終了済み` とする
 
 ### `OrganizationLeader` の制約
 
@@ -144,6 +152,7 @@ MVP の `OrganizationLeader` は以下を持つ。
 
 - `HR_ADMIN` は `Organization` と `OrganizationLeader` の本更新を行える
 - `ORG_ADMIN` は MVP では組織運用補助にとどめ、本更新主体にはしない
+- `ORG_ADMIN` は MVP では部門長 / 副部門長の終了操作を行えない
 - `MANAGER` は `Organization` と `OrganizationLeader` の本更新主体に含めない
 - `EXECUTIVE_VIEWER` と `EMPLOYEE` は更新を行わない
 
@@ -167,6 +176,7 @@ MVP では以下を第一候補とする。
 - 他テナントの組織 ID、社員 ID を指定した場合は拒否する
 - 組織詳細では、基本属性に加えて直下の子組織一覧と現在の部門長を返せる形を第一候補とする
 - 組織ツリー取得は、組織図表示と認可判定の両方で再利用できる形を優先する
+- `MANAGE_ORGANIZATION` 権限を追加し、MVP では `HR_ADMIN` のみに付与する
 
 ### エラー方針
 
@@ -205,9 +215,8 @@ MVP では以下を第一候補とする。
 
 ## Open Questions
 
-- `organization_code` を MVP 必須にするか
-- `ORG_ADMIN` の「組織運用に関わる軽微な管理補助」に、部門長 / 副部門長終了の補助を含めるか
-- 組織無効化時に、過去の組織図表示でどう見せるか
+- `組織管理` フェーズで先送りした `Employment` 無効化チェックを `社員台帳管理` 実装時にどう統合するか
+- `updated_by` を将来の監査導線で `UserAccount` 参照へ昇格させるか
 
 ## 次に決めること
 

@@ -23,5 +23,6 @@ export const Permission = {
   VIEW_ORG_TREE: 'VIEW_ORG_TREE',
   MANAGE_SOFT_DELETED: 'MANAGE_SOFT_DELETED',
   MANAGE_ROLE_ASSIGNMENTS: 'MANAGE_ROLE_ASSIGNMENTS',
+  MANAGE_ORGANIZATION: 'MANAGE_ORGANIZATION',
 } as const;
 export type Permission = (typeof Permission)[keyof typeof Permission];

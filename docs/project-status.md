@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-04-27
+- Last Updated: 2026-04-28
 
 ## 目的
 
@@ -48,6 +48,11 @@
 - `implementation-plan.md` の着手単位を基準に、MVP の親課題を作成済み
 - 直近着手対象として `認証・認可基盤` の子課題を起票済み
 - 仕様、設計、ロードマップ、運用ルールの正本は常に `docs/` とし、Backlog は進捗管理と実行管理に使う
+- `認証・認可基盤` 実装後の確認論点は `PMO_PJPERSONALBASE-19` を起点に整理し、正本は `docs/architecture/security.md` と `docs/setup/initial-bootstrap.md` に反映する
+- `PMO_PJPERSONALBASE-19` の主要回答方針として、`OrganizationLeader.leader_type` は `1=部門長, 2=副部門長`、`OrganizationLeader.status` は `1=有効, 2=終了済み` を採用する
+- `organization_code` は MVP では任意、`ORG_ADMIN` の部門長 / 副部門長終了操作は MVP では未許可、通常の組織 API は `is_active = true` のみ返す方針とする
+- `Employment` による組織無効化チェックは `社員台帳管理` フェーズで追加し、`updated_by` は MVP では `Int` 型で保持して外部キー制約は張らない
+- `MANAGE_ORGANIZATION` は MVP では `HR_ADMIN` のみへ付与し、`組織管理` の子課題は `schema / service / API / test` の 4 分割を採用する
 
 ### ドメインモデル方針
 
@@ -146,15 +151,18 @@
 - `MVP` はアプリ内認証のみを第一候補とし、`第 2 フェーズ` でも SSO は必須にしない
 - SSO は、顧客要件または導入運用上の必要性が明確になった時点で `第 3 フェーズ以降` の追加候補とする
 - 認証主体は `Employee` と分離した `UserAccount` を独立で持つ
-- MVP の認証は `メールアドレス + パスワード` を第一候補とする
+- MVP の認証は `tenantId + loginIdentifier + password` を受け取る方式とし、`loginIdentifier` は現時点ではメールアドレス形式を許容する
 - `UserAccount` のログイン識別子は `login_identifier` とし、連絡先メールアドレスとは分離する
 - セッションは `DB 保存のサーバ側セッション` を第一候補とし、発行履歴を DB に残す
 - セッションは将来の管理画面からの強制失効に備え、個別に無効化できる前提とする
+- 認証 Cookie 名は `session_token` とする
+- MVP のセッション有効期限は固定値 `24 時間` とする
 - 認可判定は `AuthorizationService` に集約する
 - 1 ユーザーは複数の `RoleAssignment` を同時保持できる
 - `RoleAssignment.scope_id` は `NULL` を使わず、非組織スコープでは `0` を使う
 - 認可判定は有効ロールの許可の和集合で扱う
-- 初回 `HR_ADMIN` 作成は管理コマンドまたは Seed で行い、手順は文書化する
+- 現在の `AuthorizationService` は `tenant_id` 境界とロールごとの許可判定を先に実装し、`organization_tree` を使う実データ判定は `組織管理` と合わせて拡張する
+- 初回 `HR_ADMIN` 作成は管理コマンドで行い、最小 `Employee`、`UserAccount`、`RoleAssignment` を 1 トランザクションで作成する
 - 初期は同期処理中心で始め、非同期処理は限定用途に絞る
 - 専用検索基盤は初期導入せず、RDB 中心で開始する
 - メール送信基盤は初期外部システムに含めず、必要になった時点で追加する

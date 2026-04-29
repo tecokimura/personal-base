@@ -1,8 +1,8 @@
 # Security
 
-- Status: In Review
+- Status: Decided
 - Owner: Keith / Codex
-- Last Updated: 2026-04-22
+- Last Updated: 2026-04-28
 
 ## 目的
 
@@ -25,7 +25,7 @@
 - MVP は同期処理中心で始め、非同期処理はファイル処理や将来の AI 処理など限定用途に絞る
 - 初期の認証方式は `アプリ内認証で開始し、後で SSO を追加する方式` を第一候補とする
 - 認証主体は `Employee` とは分離した `UserAccount` を独立で持ち、`UserAccount.employee_id` で社員へ紐づける
-- MVP の認証は `メールアドレス + パスワード` を第一候補とし、パスワードはハッシュ保存する
+- MVP の認証は `tenant_id + login_identifier + password` を受け取るアプリ内認証とし、`login_identifier` は現時点ではメールアドレス形式を許容する
 - セッションは `JWT` ではなく `DB 保存のサーバ側セッション` を第一候補とする
 - セッション発行履歴は DB に残し、どのユーザーに、いつ、どこまで有効なセッションを発行したかを追えるようにする
 - 将来の管理画面からの強制セッション失効に備え、セッションは個別に無効化できる設計を前提とする
@@ -57,6 +57,7 @@
 
 - ログイン成功時は Cookie ベースでサーバ側セッションを発行する
 - Cookie に載せる値はランダムなセッショントークンとし、DB にはそのハッシュのみを保存する
+- Cookie 名は `session_token` とする
 - 認証 Cookie は `HttpOnly` を前提にする
 - 開発時は `http://localhost:3000` から `http://localhost:3001` への `CORS + credentials: include` を前提にする
 - `backend` 側では `Access-Control-Allow-Credentials: true` を有効にする
@@ -71,7 +72,7 @@
 - `apps/backend` 個別の `.env` は必要になるまで作らない
 - セッションの保持先は DB とし、少なくとも `user_account_id`, `tenant_id`, `expires_at`, `revoked_at` を追えるようにする
 - セッション発行時には、だれに、いつ、どこまで有効なセッションを発行したかを DB に記録する
-- MVP のセッション有効期限は固定値 `14 日` を第一候補とする
+- MVP のセッション有効期限は固定値 `24 時間` とする
 - ログアウト時は該当セッションを失効させる
 - 将来の管理画面からの強制セッション切断に備え、セッション単位で `revoked_at` を設定できる前提とする
 - `UserAccount` が `退職` または `休職` により無効化された時は、その時点で既存セッションも即時失効させる
@@ -83,6 +84,8 @@
 - 判定材料は `RoleAssignment`, `scope_type`, `scope_id`, `organization_tree` を使う
 - 画面側のメニュー制御は補助にとどめ、最終判定は必ずサーバ側で行う
 - 複数ロールを持つ場合は、同一 `tenant_id` 内で有効なロールの許可を合算して判定する
+- 現在の `認証・認可基盤` 実装では、まず `tenant_id` 境界とロールごとの許可判定を `AuthorizationService` に集約した
+- `organization_tree` を使う実データ判定は `組織管理` 実装と合わせて拡張する
 
 ### ロール評価の第一候補
 
@@ -100,7 +103,7 @@
 - `employee_id`
 - `login_identifier`
 - `password_hash`
-- `is_active`
+- `status`
 - `last_logged_in_at`
 - `created_at`
 - `updated_at`
@@ -116,13 +119,10 @@
 - `tenant_id`
 - `user_account_id`
 - `session_token_hash`
-- `issued_at`
 - `expires_at`
 - `revoked_at`
-- `last_accessed_at`
-- `ip_address`
-- `user_agent`
 - `created_at`
+- `updated_at`
 
 制約:
 
@@ -134,7 +134,7 @@
 
 - `id`
 - `tenant_id`
-- `employee_id`
+- `user_account_id`
 - `role_type`
 - `scope_type`
 - `scope_id`
@@ -145,7 +145,7 @@
 
 制約:
 
-- `employee_id` は `Employee` を参照する
+- `user_account_id` は `UserAccount` を参照する
 - `scope_id` は `NULL` を使わず、非組織スコープでは `0` を使う
 - `TENANT_ALL` と `SELF` は `scope_id = 0` とする
 - `ORGANIZATION` と `ORGANIZATION_TREE` は `scope_id = organization_id` とする
@@ -154,43 +154,50 @@
 
 - 主キー / 外部キーは `integer` を前提にする
 - 状態値 / 種別値は `smallint` を前提にする
-- 列挙値は将来の途中追加に備え、`10, 20, 30...` の刻みで定義する
+- MVP の実装済みコード表は `1, 2, 3...` を使う
+
+#### `Employee.enrollmentStatus`
+
+- `10 = 在職`
+- `20 = 休職`
+- `30 = 退職`
 
 #### `UserAccount.status`
 
-- `10 = ACTIVE`
-- `20 = SUSPENDED`
-- `30 = DISABLED`
+- `1 = ACTIVE`
+- `2 = DISABLED`
 
 #### `RoleAssignment.role_type`
 
-- `10 = HR_ADMIN`
-- `20 = MANAGER`
-- `30 = ORG_ADMIN`
-- `40 = EXECUTIVE_VIEWER`
-- `50 = EMPLOYEE`
+- `1 = HR_ADMIN`
+- `2 = MANAGER`
+- `3 = ORG_ADMIN`
+- `4 = EXECUTIVE_VIEWER`
+- `5 = EMPLOYEE`
 
 #### `RoleAssignment.scope_type`
 
-- `10 = TENANT_ALL`
-- `20 = SELF`
-- `30 = ORGANIZATION`
-- `40 = ORGANIZATION_TREE`
+- `1 = SELF`
+- `2 = ORGANIZATION`
+- `3 = ORGANIZATION_TREE`
+- `4 = TENANT_ALL`
 
 ### 初回 `HR_ADMIN` 作成の第一候補
 
-- 初回テナント作成と初回 `HR_ADMIN` 作成は、MVP では管理コマンドまたは Seed で行う
+- 初回テナント作成と初回 `HR_ADMIN` 作成は、MVP では管理コマンドで行う
 - 管理画面の作成は初期必須にしない
 - 手順と追加設定方法は、運用者向けのセットアップ文書へ明記する
+- 初回 `HR_ADMIN` 作成コマンドは、最小 `Employee`、`UserAccount`、`RoleAssignment` を 1 トランザクションで作成する
+- コマンドの必須引数は `tenantId`, `loginIdentifier`, `password` とする
 
 ### 認証・認可 API の第一候補
 
-- MVP の最小 API は `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`, `GET /api/me/roles` の 4 本を第一候補とする
-- `POST /api/auth/login` は `login_identifier + password` を受け取り、成功時に `HttpOnly Cookie` でサーバ側セッションを発行する
+- `認証・認可基盤` の現実装 API は `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` とする
+- `POST /api/auth/login` は `tenantId + loginIdentifier + password` を受け取り、成功時に `HttpOnly Cookie` でサーバ側セッションを発行する
 - `POST /api/auth/logout` は現在セッションを失効し、Cookie を削除する
-- `GET /api/auth/session` は現在の認証状態と最小ユーザー情報を返す
-- `GET /api/me/roles` は現在ユーザーの有効ロール一覧を返す
+- `GET /api/auth/me` は現在の最小ユーザー情報を返す
 - セッショントークンはレスポンス body に返さず、Cookie のみで扱う
+- 現時点では `GET /api/me/roles` は未実装とし、必要になった時点で追加する
 
 ### エラーレスポンスの第一候補
 
@@ -316,7 +323,7 @@
 - 既存セッションはこの時点では失効させず、同時ログインを許可する
 
 - セッション有効期限のような業務設定値は、環境変数ではなくアプリ内の設定ファイルまたは設定モジュールで一元管理する
-- `14 日` は初期推奨値に留め、コード中にマジックナンバーで直接書かない
+- `24 時間` は現実装の固定値とし、将来は設定モジュールへ切り出せる形を維持する
 
 #### ログアウト時
 
@@ -348,8 +355,10 @@
 
 #### `LoginRequestDto`
 
+- `tenantId: number`
 - `loginIdentifier: string`
 - `password: string`
+- `tenantId` は必須、正の整数
 - `loginIdentifier` は必須、空文字不可、最大 `255`
 - `password` は必須、空文字不可、最大 `255`
 
@@ -368,17 +377,11 @@
 
 #### `RoleItemDto`
 
-- `roleType: number`
-- `roleName: string`
-- `scopeType: number`
-- `scopeName: string`
-- `scopeId: number`
-
-- 数値コードと名前の両方を返す shape を第一候補とする
+- `GET /api/me/roles` を追加する時点で定義する
 
 #### `MyRolesResponseDto`
 
-- `roles: RoleItemDto[]`
+- `GET /api/me/roles` を追加する時点で定義する
 
 #### `ApiErrorResponseDto`
 

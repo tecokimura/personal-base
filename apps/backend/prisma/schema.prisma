@@ -59,6 +59,52 @@ model Session {
   @@index([expiresAt])
 }
 
+// leaderType: 1=部門長, 2=副部門長
+// status: 1=有効, 2=終了済み
+model Organization {
+  id                   Int                  @id @default(autoincrement())
+  tenantId             Int
+  organizationName     String               @db.VarChar(255)
+  organizationCode     String?              @db.VarChar(100)
+  parentOrganizationId Int?
+  displayOrder         Int                  @default(0)
+  isActive             Boolean              @default(true)
+  updatedBy            Int?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  parent               Organization?        @relation("OrganizationChildren", fields: [parentOrganizationId], references: [id])
+  children             Organization[]       @relation("OrganizationChildren")
+  leaders              OrganizationLeader[]
+
+  @@unique([tenantId, organizationCode])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([parentOrganizationId])
+}
+
+// leaderType: 1=部門長, 2=副部門長
+// status: 1=有効, 2=終了済み
+model OrganizationLeader {
+  id              Int          @id @default(autoincrement())
+  tenantId        Int
+  organizationId  Int
+  employeeId      Int
+  leaderType      Int          @db.SmallInt
+  isPrimaryLeader Boolean      @default(false)
+  startDate       DateTime     @db.Date
+  endDate         DateTime?    @db.Date
+  status          Int          @db.SmallInt
+  updatedBy       Int?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([tenantId])
+  @@index([organizationId])
+  @@index([tenantId, employeeId])
+  @@index([status])
+}
+
 // roleType: 1=HR_ADMIN, 2=MANAGER, 3=ORG_ADMIN, 4=EXECUTIVE_VIEWER, 5=EMPLOYEE
 // scopeType: 1=SELF, 2=ORGANIZATION, 3=ORGANIZATION_TREE, 4=TENANT_ALL
 model RoleAssignment {
