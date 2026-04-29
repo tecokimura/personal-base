@@ -65,6 +65,7 @@ describe('OrganizationService', () => {
       findByOrganizationId: vi.fn(),
       hasActiveLeaders: vi.fn().mockResolvedValue(false),
       hasActivePrimaryLeader: vi.fn().mockResolvedValue(false),
+      hasActiveLeaderByType: vi.fn().mockResolvedValue(false),
       create: vi.fn(),
       terminate: vi.fn().mockResolvedValue(undefined),
     };
@@ -308,6 +309,27 @@ describe('OrganizationService', () => {
       await expect(
         service.addLeader(ctx, 1, { employeeId: 10, leaderType: 1, startDate: new Date() }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('同一 leaderType の有効部門長がいると ConflictException をスローする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.hasActiveLeaderByType.mockResolvedValue(true);
+
+      await expect(
+        service.addLeader(ctx, 1, { employeeId: 10, leaderType: 1, startDate: new Date() }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(leaderRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('leaderType が異なれば別々に追加できる', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.hasActiveLeaderByType.mockResolvedValue(false);
+      leaderRepo.create.mockResolvedValue(makeLeader({ leaderType: 2 }));
+
+      await service.addLeader(ctx, 1, { employeeId: 10, leaderType: 2, startDate: new Date() });
+
+      expect(leaderRepo.create).toHaveBeenCalledOnce();
     });
 
     it('存在しない社員を指定すると NotFoundException をスローする', async () => {

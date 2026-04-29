@@ -141,6 +141,18 @@ export class OrganizationService {
       throw new NotFoundException(`Employee ${input.employeeId} not found in tenant`);
     }
 
+    // leaderType 単位で有効な部門長は1件まで（設計: 同一組織に有効な部門長は1件だけ許可）
+    const hasActiveSameType = await this.leaderRepo.hasActiveLeaderByType(
+      orgId,
+      ctx.tenantId,
+      input.leaderType,
+    );
+    if (hasActiveSameType) {
+      throw new ConflictException(
+        `Organization already has an active leader of leaderType ${input.leaderType}`,
+      );
+    }
+
     if (input.isPrimaryLeader) {
       const hasPrimary = await this.leaderRepo.hasActivePrimaryLeader(orgId, ctx.tenantId);
       if (hasPrimary) {
