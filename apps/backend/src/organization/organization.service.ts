@@ -133,6 +133,21 @@ export class OrganizationService {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_ORGANIZATION, ctx.tenantId);
     await this.assertOrgExists(orgId, ctx.tenantId);
 
+    const employeeExists = await this.orgRepo.employeeExistsInTenant(
+      input.employeeId,
+      ctx.tenantId,
+    );
+    if (!employeeExists) {
+      throw new NotFoundException(`Employee ${input.employeeId} not found in tenant`);
+    }
+
+    if (input.isPrimaryLeader) {
+      const hasPrimary = await this.leaderRepo.hasActivePrimaryLeader(orgId, ctx.tenantId);
+      if (hasPrimary) {
+        throw new ConflictException('Organization already has an active primary leader');
+      }
+    }
+
     return this.leaderRepo.create({
       tenantId: ctx.tenantId,
       organizationId: orgId,
@@ -160,6 +175,10 @@ export class OrganizationService {
     }
     if (leader.status === 2) {
       throw new ConflictException('Leader is already terminated');
+    }
+
+    if (endDate < leader.startDate) {
+      throw new UnprocessableEntityException('endDate must be on or after startDate');
     }
 
     await this.leaderRepo.terminate(leaderId, ctx.tenantId, endDate, ctx.userAccountId);

@@ -64,6 +64,13 @@ export class OrganizationRepository {
     });
   }
 
+  async employeeExistsInTenant(employeeId: number, tenantId: number): Promise<boolean> {
+    const count = await this.prisma.employee.count({
+      where: { id: employeeId, tenantId, isDeleted: false },
+    });
+    return count > 0;
+  }
+
   // Walk up the ancestor chain from `id` and collect all ancestor IDs (including `id` itself).
   // Used to detect circular reference when re-parenting an organization.
   async findAncestorIds(id: number, tenantId: number): Promise<Set<number>> {

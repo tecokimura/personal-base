@@ -42,6 +42,13 @@ export class OrganizationLeaderRepository {
     return count > 0;
   }
 
+  async hasActivePrimaryLeader(organizationId: number, tenantId: number): Promise<boolean> {
+    const count = await this.prisma.organizationLeader.count({
+      where: { organizationId, tenantId, isPrimaryLeader: true, status: LEADER_STATUS_ACTIVE },
+    });
+    return count > 0;
+  }
+
   async create(data: CreateLeaderData): Promise<OrganizationLeader> {
     return this.prisma.organizationLeader.create({ data });
   }

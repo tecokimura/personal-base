@@ -57,12 +57,14 @@ describe('OrganizationService', () => {
       update: vi.fn(),
       deactivate: vi.fn().mockResolvedValue(undefined),
       findAncestorIds: vi.fn().mockResolvedValue(new Set<number>()),
+      employeeExistsInTenant: vi.fn().mockResolvedValue(true),
     };
 
     leaderRepo = {
       findById: vi.fn(),
       findByOrganizationId: vi.fn(),
       hasActiveLeaders: vi.fn().mockResolvedValue(false),
+      hasActivePrimaryLeader: vi.fn().mockResolvedValue(false),
       create: vi.fn(),
       terminate: vi.fn().mockResolvedValue(undefined),
     };
@@ -307,6 +309,46 @@ describe('OrganizationService', () => {
         service.addLeader(ctx, 1, { employeeId: 10, leaderType: 1, startDate: new Date() }),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('存在しない社員を指定すると NotFoundException をスローする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      orgRepo.employeeExistsInTenant.mockResolvedValue(false);
+
+      await expect(
+        service.addLeader(ctx, 1, { employeeId: 999, leaderType: 1, startDate: new Date() }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(leaderRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('isPrimaryLeader=true のとき既存の主部門長がいると ConflictException をスローする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.hasActivePrimaryLeader.mockResolvedValue(true);
+
+      await expect(
+        service.addLeader(ctx, 1, {
+          employeeId: 10,
+          leaderType: 1,
+          isPrimaryLeader: true,
+          startDate: new Date(),
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('isPrimaryLeader=false のとき主部門長チェックをスキップする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.create.mockResolvedValue(makeLeader({ isPrimaryLeader: false }));
+
+      await service.addLeader(ctx, 1, {
+        employeeId: 10,
+        leaderType: 2,
+        isPrimaryLeader: false,
+        startDate: new Date(),
+      });
+
+      expect(leaderRepo.hasActivePrimaryLeader).not.toHaveBeenCalled();
+      expect(leaderRepo.create).toHaveBeenCalledOnce();
+    });
   });
 
   // ─── terminateLeader ──────────────────────────────────────────────────────
@@ -355,6 +397,19 @@ describe('OrganizationService', () => {
       await expect(service.terminateLeader(ctx, 1, 1, new Date())).rejects.toThrow(
         ConflictException,
       );
+    });
+
+    it('endDate が startDate より前の場合 UnprocessableEntityException をスローする', async () => {
+      const startDate = new Date('2026-04-01');
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.findById.mockResolvedValue(makeLeader({ startDate }));
+      const endDateBeforeStart = new Date('2026-03-31');
+
+      await expect(
+        service.terminateLeader(ctx, 1, 1, endDateBeforeStart),
+      ).rejects.toThrow(UnprocessableEntityException);
+
+      expect(leaderRepo.terminate).not.toHaveBeenCalled();
     });
   });
 });
