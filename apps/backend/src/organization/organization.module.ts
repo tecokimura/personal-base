@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationLeaderRepository } from './organization-leader.repository';
 import { OrganizationService } from './organization.service';
+import { OrganizationController } from './organization.controller';
 
 @Module({
-  imports: [AuthorizationModule],
+  imports: [AuthModule, AuthorizationModule],
+  controllers: [OrganizationController],
   providers: [OrganizationRepository, OrganizationLeaderRepository, OrganizationService],
   exports: [OrganizationService],
 })
