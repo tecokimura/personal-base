@@ -1,8 +1,8 @@
 # Organization Chart Display
 
-- Status: In Review
+- Status: Decided
 - Owner: Keith / Codex
-- Last Updated: 2026-04-22
+- Last Updated: 2026-04-29
 
 ## 目的
 
@@ -182,6 +182,13 @@ MVP では以下を第一候補とする。
 - 組織詳細表示取得は、組織情報とメンバー情報をまとめて返す
 - 組織ノード配下メンバー取得は、主所属と兼務を区別して返す
 - 認可判定で許可されないノードは返さない
+- 実装済みの第一候補 API は `GET /org-chart/tree`, `GET /org-chart/organizations/:id`, `GET /org-chart/organizations/:id/members` とする
+
+### 実装反映メモ
+
+- `org-chart` は読み取り専用の集約モジュールとして実装する
+- `EmployeeCard.position_name` は `PositionMaster` 未実装の間は `null` 固定で返す
+- `MANAGER / ORG_ADMIN` の `ORGANIZATION_TREE` による枝刈りは `閲覧権限制御` で反映する
 
 ### 権限反映の前提
 
@@ -230,5 +237,4 @@ MVP では以下を第一候補とする。
 
 ## 次に決めること
 
-- `閲覧権限制御` の詳細設計
 - `プロフィール機能` の詳細設計

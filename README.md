@@ -54,7 +54,7 @@
 | 事業・プロダクトの骨子 | In Progress | Vision、Target Users、Core Use Cases の主要方針を反映済み |
 | 技術設計の骨子 | In Progress | 技術検討用の章立てを作成済み |
 | 詳細要件定義 | Not Started | 各ユースケースと業務フローの深掘りが必要 |
-| 実装計画 | In Progress | MVP と第 2 フェーズの実装順、着手単位、チケット粒度は整理済み。Backlog 初期起票を開始し、次は認証・認可基盤の実装着手 |
+| 実装計画 | In Progress | `MVP` の着手単位 `1` から `12` まで完了し、次は `第 2 フェーズ` の優先順位整理へ進む |
 
 ## まず見る場所
 
@@ -88,18 +88,27 @@
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- 直近は `認証・認可基盤` の実装フェーズに入っており、最初の `Prisma schema` 着手まで進んでいる
+- 直近は `MVP 完了` 判定まで完了し、次は `第 2 フェーズ` の着手順確認に進む
 - `TypeScript` を使う実装では `any` を使わないことを厳守する
 - `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みである
+- 開発時の DB 起動用にルート `compose.yml` と `.env.example` を置き、`Prisma migrate dev` はホストから `localhost:5432` の `DATABASE_URL` で実行する前提にしている
 - `認証・認可基盤` では、主要テーブル方針、コード表方針、最小 API、最小 DTO、ログイン / ログアウト / 退職休職 / 復帰の状態遷移まで整理済みである
-- 次は `認証・認可基盤` の実装を続ける
-  - `Employee` 最小モデル追加と `UserAccount.employeeId -> Employee.id` relation 反映: 完了
-  - 初回 auth migration の作成 (`PMO_PJPERSONALBASE-13`): 完了
-  - repository / service 基盤の作成 (`PMO_PJPERSONALBASE-15`): 完了
-  - ログイン / ログアウト / セッション検証 API の実装 (`PMO_PJPERSONALBASE-16`): 完了
-  - AuthorizationService とロール判定基盤の実装 (`PMO_PJPERSONALBASE-17`): 完了
-  - 初回 HR_ADMIN 作成コマンド・管理 API・テスト整備 (`PMO_PJPERSONALBASE-18`): 完了
-  - `認証・認可基盤` の実装完了。次は `組織管理` の詳細設計・実装へ進む
+- 完了済みの着手単位
+  - `認証・認可基盤`
+  - `組織管理`
+  - `社員台帳管理`
+  - `組織図表示`
+  - `閲覧権限制御`
+  - `プロフィール機能`
+  - `論理削除と履歴の最小対応`
+  - `CSV 入出力`
+  - `入力検証とエラー処理`
+  - `更新メタ情報と監査導線`
+  - `テストと初期運用`
+  - `ベータ運用管理機能`
+- `MVP` は完了済み
+- 次は `第 2 フェーズ` の着手対象を確認する
+- 実装を止めない論点整理用として `PMO_PJPERSONALBASE-24` を起票済み
 - Backlog の実行管理は `PMO_PJPERSONALBASE` を使い、運用ルールの正本は [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 
 ## 運用ルール

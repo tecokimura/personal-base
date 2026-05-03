@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Param,
+  Query,
   Body,
   Req,
   ParseIntPipe,
@@ -11,11 +12,15 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { Organization, OrganizationLeader } from '@prisma/client';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { AuthContext } from '../authorization/authorization.service';
-import { OrganizationService, OrganizationNode } from './organization.service';
+import {
+  OrganizationService,
+  OrganizationView,
+  OrganizationLeaderView,
+  OrganizationNode,
+} from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { AddLeaderDto } from './dto/add-leader.dto';
@@ -27,7 +32,7 @@ export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
   @Get()
-  async findAll(@Req() req: AuthenticatedRequest): Promise<Organization[]> {
+  async findAll(@Req() req: AuthenticatedRequest): Promise<OrganizationView[]> {
     return this.organizationService.findAll(req.userAccount.tenantId);
   }
 
@@ -41,7 +46,7 @@ export class OrganizationController {
   async findById(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: AuthenticatedRequest,
-  ): Promise<Organization> {
+  ): Promise<OrganizationView> {
     return this.organizationService.findById(id, req.userAccount.tenantId);
   }
 
@@ -49,7 +54,7 @@ export class OrganizationController {
   async create(
     @Body() body: CreateOrganizationDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<Organization> {
+  ): Promise<OrganizationView> {
     return this.organizationService.create(this.toAuthContext(req), body);
   }
 
@@ -58,7 +63,7 @@ export class OrganizationController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateOrganizationDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<Organization> {
+  ): Promise<OrganizationView> {
     return this.organizationService.update(this.toAuthContext(req), id, body);
   }
 
@@ -75,9 +80,14 @@ export class OrganizationController {
   @Get(':id/leaders')
   async getLeaders(
     @Param('id', ParseIntPipe) id: number,
+    @Query('includeTerminated') includeTerminated: string | undefined,
     @Req() req: AuthenticatedRequest,
-  ): Promise<OrganizationLeader[]> {
-    return this.organizationService.getLeaders(id, req.userAccount.tenantId);
+  ): Promise<OrganizationLeaderView[]> {
+    return this.organizationService.getLeaders(
+      this.toAuthContext(req),
+      id,
+      includeTerminated === 'true',
+    );
   }
 
   @Post(':id/leaders')
@@ -85,7 +95,7 @@ export class OrganizationController {
     @Param('id', ParseIntPipe) orgId: number,
     @Body() body: AddLeaderDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<OrganizationLeader> {
+  ): Promise<OrganizationLeaderView> {
     return this.organizationService.addLeader(this.toAuthContext(req), orgId, {
       employeeId: body.employeeId,
       leaderType: body.leaderType,

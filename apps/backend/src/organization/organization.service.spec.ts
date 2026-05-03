@@ -9,6 +9,7 @@ import { OrganizationService } from './organization.service';
 import type { OrganizationRepository } from './organization.repository';
 import type { OrganizationLeaderRepository } from './organization-leader.repository';
 import type { AuthorizationService } from '../authorization/authorization.service';
+import type { ScopeResolverService } from '../authorization/scope-resolver.service';
 
 const makeOrg = (overrides: Record<string, unknown> = {}) => ({
   id: 1,
@@ -47,12 +48,14 @@ describe('OrganizationService', () => {
   let orgRepo: Record<string, ReturnType<typeof vi.fn>>;
   let leaderRepo: Record<string, ReturnType<typeof vi.fn>>;
   let authzService: Record<string, ReturnType<typeof vi.fn>>;
+  let scopeResolver: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     orgRepo = {
       findById: vi.fn(),
       findAll: vi.fn(),
       hasActiveChildren: vi.fn().mockResolvedValue(false),
+      hasActiveEmployments: vi.fn().mockResolvedValue(false),
       create: vi.fn(),
       update: vi.fn(),
       deactivate: vi.fn().mockResolvedValue(undefined),
@@ -74,10 +77,15 @@ describe('OrganizationService', () => {
       assertCan: vi.fn().mockResolvedValue(undefined),
     };
 
+    scopeResolver = {
+      resolveOrgAccess: vi.fn().mockResolvedValue({ kind: 'TENANT_ALL' }),
+    };
+
     service = new OrganizationService(
       orgRepo as unknown as OrganizationRepository,
       leaderRepo as unknown as OrganizationLeaderRepository,
       authzService as unknown as AuthorizationService,
+      scopeResolver as unknown as ScopeResolverService,
     );
   });
 
@@ -265,6 +273,15 @@ describe('OrganizationService', () => {
 
       expect(orgRepo.deactivate).not.toHaveBeenCalled();
     });
+
+    it('有効な所属社員がある場合 ConflictException をスローする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      orgRepo.hasActiveEmployments.mockResolvedValue(true);
+
+      await expect(service.deactivate(ctx, 1)).rejects.toThrow(ConflictException);
+
+      expect(orgRepo.deactivate).not.toHaveBeenCalled();
+    });
   });
 
   // ─── getLeaders ───────────────────────────────────────────────────────────
@@ -274,15 +291,60 @@ describe('OrganizationService', () => {
       orgRepo.findById.mockResolvedValue(makeOrg());
       leaderRepo.findByOrganizationId.mockResolvedValue([makeLeader()]);
 
-      const result = await service.getLeaders(1, 1);
+      const result = await service.getLeaders(ctx, 1);
 
       expect(result).toHaveLength(1);
+    });
+
+    it('includeTerminated=false のとき有効な部門長のみ返す', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.findByOrganizationId.mockResolvedValue([makeLeader()]);
+
+      await service.getLeaders(ctx, 1, false);
+
+      expect(leaderRepo.findByOrganizationId).toHaveBeenCalledWith(1, 1, false);
+    });
+
+    it('includeTerminated=true のとき全部門長を返す', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.findByOrganizationId.mockResolvedValue([
+        makeLeader({ status: 1 }),
+        makeLeader({ id: 2, status: 2 }),
+      ]);
+
+      const result = await service.getLeaders(ctx, 1, true);
+
+      expect(result).toHaveLength(2);
+      expect(leaderRepo.findByOrganizationId).toHaveBeenCalledWith(1, 1, true);
+    });
+
+    it('権限がない場合 ForbiddenException をスローする', async () => {
+      authzService.assertCan.mockRejectedValue(new ForbiddenException());
+
+      await expect(service.getLeaders(ctx, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('組織が存在しない場合 NotFoundException をスローする', async () => {
       orgRepo.findById.mockResolvedValue(null);
 
-      await expect(service.getLeaders(999, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.getLeaders(ctx, 999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('ORG_TREE スコープ外の組織は NotFoundException をスローする', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      scopeResolver.resolveOrgAccess.mockResolvedValue({ kind: 'ORG_TREE', orgIds: new Set([99]) });
+
+      await expect(service.getLeaders(ctx, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('TENANT_ALL スコープでは任意の組織の部門長を返す', async () => {
+      orgRepo.findById.mockResolvedValue(makeOrg());
+      leaderRepo.findByOrganizationId.mockResolvedValue([makeLeader()]);
+      scopeResolver.resolveOrgAccess.mockResolvedValue({ kind: 'TENANT_ALL' });
+
+      const result = await service.getLeaders(ctx, 1);
+
+      expect(result).toHaveLength(1);
     });
   });
 

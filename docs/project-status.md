@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-04-28
+- Last Updated: 2026-05-03
 
 ## 目的
 
@@ -53,6 +53,18 @@
 - `organization_code` は MVP では任意、`ORG_ADMIN` の部門長 / 副部門長終了操作は MVP では未許可、通常の組織 API は `is_active = true` のみ返す方針とする
 - `Employment` による組織無効化チェックは `社員台帳管理` フェーズで追加し、`updated_by` は MVP では `Int` 型で保持して外部キー制約は張らない
 - `MANAGE_ORGANIZATION` は MVP では `HR_ADMIN` のみへ付与し、`組織管理` の子課題は `schema / service / API / test` の 4 分割を採用する
+- `組織管理` は実装とレビュー指摘解消まで完了し、次の着手単位は `社員台帳管理` とする
+- `社員台帳管理` は実装完了とし、次の着手単位は `組織図表示` とする
+- `組織図表示` は実装とレビュー指摘解消まで完了し、次の着手単位は `閲覧権限制御` とする
+- `Employee.enrollmentStatus` は廃止し、在籍状態の正本は `Employment.status` とする
+- `Employment.status` は `1=在職, 2=休職, 3=退職, 9=削除` を採用する
+- `Employment.employment_type` は `1=正社員, 2=契約社員, 3=パートタイム, 4=派遣, 5=業務委託` を採用する
+- `email` は MVP では任意項目、`positionMasterId` は nullable で保持し、最小 `PositionMaster` を `プロフィール機能` の後、`論理削除と履歴の最小対応` の前に導入する
+- 主所属切替は単独 API とし、更新 API から分離する
+- `Organization.deactivate` は有効な `Employment` が残っている場合に拒否する
+- `組織図表示` は `org-chart` 集約モジュールとして実装し、`GET /org-chart/tree`, `GET /org-chart/organizations/:id`, `GET /org-chart/organizations/:id/members` を第一候補 API とする
+- `組織図表示` の `EmployeeCard.positionName` は `PositionMaster` 導入までの暫定で `null` 固定とし、その後に正本マスタ参照へ切り替える
+- `閲覧権限制御` では `ScopeResolverService` を追加し、`TENANT_ALL / ORG_TREE / PRIMARY_ORG` の閲覧スコープ解決を実装中とする
 
 ### ドメインモデル方針
 
@@ -98,10 +110,10 @@
 - 過去原文も、詳細表示やページングでたどれる前提とする
 - `EMPLOYEE` には生年月日、社員番号、雇用区分、論理削除状態、`UserAccount` の有効 / 無効状態、更新者 / 更新日時の内部メタ情報を同僚向けには見せない
 - この範囲を `EMPLOYEE` の同僚閲覧項目として固定する
-- `MANAGER` と `ORG_ADMIN` は通常社員に対して同一の閲覧項目を持ち、生年月日も含める
+- `MANAGER` と `ORG_ADMIN` は通常社員に対して同一の閲覧項目を持つが、生年月日は含めない
 - `MANAGER` と `ORG_ADMIN` は過去の所属履歴も補助情報として閲覧できる
-- `MANAGER` と `ORG_ADMIN` の通常社員閲覧項目は、氏名、表示名、メールアドレス、社員番号、主所属、兼務、過去の所属履歴、役職、雇用区分、生年月日、顔写真、`profile_free_text`、`WorkHistory`、上長で固定する
-- ただし、生年月日の表示範囲は後続フェーズ終盤で再検討する
+- `MANAGER` と `ORG_ADMIN` の通常社員閲覧項目は、氏名、表示名、メールアドレス、社員番号、主所属、兼務、過去の所属履歴、役職、雇用区分、顔写真、`profile_free_text`、`WorkHistory`、上長で固定する
+- 生年月日は MVP では `HR_ADMIN` のみ表示とし、他ロールには見せない
 - `updated_by` / `updated_at` のような更新メタ情報は、現時点では `HR_ADMIN` を含め通常 UI に表示しない
 - `HR_ADMIN` 向けの更新メタ情報表示は、将来の監査画面や管理画面で再検討する
 
@@ -145,6 +157,11 @@
 - ディレクトリごとの `.env` 配置は、まずルート `.env` を正本にする
 - `apps/frontend/.env.local` は必要時のローカル上書きとして使えるようにする
 - `apps/backend` 個別の `.env` は必要になるまで作らない
+- 開発時の `PostgreSQL` はルート `compose.yml` の `db` サービスで起動する
+- `Prisma migrate dev` はホストから実行する前提とし、開発時の `DATABASE_URL` は `localhost:5432` を向ける
+- `Prisma` 実行時は、ルート `.env` をシェルへ `source` して `DATABASE_URL` をエクスポートしてから `apps/backend` で実行する
+- `ベータ運用管理機能` では、`tenant_id` の慣習値だけで済ませず、最小 `Tenant` テーブルと `create-tenant` コマンドを導入する
+- 組織 / 社員の初期投入は、MVP では CSV や専用 seed を前提にせず、既存 API を使った手順書整備を正本とする
 - `TypeScript` を使う実装では `any` を使わないことを厳守する
 - 認可はアプリケーション層で `RBAC + 組織スコープ` を一元的に扱う
 - 初期の認証方式は `アプリ内認証で開始し、後で SSO を追加する方式` を第一候補とする
@@ -171,7 +188,8 @@
 
 ### 対象データ項目の現時点方針
 
-- `Employee` では、社員番号、氏名、表示名、メールアドレス、生年月日、顔写真、`profile_free_text`、在籍状態を MVP 必須候補としている
+- `Employee` では、社員番号、氏名、表示名、メールアドレス、生年月日、顔写真、`profile_free_text` を MVP の基本項目として扱う
+- 在籍状態の正本は `Employee` ではなく `Employment.status` に置く
 - 顔写真はデフォルト画像ありの任意設定
 - 社員番号は未設定者や契約社員も扱えるよう拡張余地を持たせる
 
@@ -181,6 +199,8 @@
 - 初期はローカルファイル保存を第一候補とする
 - 将来は別サーバや `S3` 互換ストレージを追加、設定できるようにする
 - 保存先は抽象化し、環境で切り替えられるようにする
+- 命名は `tenantId/employeeId/version` 系の衝突しにくい規則を第一候補とする
+- 差し替え時は旧ファイルを削除し、未設定時は共通デフォルト画像を返す
 
 ### 履歴管理方針
 
@@ -220,6 +240,16 @@
 - `CONT` は `Contract`
 - `EXT` は `External`
 
+### 社員台帳管理の完了状況と残課題
+
+- `社員台帳管理` の MVP 実装として、`Employee` 基本情報、`Employment`、主所属切替、論理削除、組織無効化時の所属チェックを反映済み
+- `Employee` の論理削除時は、対応する有効 `Employment` を `status=9` の削除状態へ遷移させる前提を採る
+- `MANAGER` による補助更新は MVP に含め、`profile_free_text`、顔写真、`Manager Employee ID` を対象にする
+- 在籍終了者専用一覧 API は未実装であり、`Employment.status` のクエリ条件付き一覧として後続対応する
+- 在籍終了者一覧は通常社員一覧と分離し、`Employment.status = 1` を通常一覧、`Employment.status IN (2, 3)` を在籍終了者一覧の基準にする
+- `deleted = 9` は論理削除の別導線として扱い、在籍終了者一覧には混ぜない
+- `positionMasterId` の外部キー制約は、最小 `PositionMaster` 導入後に追加する
+
 ### 兼務ルール
 
 - 兼務は `Employment` の複数レコードで表現する
@@ -241,11 +271,27 @@
 - 部門長 / 副部門長は複数持てる前提とし、標準組織図では `部門長` のみ表示し、複数いる場合は詳細画面で表示する
 - ただし、部門長 / 副部門長 / 上長 / 兼務の最終的な見せ方は実装後の表示デザイン確認で見直す前提とする
 
+### 組織図表示の完了状況
+
+- `org-chart` 読み取り専用集約モジュールを追加済み
+- 組織図ツリー、組織詳細、組織配下メンバー取得 API を実装済み
+- `EmployeeCard.positionName` は `PositionMaster` 導入までの暫定で `null` 固定とする
+
+### 閲覧権限制御の完了状況
+
+- `ScopeResolverService` を導入し、`TENANT_ALL / ORG_TREE / PRIMARY_ORG` のスコープ解決を追加済み
+- 社員一覧、社員詳細、所属一覧、組織図 API に閲覧スコープを反映済み
+- `HR_ADMIN / EXECUTIVE_VIEWER` 向けの全社閲覧、`MANAGER / ORG_ADMIN` 向けの `ORGANIZATION_TREE`、`EMPLOYEE` 向けの `PRIMARY_ORG` 境界を実装済み
+- ロール別の項目マスキングを追加し、`EMPLOYEE` には社員番号や生年月日などの非公開項目を返さない
+- 論理削除社員の一覧・復元でも `ORG_ADMIN` の組織スコープを適用済み
+
 ### プロフィールと業務履歴方針
 
 - `profile_free_text` は MVP に含める
 - `profile_free_text` は自己紹介または業務概要を自由に書ける単一欄とする
 - `profile_free_text` は本人に加えて `HR_ADMIN` と `MANAGER` が補助更新できる
+- 顔写真も MVP に含め、本人に加えて `HR_ADMIN` と `MANAGER` が補助更新できる
+- `Manager Employee ID` も MVP の `MANAGER` 補助更新対象に含める
 - MVP ではプレーンテキスト入力を前提とする
 - Markdown はオプション機能として `profile_free_text` に限って第 2 フェーズの拡張候補とする
 - 第 2 フェーズの Markdown 許可は入力保存を先に扱い、表示時の Markdown レンダリングは後続フェーズへ送る
@@ -292,6 +338,15 @@
 - `フェーズ 4` の AI 機能優先順位は、`AI 検索 / 推薦` → `AI アドバイス文` → `AI 相談チャット` とする
 - `AI 検索 / 推薦` は必要機能として扱うが、AI を使うか通常検索拡張で始めるかは現時点では確定しない
 
+### CSV 入出力方針
+
+- MVP の CSV インポートは `Employee + Employment` を 1 行でまとめて取り込む
+- CSV インポート時に社員番号が既存データと重複した行はエラーとし、暗黙上書きは行わない
+- CSV インポートは `all-or-nothing` とし、1 行でもバリデーションエラーがあれば全件ロールバックする
+- MVP の CSV エクスポート対象は、社員基本情報に加えて `現在有効な主所属 Employment` を含める
+- CSV エンコーディングは MVP では `UTF-8` を採用する
+- CSV のインポート / エクスポート権限は MVP では `HR_ADMIN` のみに許可する
+
 ## まだ未決の主論点
 
 - 未決論点の正本は [decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) とする
@@ -300,11 +355,10 @@
 
 優先候補は以下。
 
-1. `Employee` 最小 Prisma モデル追加と `UserAccount.employeeId -> Employee.id` relation 反映: 完了
-2. 次は初回 auth migration の作成 (`PMO_PJPERSONALBASE-13`) へ進む
-3. その後に repository / service 基盤 (`PMO_PJPERSONALBASE-15`) へ進む
-4. `認証・認可基盤` の API 実装へ入る
-5. `TypeScript` を使う領域では `any` を使わない実装ルールを維持する
+1. `顔写真と profile_free_text` の着手準備
+2. `PositionMaster` の最小導入タイミングと初期コード表整理
+3. `在籍終了者一覧 API` の実装タイミング整理
+4. `TypeScript` を使う領域では `any` を使わない実装ルールを維持する
 
 ### マルチテナント方式の現時点推奨
 

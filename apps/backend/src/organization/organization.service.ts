@@ -6,9 +6,34 @@ import {
 } from '@nestjs/common';
 import { Organization, OrganizationLeader } from '@prisma/client';
 import { AuthorizationService, AuthContext } from '../authorization/authorization.service';
+import { ScopeResolverService } from '../authorization/scope-resolver.service';
 import { Permission } from '../authorization/constants';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationLeaderRepository } from './organization-leader.repository';
+
+export interface OrganizationView {
+  id: number;
+  tenantId: number;
+  organizationName: string;
+  organizationCode: string | null;
+  parentOrganizationId: number | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface OrganizationLeaderView {
+  id: number;
+  tenantId: number;
+  organizationId: number;
+  employeeId: number;
+  leaderType: number;
+  isPrimaryLeader: boolean;
+  startDate: Date;
+  endDate: Date | null;
+  status: number;
+  createdAt: Date;
+}
 
 export interface CreateOrganizationInput {
   organizationName: string;
@@ -32,7 +57,7 @@ export interface AddLeaderInput {
   startDate: Date;
 }
 
-export interface OrganizationNode extends Organization {
+export interface OrganizationNode extends OrganizationView {
   children: OrganizationNode[];
 }
 
@@ -42,16 +67,18 @@ export class OrganizationService {
     private readonly orgRepo: OrganizationRepository,
     private readonly leaderRepo: OrganizationLeaderRepository,
     private readonly authorizationService: AuthorizationService,
+    private readonly scopeResolver: ScopeResolverService,
   ) {}
 
-  async findAll(tenantId: number): Promise<Organization[]> {
-    return this.orgRepo.findAll(tenantId, true);
+  async findAll(tenantId: number): Promise<OrganizationView[]> {
+    const orgs = await this.orgRepo.findAll(tenantId, true);
+    return orgs.map((o) => this.toOrgView(o));
   }
 
-  async findById(id: number, tenantId: number): Promise<Organization> {
+  async findById(id: number, tenantId: number): Promise<OrganizationView> {
     const org = await this.orgRepo.findById(id, tenantId);
     if (!org) throw new NotFoundException(`Organization ${id} not found`);
-    return org;
+    return this.toOrgView(org);
   }
 
   async getTree(tenantId: number): Promise<OrganizationNode[]> {
@@ -59,14 +86,14 @@ export class OrganizationService {
     return this.buildTree(all);
   }
 
-  async create(ctx: AuthContext, input: CreateOrganizationInput): Promise<Organization> {
+  async create(ctx: AuthContext, input: CreateOrganizationInput): Promise<OrganizationView> {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_ORGANIZATION, ctx.tenantId);
 
     if (input.parentOrganizationId !== undefined) {
       await this.assertOrgExists(input.parentOrganizationId, ctx.tenantId);
     }
 
-    return this.orgRepo.create({
+    const org = await this.orgRepo.create({
       tenantId: ctx.tenantId,
       organizationName: input.organizationName,
       organizationCode: input.organizationCode ?? null,
@@ -75,13 +102,14 @@ export class OrganizationService {
       isActive: true,
       updatedBy: ctx.userAccountId,
     });
+    return this.toOrgView(org);
   }
 
   async update(
     ctx: AuthContext,
     id: number,
     input: UpdateOrganizationInput,
-  ): Promise<Organization> {
+  ): Promise<OrganizationView> {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_ORGANIZATION, ctx.tenantId);
     await this.assertOrgExists(id, ctx.tenantId);
 
@@ -90,7 +118,7 @@ export class OrganizationService {
       await this.assertNoCircularReference(id, input.parentOrganizationId, ctx.tenantId);
     }
 
-    return this.orgRepo.update(id, ctx.tenantId, {
+    const org = await this.orgRepo.update(id, ctx.tenantId, {
       ...(input.organizationName !== undefined && { organizationName: input.organizationName }),
       ...(input.organizationCode !== undefined && { organizationCode: input.organizationCode }),
       ...(input.parentOrganizationId !== undefined && {
@@ -99,6 +127,7 @@ export class OrganizationService {
       ...(input.displayOrder !== undefined && { displayOrder: input.displayOrder }),
       updatedBy: ctx.userAccountId,
     });
+    return this.toOrgView(org);
   }
 
   async deactivate(ctx: AuthContext, id: number): Promise<void> {
@@ -115,21 +144,37 @@ export class OrganizationService {
       );
     }
 
-    // TODO: check active Employment records when employee-management phase is implemented
+    if (await this.orgRepo.hasActiveEmployments(id, ctx.tenantId)) {
+      throw new ConflictException(
+        'Cannot deactivate: organization has active employments. Terminate them first.',
+      );
+    }
 
     await this.orgRepo.deactivate(id, ctx.tenantId, ctx.userAccountId);
   }
 
-  async getLeaders(orgId: number, tenantId: number): Promise<OrganizationLeader[]> {
-    await this.assertOrgExists(orgId, tenantId);
-    return this.leaderRepo.findByOrganizationId(orgId, tenantId);
+  async getLeaders(
+    ctx: AuthContext,
+    orgId: number,
+    includeTerminated = false,
+  ): Promise<OrganizationLeaderView[]> {
+    await this.authorizationService.assertCan(ctx, Permission.VIEW_ORG_TREE, ctx.tenantId);
+    await this.assertOrgExists(orgId, ctx.tenantId);
+
+    const access = await this.scopeResolver.resolveOrgAccess(ctx);
+    if (access.kind === 'ORG_TREE' && !access.orgIds.has(orgId)) {
+      throw new NotFoundException(`Organization ${orgId} not found`);
+    }
+
+    const leaders = await this.leaderRepo.findByOrganizationId(orgId, ctx.tenantId, includeTerminated);
+    return leaders.map((l) => this.toLeaderView(l));
   }
 
   async addLeader(
     ctx: AuthContext,
     orgId: number,
     input: AddLeaderInput,
-  ): Promise<OrganizationLeader> {
+  ): Promise<OrganizationLeaderView> {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_ORGANIZATION, ctx.tenantId);
     await this.assertOrgExists(orgId, ctx.tenantId);
 
@@ -160,7 +205,7 @@ export class OrganizationService {
       }
     }
 
-    return this.leaderRepo.create({
+    const leader = await this.leaderRepo.create({
       tenantId: ctx.tenantId,
       organizationId: orgId,
       employeeId: input.employeeId,
@@ -170,6 +215,7 @@ export class OrganizationService {
       status: 1, // 有効
       updatedBy: ctx.userAccountId,
     });
+    return this.toLeaderView(leader);
   }
 
   async terminateLeader(
@@ -223,7 +269,7 @@ export class OrganizationService {
   private buildTree(orgs: Organization[]): OrganizationNode[] {
     const map = new Map<number, OrganizationNode>();
     for (const org of orgs) {
-      map.set(org.id, { ...org, children: [] });
+      map.set(org.id, { ...this.toOrgView(org), children: [] });
     }
 
     const roots: OrganizationNode[] = [];
@@ -241,5 +287,33 @@ export class OrganizationService {
     }
 
     return roots;
+  }
+
+  private toOrgView(org: Organization): OrganizationView {
+    return {
+      id: org.id,
+      tenantId: org.tenantId,
+      organizationName: org.organizationName,
+      organizationCode: org.organizationCode,
+      parentOrganizationId: org.parentOrganizationId,
+      displayOrder: org.displayOrder,
+      isActive: org.isActive,
+      createdAt: org.createdAt,
+    };
+  }
+
+  private toLeaderView(leader: OrganizationLeader): OrganizationLeaderView {
+    return {
+      id: leader.id,
+      tenantId: leader.tenantId,
+      organizationId: leader.organizationId,
+      employeeId: leader.employeeId,
+      leaderType: leader.leaderType,
+      isPrimaryLeader: leader.isPrimaryLeader,
+      startDate: leader.startDate,
+      endDate: leader.endDate,
+      status: leader.status,
+      createdAt: leader.createdAt,
+    };
   }
 }

@@ -11,13 +11,14 @@ const ROLE_PERMISSIONS: Record<number, readonly Permission[]> = {
   [RoleType.HR_ADMIN]: [
     Permission.MANAGE_EMPLOYEE,
     Permission.VIEW_ALL_EMPLOYEES,
+    Permission.VIEW_ORG_TREE,
     Permission.MANAGE_SOFT_DELETED,
     Permission.MANAGE_ROLE_ASSIGNMENTS,
     Permission.MANAGE_ORGANIZATION,
   ],
-  [RoleType.MANAGER]: [Permission.VIEW_ORG_TREE],
+  [RoleType.MANAGER]: [Permission.VIEW_ORG_TREE, Permission.ASSIST_UPDATE_PROFILE],
   [RoleType.ORG_ADMIN]: [Permission.VIEW_ORG_TREE, Permission.MANAGE_SOFT_DELETED],
-  [RoleType.EXECUTIVE_VIEWER]: [Permission.VIEW_ALL_EMPLOYEES],
+  [RoleType.EXECUTIVE_VIEWER]: [Permission.VIEW_ALL_EMPLOYEES, Permission.VIEW_ORG_TREE],
   [RoleType.EMPLOYEE]: [],
 };
 

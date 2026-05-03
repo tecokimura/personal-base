@@ -165,6 +165,13 @@ MVP では、`選択肢 2. 一部のエンティティだけ履歴を持つ` を
 - 補正は既存履歴の直接上書きではなく、更新日時と更新者を残せる形が望ましい
 - MVP では汎用監査ログまでは持たなくても、最低限 `updated_at` と `updated_by` は保持する方向が望ましい
 
+### MVP 実装済みステータス（2026-05-01 確認）
+
+- `updated_at`（Prisma `@updatedAt`）と `updated_by`（`UserAccount.id` の整数値）は `Employee`、`Employment`、`Organization`、`OrganizationLeader`、`PositionMaster` の全テーブルに実装済み
+- 全サービスメソッドの書き込みパス（create / update / deactivate / terminate / softDelete / restore 系）で `updatedBy: ctx.userAccountId` を書き込んでいることを確認済み
+- 通常 UI の API レスポンスには `updated_by` / `updated_at` を含めない方針を維持している（`EmployeeManagerView` から除外、`project-status.md` に方針を記載済み）
+- `LoginHistory` と `EditHistory` は第 2 フェーズで追加予定（`updated_by` の整数値から名前への解決もこの段階で実施する）
+
 ## ログイン履歴と編集履歴のたたき台
 
 将来的に人材情報を扱う以上、ログイン履歴と編集履歴は欲しくなる。ただし、MVP で広い監査ログまで入れると実装が重くなりやすい。

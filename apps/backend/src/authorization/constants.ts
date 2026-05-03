@@ -24,5 +24,7 @@ export const Permission = {
   MANAGE_SOFT_DELETED: 'MANAGE_SOFT_DELETED',
   MANAGE_ROLE_ASSIGNMENTS: 'MANAGE_ROLE_ASSIGNMENTS',
   MANAGE_ORGANIZATION: 'MANAGE_ORGANIZATION',
+  // Limited auxiliary update: profile_free_text, photo, managerEmployeeId for ORG_TREE subordinates
+  ASSIST_UPDATE_PROFILE: 'ASSIST_UPDATE_PROFILE',
 } as const;
 export type Permission = (typeof Permission)[keyof typeof Permission];

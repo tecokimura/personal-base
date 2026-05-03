@@ -143,6 +143,26 @@ describe('AuthService', () => {
       expect(mockFindById).not.toHaveBeenCalled();
     });
 
+    it('期限切れセッションで null を返す（repository が null を返す）', async () => {
+      // Repository filters out expired sessions; service treats null as "no valid session"
+      mockFindValidByTokenHash.mockResolvedValue(null);
+
+      const result = await service.verifySession('expired-token');
+
+      expect(result).toBeNull();
+      expect(mockFindById).not.toHaveBeenCalled();
+    });
+
+    it('失効済みセッションで null を返す（repository が null を返す）', async () => {
+      // Repository filters out revoked sessions; service treats null as "no valid session"
+      mockFindValidByTokenHash.mockResolvedValue(null);
+
+      const result = await service.verifySession('revoked-token');
+
+      expect(result).toBeNull();
+      expect(mockFindById).not.toHaveBeenCalled();
+    });
+
     it('無効化アカウントで null を返す', async () => {
       mockFindValidByTokenHash.mockResolvedValue(makeSession());
       mockFindById.mockResolvedValue(makeUserAccount({ status: 2 }));

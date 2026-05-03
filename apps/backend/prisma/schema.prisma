@@ -7,20 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// enrollmentStatus: 10=在職, 20=休職, 30=退職
-// isDeleted: 誤登録・無効化のための例外的な論理削除フラグ（退職管理とは分離）
-model Employee {
-  id               Int          @id @default(autoincrement())
-  tenantId         Int
-  enrollmentStatus Int          @db.SmallInt
-  isDeleted        Boolean      @default(false)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  userAccount         UserAccount?
-  organizationLeaders OrganizationLeader[]
+model Tenant {
+  id          Int      @id @default(autoincrement())
+  tenantCode  String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 
+// isDeleted: 誤登録・無効化のための例外的な論理削除フラグ（退職管理とは分離）
+// 在籍状態の正本は Employment.status とする
+model Employee {
+  id                 Int                  @id @default(autoincrement())
+  tenantId           Int
+  employeeNumber     String?              @db.VarChar(50)
+  fullName           String               @db.VarChar(255)
+  displayName        String?              @db.VarChar(255)
+  email              String?              @db.VarChar(255)
+  birthDate          DateTime?            @db.Date
+  photoStorageKey    String?              @db.VarChar(1000)
+  profileFreeText    String?
+  isDeleted          Boolean              @default(false)
+  deletedAt          DateTime?
+  updatedBy          Int?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  userAccount        UserAccount?
+  organizationLeaders OrganizationLeader[]
+  employments        Employment[]
+
+  @@unique([tenantId, employeeNumber])
   @@index([tenantId])
-  @@index([enrollmentStatus])
+  @@index([tenantId, isDeleted])
 }
 
 // status: 1=有効, 2=無効
@@ -60,6 +78,49 @@ model Session {
   @@index([expiresAt])
 }
 
+// employmentType: 1=正社員, 2=契約社員, 3=パートタイム, 4=派遣, 5=業務委託
+// status: 1=在職, 2=休職, 3=退職, 9=削除
+model Employment {
+  id                  Int              @id @default(autoincrement())
+  tenantId            Int
+  employeeId          Int
+  organizationId      Int
+  positionMasterId    Int?
+  employmentType      Int              @db.SmallInt
+  isPrimaryAssignment Boolean          @default(false)
+  managerEmployeeId   Int?
+  startDate           DateTime         @db.Date
+  endDate             DateTime?        @db.Date
+  status              Int              @db.SmallInt
+  updatedBy           Int?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  employee            Employee         @relation(fields: [employeeId], references: [id])
+  organization        Organization     @relation(fields: [organizationId], references: [id])
+  positionMaster      PositionMaster?  @relation(fields: [positionMasterId], references: [id])
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([organizationId])
+  @@index([tenantId, isPrimaryAssignment])
+  @@index([status])
+}
+
+model PositionMaster {
+  id           Int          @id @default(autoincrement())
+  tenantId     Int
+  name         String       @db.VarChar(255)
+  displayOrder Int          @default(0)
+  isActive     Boolean      @default(true)
+  updatedBy    Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  employments  Employment[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
 // leaderType: 1=部門長, 2=副部門長
 // status: 1=有効, 2=終了済み
 model Organization {
@@ -76,6 +137,7 @@ model Organization {
   parent               Organization?        @relation("OrganizationChildren", fields: [parentOrganizationId], references: [id])
   children             Organization[]       @relation("OrganizationChildren")
   leaders              OrganizationLeader[]
+  employments          Employment[]
 
   @@unique([tenantId, organizationCode])
   @@index([tenantId])

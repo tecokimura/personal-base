@@ -4,8 +4,10 @@ import { Module } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { TenantModule } from '../tenant/tenant.module';
+import { TenantService } from '../tenant/tenant.service';
 
-@Module({ imports: [PrismaModule] })
+@Module({ imports: [PrismaModule, TenantModule] })
 class BootstrapModule {}
 
 interface ParsedArgs {
@@ -44,7 +46,10 @@ async function main(): Promise<void> {
     logger: ['error', 'warn'],
   });
 
+  const tenantService = app.get(TenantService);
   const prisma = app.get(PrismaService);
+
+  await tenantService.assertExists(tenantId);
 
   await prisma.$transaction(async (tx) => {
     const existing = await tx.userAccount.findUnique({
@@ -57,7 +62,7 @@ async function main(): Promise<void> {
     }
 
     const employee = await tx.employee.create({
-      data: { tenantId, enrollmentStatus: 10 },
+      data: { tenantId, fullName: loginIdentifier },
     });
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -91,9 +96,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error(
-    'Failed to create HR_ADMIN:',
-    err instanceof Error ? err.message : err,
-  );
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error('Failed to create HR_ADMIN:', msg);
   process.exit(1);
 });

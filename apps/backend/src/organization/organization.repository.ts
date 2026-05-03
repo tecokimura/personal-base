@@ -64,6 +64,13 @@ export class OrganizationRepository {
     });
   }
 
+  async hasActiveEmployments(organizationId: number, tenantId: number): Promise<boolean> {
+    const count = await this.prisma.employment.count({
+      where: { organizationId, tenantId, status: 1 }, // 1=在職
+    });
+    return count > 0;
+  }
+
   async employeeExistsInTenant(employeeId: number, tenantId: number): Promise<boolean> {
     const count = await this.prisma.employee.count({
       where: { id: employeeId, tenantId, isDeleted: false },

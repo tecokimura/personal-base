@@ -2,7 +2,7 @@
 
 - Status: Decided
 - Owner: Keith / Codex
-- Last Updated: 2026-04-28
+- Last Updated: 2026-05-01
 
 ## 目的
 
@@ -70,6 +70,9 @@
 - ディレクトリごとの `.env` 配置は、まずルート `.env` を正本にする
 - `apps/frontend/.env.local` は必要時のローカル上書きとして使えるようにする
 - `apps/backend` 個別の `.env` は必要になるまで作らない
+- 開発時の `PostgreSQL` は `compose.yml` の `db` サービスで起動し、`prisma migrate dev` はホストから実行する
+- そのため開発時の `DATABASE_URL` は `localhost:5432` を向ける
+- `Prisma CLI` 実行時は、ルート `.env` の値をシェルへエクスポートしてから `apps/backend` で実行する
 - セッションの保持先は DB とし、少なくとも `user_account_id`, `tenant_id`, `expires_at`, `revoked_at` を追えるようにする
 - セッション発行時には、だれに、いつ、どこまで有効なセッションを発行したかを DB に記録する
 - MVP のセッション有効期限は固定値 `24 時間` とする
@@ -199,17 +202,47 @@
 - セッショントークンはレスポンス body に返さず、Cookie のみで扱う
 - 現時点では `GET /api/me/roles` は未実装とし、必要になった時点で追加する
 
-### エラーレスポンスの第一候補
+### エラーレスポンス（実装済み）
 
-- 失敗レスポンスは共通で `error.code`, `error.message`, `error.details` を持つ JSON 形式を使う
-- `error.code` は機械判定用、`error.message` は画面表示用、`error.details` は追加情報用とする
-- HTTP ステータスは一般的な意味に合わせて使い分ける
-- `400` は入力不正
-- `401` は未認証
-- `403` は権限不足または他テナント拒否
-- `404` は対象なし
-- `409` は重複または状態競合
-- `500` は想定外障害
+失敗レスポンスは `GlobalExceptionFilter` (`src/common/filters/global-exception.filter.ts`) で統一的に生成する。
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "リクエストの内容が不正です",
+    "details": [{ "message": "field must not be empty" }]
+  }
+}
+```
+
+- `error.code` は機械判定用
+- `error.message` は画面表示用日本語
+- `error.details` は追加情報（バリデーションエラー一覧、CSVインポートエラー等）
+
+#### エラーコード一覧
+
+| HTTP | error.code | 用途 |
+|------|------------|------|
+| 400 | `VALIDATION_ERROR` | ValidationPipe によるリクエスト不正 |
+| 401 | `UNAUTHORIZED` | 未認証 |
+| 403 | `FORBIDDEN` | 権限不足または他テナント拒否 |
+| 404 | `NOT_FOUND` | 対象なし |
+| 409 | `CONFLICT` | 一意制約違反・状態競合 |
+| 422 | `UNPROCESSABLE_ENTITY` | CSVインポート等の行レベルエラー |
+| 500 | `INTERNAL_ERROR` | 想定外障害 |
+
+#### Prisma エラーマッピング
+
+- `P2002`（一意制約違反）→ 409 `CONFLICT`
+- `P2025`（レコード不存在）→ 404 `NOT_FOUND`
+- それ以外の Prisma エラー → 500 `INTERNAL_ERROR`
+
+#### バリデーション DTO
+
+- `LoginDto`: `tenantId` (int ≥ 1), `loginIdentifier` (string, 1–255 chars), `password` (string, 1–255 chars)
+- `AssignRoleDto`: `targetUserAccountId` (int > 0), `roleType` (1–5), `scopeType` (1–4), `scopeId` (int > 0), `effectiveFrom` (ISO date string), `effectiveTo?` (ISO date string)
+- すべての DTO は ValidationPipe (`whitelist: true, forbidNonWhitelisted: true`) で検証される
 
 ### `Prisma schema / migration` 方針の第一候補
 

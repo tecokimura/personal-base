@@ -28,9 +28,14 @@ export class OrganizationLeaderRepository {
   async findByOrganizationId(
     organizationId: number,
     tenantId: number,
+    includeTerminated = false,
   ): Promise<OrganizationLeader[]> {
     return this.prisma.organizationLeader.findMany({
-      where: { organizationId, tenantId },
+      where: {
+        organizationId,
+        tenantId,
+        ...(includeTerminated ? {} : { status: LEADER_STATUS_ACTIVE }),
+      },
       orderBy: { startDate: 'desc' },
     });
   }
