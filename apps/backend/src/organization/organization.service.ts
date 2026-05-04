@@ -8,6 +8,7 @@ import { Organization, OrganizationLeader } from '@prisma/client';
 import { AuthorizationService, AuthContext } from '../authorization/authorization.service';
 import { ScopeResolverService } from '../authorization/scope-resolver.service';
 import { Permission } from '../authorization/constants';
+import { AuditService } from '../audit/audit.service';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationLeaderRepository } from './organization-leader.repository';
 
@@ -68,6 +69,7 @@ export class OrganizationService {
     private readonly leaderRepo: OrganizationLeaderRepository,
     private readonly authorizationService: AuthorizationService,
     private readonly scopeResolver: ScopeResolverService,
+    private readonly auditService: AuditService,
   ) {}
 
   async findAll(tenantId: number): Promise<OrganizationView[]> {
@@ -102,6 +104,13 @@ export class OrganizationService {
       isActive: true,
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Organization',
+      entityId: org.id,
+      actionType: 'CREATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
     return this.toOrgView(org);
   }
 
@@ -127,6 +136,13 @@ export class OrganizationService {
       ...(input.displayOrder !== undefined && { displayOrder: input.displayOrder }),
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Organization',
+      entityId: id,
+      actionType: 'UPDATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
     return this.toOrgView(org);
   }
 
@@ -151,6 +167,13 @@ export class OrganizationService {
     }
 
     await this.orgRepo.deactivate(id, ctx.tenantId, ctx.userAccountId);
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Organization',
+      entityId: id,
+      actionType: 'DEACTIVATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
   }
 
   async getLeaders(
@@ -215,6 +238,13 @@ export class OrganizationService {
       status: 1, // 有効
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'OrganizationLeader',
+      entityId: leader.id,
+      actionType: 'CREATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
     return this.toLeaderView(leader);
   }
 
@@ -240,6 +270,13 @@ export class OrganizationService {
     }
 
     await this.leaderRepo.terminate(leaderId, ctx.tenantId, endDate, ctx.userAccountId);
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'OrganizationLeader',
+      entityId: leaderId,
+      actionType: 'TERMINATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
   }
 
   private async assertOrgExists(id: number, tenantId: number): Promise<Organization> {

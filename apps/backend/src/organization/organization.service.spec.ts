@@ -10,6 +10,7 @@ import type { OrganizationRepository } from './organization.repository';
 import type { OrganizationLeaderRepository } from './organization-leader.repository';
 import type { AuthorizationService } from '../authorization/authorization.service';
 import type { ScopeResolverService } from '../authorization/scope-resolver.service';
+import type { AuditService } from '../audit/audit.service';
 
 const makeOrg = (overrides: Record<string, unknown> = {}) => ({
   id: 1,
@@ -41,7 +42,7 @@ const makeLeader = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const ctx = { userAccountId: 99, tenantId: 1 };
+const ctx = { userAccountId: 99, employeeId: 99, tenantId: 1 };
 
 describe('OrganizationService', () => {
   let service: OrganizationService;
@@ -49,6 +50,7 @@ describe('OrganizationService', () => {
   let leaderRepo: Record<string, ReturnType<typeof vi.fn>>;
   let authzService: Record<string, ReturnType<typeof vi.fn>>;
   let scopeResolver: Record<string, ReturnType<typeof vi.fn>>;
+  let auditService: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     orgRepo = {
@@ -81,11 +83,16 @@ describe('OrganizationService', () => {
       resolveOrgAccess: vi.fn().mockResolvedValue({ kind: 'TENANT_ALL' }),
     };
 
+    auditService = {
+      logEdit: vi.fn().mockResolvedValue(undefined),
+    };
+
     service = new OrganizationService(
       orgRepo as unknown as OrganizationRepository,
       leaderRepo as unknown as OrganizationLeaderRepository,
       authzService as unknown as AuthorizationService,
       scopeResolver as unknown as ScopeResolverService,
+      auditService as unknown as AuditService,
     );
   });
 

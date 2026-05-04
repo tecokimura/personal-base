@@ -46,7 +46,7 @@ export class AdminController {
       Permission.MANAGE_ROLE_ASSIGNMENTS,
       ctx.tenantId,
     );
-    await this.adminService.assignRole(ctx.tenantId, dto);
+    await this.adminService.assignRole(ctx, dto);
   }
 
   @Delete('role-assignments/:id')
@@ -66,7 +66,7 @@ export class AdminController {
       Permission.MANAGE_ROLE_ASSIGNMENTS,
       ctx.tenantId,
     );
-    await this.adminService.revokeRole(Number(id), ctx.tenantId);
+    await this.adminService.revokeRole(Number(id), ctx);
   }
 
   @Get('employees/deleted')
@@ -104,7 +104,7 @@ export class AdminController {
       Permission.MANAGE_SOFT_DELETED,
       ctx.tenantId,
     );
-    await this.adminService.restoreEmployee(Number(id), ctx.tenantId);
+    await this.adminService.restoreEmployee(Number(id), ctx);
   }
 
   @Patch('employees/:id/soft-delete')
@@ -124,6 +124,6 @@ export class AdminController {
       Permission.MANAGE_SOFT_DELETED,
       ctx.tenantId,
     );
-    await this.adminService.softDeleteEmployee(Number(id), ctx.tenantId);
+    await this.adminService.softDeleteEmployee(Number(id), ctx);
   }
 }
