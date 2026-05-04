@@ -18,7 +18,7 @@ export interface CreateWorkHistoryInput {
 
 export interface UpdateWorkHistoryInput {
   yearMonthFrom?: string;
-  yearMonthTo?: string;
+  yearMonthTo?: string | null;
   isCurrent?: boolean;
   workSummary?: string;
   toolsUsed?: string;
