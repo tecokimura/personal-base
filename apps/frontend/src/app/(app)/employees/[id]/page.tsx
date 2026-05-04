@@ -7,7 +7,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { api, type EmployeeDetail } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍', 2: '休職', 3: '退職' };
-const EMPLOYMENT_TYPE: Record<number, string> = { 1: '主所属', 2: '兼務' };
+const EMPLOYMENT_TYPE: Record<number, string> = {
+  1: '正社員',
+  2: '契約社員',
+  3: 'パートタイム',
+  4: '派遣',
+  5: '業務委託',
+};
 
 export default function EmployeeDetailPage() {
   const { loading: authLoading } = useAuth();
