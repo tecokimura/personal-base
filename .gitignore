@@ -4,3 +4,9 @@ dist
 .env
 .env.local
 .pnpm-store
+
+# Playwright E2E
+apps/frontend/e2e/.auth/
+apps/frontend/e2e/.fixture-state.json
+apps/frontend/playwright-report/
+apps/frontend/test-results/
