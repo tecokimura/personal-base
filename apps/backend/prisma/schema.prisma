@@ -35,6 +35,7 @@ model Employee {
   userAccount        UserAccount?
   organizationLeaders OrganizationLeader[]
   employments        Employment[]
+  workHistories      WorkHistory[]
 
   @@unique([tenantId, employeeNumber])
   @@index([tenantId])
@@ -198,6 +199,28 @@ model EditHistory {
   @@index([tenantId])
   @@index([tenantId, entityType])
   @@index([tenantId, changedAt])
+}
+
+model WorkHistory {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  employeeId    Int
+  yearMonthFrom String   @db.VarChar(7)
+  yearMonthTo   String?  @db.VarChar(7)
+  isCurrent     Boolean  @default(false)
+  workSummary   String
+  toolsUsed     String?  @db.VarChar(1000)
+  roleName      String?  @db.VarChar(255)
+  teamSize      Int?
+  projectCode   String?  @db.VarChar(100)
+  updatedBy     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([tenantId, employeeId])
 }
 
 // roleType: 1=HR_ADMIN, 2=MANAGER, 3=ORG_ADMIN, 4=EXECUTIVE_VIEWER, 5=EMPLOYEE
