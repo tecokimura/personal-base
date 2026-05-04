@@ -26,5 +26,6 @@ export const Permission = {
   MANAGE_ORGANIZATION: 'MANAGE_ORGANIZATION',
   // Limited auxiliary update: profile_free_text, photo, managerEmployeeId for ORG_TREE subordinates
   ASSIST_UPDATE_PROFILE: 'ASSIST_UPDATE_PROFILE',
+  VIEW_AUDIT_LOGS: 'VIEW_AUDIT_LOGS',
 } as const;
 export type Permission = (typeof Permission)[keyof typeof Permission];

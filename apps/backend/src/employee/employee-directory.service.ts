@@ -14,6 +14,7 @@ import { Permission } from '../authorization/constants';
 import { EmployeeRepository } from './employee.repository';
 import { EmploymentRepository, EMPLOYMENT_STATUS } from './employment.repository';
 import { PositionMasterRepository } from '../position-master/position-master.repository';
+import { AuditService } from '../audit/audit.service';
 
 export interface CreateEmployeeInput {
   fullName: string;
@@ -121,6 +122,7 @@ export class EmployeeDirectoryService {
     private readonly scopeResolver: ScopeResolverService,
     private readonly storageService: StorageService,
     private readonly positionMasterRepo: PositionMasterRepository,
+    private readonly auditService: AuditService,
   ) {}
 
   async findAll(ctx: AuthContext): Promise<EmployeePublicView[] | EmployeeManagerView[]> {
@@ -198,7 +200,7 @@ export class EmployeeDirectoryService {
       employeeNumber = await this.employeeRepo.generatePlaceholderNumber(ctx.tenantId);
     }
 
-    return this.employeeRepo.create({
+    const employee = await this.employeeRepo.create({
       tenantId: ctx.tenantId,
       employeeNumber,
       fullName: input.fullName,
@@ -209,13 +211,21 @@ export class EmployeeDirectoryService {
       profileFreeText: input.profileFreeText ?? null,
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employee',
+      entityId: employee.id,
+      actionType: 'CREATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
+    return employee;
   }
 
   async update(ctx: AuthContext, id: number, input: UpdateEmployeeInput): Promise<Employee> {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_EMPLOYEE, ctx.tenantId);
     await this.assertEmployeeExists(id, ctx.tenantId);
 
-    return this.employeeRepo.update(id, ctx.tenantId, {
+    const updated = await this.employeeRepo.update(id, ctx.tenantId, {
       ...(input.fullName !== undefined && { fullName: input.fullName }),
       ...(input.displayName !== undefined && { displayName: input.displayName }),
       ...(input.email !== undefined && { email: input.email }),
@@ -223,6 +233,14 @@ export class EmployeeDirectoryService {
       ...(input.profileFreeText !== undefined && { profileFreeText: input.profileFreeText }),
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employee',
+      entityId: id,
+      actionType: 'UPDATE',
+      changedByEmployeeId: ctx.employeeId,
+    });
+    return updated;
   }
 
   async softDelete(ctx: AuthContext, id: number): Promise<void> {
@@ -236,6 +254,13 @@ export class EmployeeDirectoryService {
     // Mark all active employments as deleted before soft-deleting the employee
     await this.employmentRepo.markAllActiveDeleted(id, ctx.tenantId, ctx.userAccountId);
     await this.employeeRepo.softDelete(id, ctx.tenantId, new Date(), ctx.userAccountId);
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employee',
+      entityId: id,
+      actionType: 'SOFT_DELETE',
+      changedByEmployeeId: ctx.employeeId,
+    });
   }
 
   async restore(ctx: AuthContext, id: number): Promise<void> {
@@ -256,6 +281,13 @@ export class EmployeeDirectoryService {
 
     // Restore employee only; employment re-assignment is a separate explicit operation
     await this.employeeRepo.restore(id, ctx.tenantId, ctx.userAccountId);
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employee',
+      entityId: id,
+      actionType: 'RESTORE',
+      changedByEmployeeId: ctx.employeeId,
+    });
   }
 
   async getEmployments(
@@ -311,7 +343,7 @@ export class EmployeeDirectoryService {
       );
     }
 
-    return this.employmentRepo.create({
+    const employment = await this.employmentRepo.create({
       tenantId: ctx.tenantId,
       employeeId,
       organizationId: input.organizationId,
@@ -323,6 +355,15 @@ export class EmployeeDirectoryService {
       status: input.status ?? EMPLOYMENT_STATUS.ACTIVE,
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employment',
+      entityId: employment.id,
+      actionType: 'CREATE',
+      changedByEmployeeId: ctx.employeeId,
+      scopeSummary: `employeeId=${employeeId}`,
+    });
+    return employment;
   }
 
   async updateEmployment(
@@ -353,7 +394,7 @@ export class EmployeeDirectoryService {
       }
     }
 
-    return this.employmentRepo.update(employmentId, ctx.tenantId, {
+    const updatedEmp = await this.employmentRepo.update(employmentId, ctx.tenantId, {
       ...(input.organizationId !== undefined && { organizationId: input.organizationId }),
       ...(input.employmentType !== undefined && { employmentType: input.employmentType }),
       ...(input.positionMasterId !== undefined && { positionMasterId: input.positionMasterId }),
@@ -363,6 +404,15 @@ export class EmployeeDirectoryService {
       ...(input.startDate !== undefined && { startDate: input.startDate }),
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employment',
+      entityId: employmentId,
+      actionType: 'UPDATE',
+      changedByEmployeeId: ctx.employeeId,
+      scopeSummary: `employeeId=${employeeId}`,
+    });
+    return updatedEmp;
   }
 
   async terminateEmployment(
@@ -388,6 +438,14 @@ export class EmployeeDirectoryService {
     }
 
     await this.employmentRepo.terminate(employmentId, ctx.tenantId, endDate, ctx.userAccountId);
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employment',
+      entityId: employmentId,
+      actionType: 'TERMINATE',
+      changedByEmployeeId: ctx.employeeId,
+      scopeSummary: `employeeId=${employeeId}`,
+    });
   }
 
   async setPrimaryAssignment(

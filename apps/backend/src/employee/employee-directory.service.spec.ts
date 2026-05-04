@@ -13,6 +13,7 @@ import type { AuthorizationService } from '../authorization/authorization.servic
 import type { ScopeResolverService } from '../authorization/scope-resolver.service';
 import type { StorageService } from '../storage/storage.service';
 import type { PositionMasterRepository } from '../position-master/position-master.repository';
+import type { AuditService } from '../audit/audit.service';
 
 const makeEmployee = (overrides: Record<string, unknown> = {}) => ({
   id: 1,
@@ -50,7 +51,7 @@ const makeEmployment = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const ctx = { userAccountId: 99, tenantId: 1 };
+const ctx = { userAccountId: 99, employeeId: 99, tenantId: 1 };
 
 describe('EmployeeDirectoryService', () => {
   let service: EmployeeDirectoryService;
@@ -60,6 +61,7 @@ describe('EmployeeDirectoryService', () => {
   let scopeResolver: Record<string, ReturnType<typeof vi.fn>>;
   let storageService: Record<string, ReturnType<typeof vi.fn>>;
   let positionMasterRepo: Record<string, ReturnType<typeof vi.fn>>;
+  let auditService: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     employeeRepo = {
@@ -115,6 +117,10 @@ describe('EmployeeDirectoryService', () => {
       findNamesByIds: vi.fn().mockResolvedValue(new Map()),
     };
 
+    auditService = {
+      logEdit: vi.fn().mockResolvedValue(undefined),
+    };
+
     service = new EmployeeDirectoryService(
       employeeRepo as unknown as EmployeeRepository,
       employmentRepo as unknown as EmploymentRepository,
@@ -122,6 +128,7 @@ describe('EmployeeDirectoryService', () => {
       scopeResolver as unknown as ScopeResolverService,
       storageService as unknown as StorageService,
       positionMasterRepo as unknown as PositionMasterRepository,
+      auditService as unknown as AuditService,
     );
   });
 

@@ -4,13 +4,14 @@ import { AuthModule } from '../auth/auth.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { StorageModule } from '../storage/storage.module';
 import { PositionMasterModule } from '../position-master/position-master.module';
+import { AuditModule } from '../audit/audit.module';
 import { EmployeeRepository } from './employee.repository';
 import { EmploymentRepository } from './employment.repository';
 import { EmployeeDirectoryService } from './employee-directory.service';
 import { EmployeeController } from './employee.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuthorizationModule, StorageModule, PositionMasterModule],
+  imports: [PrismaModule, AuthModule, AuthorizationModule, StorageModule, PositionMasterModule, AuditModule],
   providers: [EmployeeRepository, EmploymentRepository, EmployeeDirectoryService],
   controllers: [EmployeeController],
 })

@@ -9,11 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService, COOKIE_NAME } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SessionGuard } from './guards/session.guard';
 import { AuthenticatedRequest } from './types/authenticated-request';
+import { AuditService } from '../audit/audit.service';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
@@ -27,12 +28,16 @@ interface MeResponse {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() body: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MeResponse> {
     const { rawToken, expiresAt, userAccount } =
@@ -43,6 +48,14 @@ export class AuthController {
       secure: IS_PRODUCTION,
       sameSite: 'lax',
       expires: expiresAt,
+    });
+
+    void this.auditService.logLogin({
+      tenantId: userAccount.tenantId,
+      userAccountId: userAccount.id,
+      employeeId: userAccount.employeeId,
+      ipAddress: req.ip ?? undefined,
+      userAgent: req.headers['user-agent'] ?? undefined,
     });
 
     return {

@@ -42,7 +42,7 @@ export class CsvController {
     file: Express.Multer.File,
   ) {
     return this.csvService.import(
-      { userAccountId: req.userAccount.id, tenantId: req.userAccount.tenantId },
+      { userAccountId: req.userAccount.id, employeeId: req.userAccount.employeeId, tenantId: req.userAccount.tenantId },
       file.buffer,
     );
   }
@@ -51,6 +51,7 @@ export class CsvController {
   async export(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const buffer = await this.csvService.export({
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');

@@ -38,6 +38,7 @@ export class AdminController {
   ): Promise<void> {
     const ctx: AuthContext = {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
     await this.authorizationService.assertCan(
@@ -57,6 +58,7 @@ export class AdminController {
   ): Promise<void> {
     const ctx: AuthContext = {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
     await this.authorizationService.assertCan(
@@ -74,6 +76,7 @@ export class AdminController {
   ): Promise<Employee[]> {
     const ctx: AuthContext = {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
     await this.authorizationService.assertCan(
@@ -93,6 +96,7 @@ export class AdminController {
   ): Promise<void> {
     const ctx: AuthContext = {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
     await this.authorizationService.assertCan(
@@ -112,6 +116,7 @@ export class AdminController {
   ): Promise<void> {
     const ctx: AuthContext = {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
     await this.authorizationService.assertCan(

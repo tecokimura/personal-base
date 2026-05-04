@@ -9,8 +9,9 @@ import { OrgChartModule } from './org-chart/org-chart.module';
 import { MediaModule } from './media/media.module';
 import { CsvModule } from './csv/csv.module';
 import { PositionMasterModule } from './position-master/position-master.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuthorizationModule, AdminModule, OrganizationModule, EmployeeModule, OrgChartModule, MediaModule, CsvModule, PositionMasterModule],
+  imports: [PrismaModule, AuthModule, AuthorizationModule, AdminModule, OrganizationModule, EmployeeModule, OrgChartModule, MediaModule, CsvModule, PositionMasterModule, AuditModule],
 })
 export class AppModule {}

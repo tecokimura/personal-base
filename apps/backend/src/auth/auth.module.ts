@@ -8,8 +8,10 @@ import { RoleAssignmentService } from './role-assignment/role-assignment.service
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { SessionGuard } from './guards/session.guard';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
+  imports: [AuditModule],
   controllers: [AuthController],
   providers: [
     UserAccountRepository,

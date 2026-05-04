@@ -169,6 +169,37 @@ model OrganizationLeader {
   @@index([status])
 }
 
+model LoginHistory {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  userAccountId Int
+  employeeId    Int
+  loggedInAt    DateTime @default(now())
+  ipAddress     String?  @db.VarChar(45)
+  userAgent     String?  @db.VarChar(500)
+
+  @@index([tenantId])
+  @@index([userAccountId])
+  @@index([tenantId, loggedInAt])
+}
+
+// actionType: "CREATE" | "UPDATE" | "SOFT_DELETE" | "RESTORE" | "TERMINATE"
+// entityType: "Employee" | "Employment" | "Organization" | "RoleAssignment"
+model EditHistory {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  entityType          String   @db.VarChar(100)
+  entityId            Int
+  actionType          String   @db.VarChar(50)
+  changedByEmployeeId Int
+  changedAt           DateTime @default(now())
+  scopeSummary        String?  @db.VarChar(500)
+
+  @@index([tenantId])
+  @@index([tenantId, entityType])
+  @@index([tenantId, changedAt])
+}
+
 // roleType: 1=HR_ADMIN, 2=MANAGER, 3=ORG_ADMIN, 4=EXECUTIVE_VIEWER, 5=EMPLOYEE
 // scopeType: 1=SELF, 2=ORGANIZATION, 3=ORGANIZATION_TREE, 4=TENANT_ALL
 model RoleAssignment {

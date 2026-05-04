@@ -58,6 +58,7 @@ export class PositionMasterController {
   private toAuthContext(req: AuthenticatedRequest): AuthContext {
     return {
       userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
       tenantId: req.userAccount.tenantId,
     };
   }

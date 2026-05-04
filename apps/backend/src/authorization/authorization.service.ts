@@ -4,6 +4,7 @@ import { Permission, RoleType } from './constants';
 
 export interface AuthContext {
   userAccountId: number;
+  employeeId: number;
   tenantId: number;
 }
 
@@ -15,6 +16,7 @@ const ROLE_PERMISSIONS: Record<number, readonly Permission[]> = {
     Permission.MANAGE_SOFT_DELETED,
     Permission.MANAGE_ROLE_ASSIGNMENTS,
     Permission.MANAGE_ORGANIZATION,
+    Permission.VIEW_AUDIT_LOGS,
   ],
   [RoleType.MANAGER]: [Permission.VIEW_ORG_TREE, Permission.ASSIST_UPDATE_PROFILE],
   [RoleType.ORG_ADMIN]: [Permission.VIEW_ORG_TREE, Permission.MANAGE_SOFT_DELETED],

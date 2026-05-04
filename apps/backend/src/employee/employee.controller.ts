@@ -198,6 +198,6 @@ export class EmployeeController {
   }
 
   private ctx(req: AuthenticatedRequest): AuthContext {
-    return { userAccountId: req.userAccount.id, tenantId: req.userAccount.tenantId };
+    return { userAccountId: req.userAccount.id, employeeId: req.userAccount.employeeId, tenantId: req.userAccount.tenantId };
   }
 }
