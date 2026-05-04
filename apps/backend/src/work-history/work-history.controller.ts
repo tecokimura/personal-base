@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { WorkHistory } from '@prisma/client';
 import { SessionGuard } from '../auth/guards/session.guard';
@@ -27,41 +28,41 @@ export class WorkHistoryController {
   @Get('employees/:employeeId/work-histories')
   async list(
     @Req() req: AuthenticatedRequest,
-    @Param('employeeId') employeeId: string,
+    @Param('employeeId', ParseIntPipe) employeeId: number,
   ): Promise<WorkHistory[]> {
     const ctx = this.toCtx(req);
-    return this.workHistoryService.list(ctx, Number(employeeId));
+    return this.workHistoryService.list(ctx, employeeId);
   }
 
   @Post('employees/:employeeId/work-histories')
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Req() req: AuthenticatedRequest,
-    @Param('employeeId') employeeId: string,
+    @Param('employeeId', ParseIntPipe) employeeId: number,
     @Body() dto: CreateWorkHistoryDto,
   ): Promise<WorkHistory> {
     const ctx = this.toCtx(req);
-    return this.workHistoryService.create(ctx, Number(employeeId), dto);
+    return this.workHistoryService.create(ctx, employeeId, dto);
   }
 
   @Patch('work-histories/:id')
   async update(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWorkHistoryDto,
   ): Promise<WorkHistory> {
     const ctx = this.toCtx(req);
-    return this.workHistoryService.update(ctx, Number(id), dto);
+    return this.workHistoryService.update(ctx, id, dto);
   }
 
   @Delete('work-histories/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
     const ctx = this.toCtx(req);
-    return this.workHistoryService.remove(ctx, Number(id));
+    return this.workHistoryService.remove(ctx, id);
   }
 
   private toCtx(req: AuthenticatedRequest): AuthContext {
