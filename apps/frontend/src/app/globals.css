@@ -123,7 +123,12 @@ tr:hover td { background: #fafafa; }
   font-weight: 500;
 }
 .btn-primary { background: #0070f3; color: #fff; }
-.btn-primary:hover { background: #005fd4; }
+.btn-primary:hover:not(:disabled) { background: #005fd4; }
+.btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
+.btn-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.btn-danger:hover:not(:disabled) { background: #fecaca; }
+.btn:disabled, .btn-primary:disabled, .btn-secondary:disabled, .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 
 /* ── Misc ────────────────────────────────────────── */

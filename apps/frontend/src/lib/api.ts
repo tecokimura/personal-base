@@ -91,6 +91,34 @@ export interface EmployeeDetail extends EmployeeListItem {
   employments: EmploymentView[];
 }
 
+export interface WorkHistory {
+  id: number;
+  tenantId: number;
+  employeeId: number;
+  yearMonthFrom: string;
+  yearMonthTo: string | null;
+  isCurrent: boolean;
+  workSummary: string;
+  toolsUsed: string | null;
+  roleName: string | null;
+  teamSize: number | null;
+  projectCode: string | null;
+  updatedBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkHistoryInput {
+  yearMonthFrom: string;
+  yearMonthTo?: string;
+  isCurrent?: boolean;
+  workSummary: string;
+  toolsUsed?: string;
+  roleName?: string;
+  teamSize?: number;
+  projectCode?: string;
+}
+
 // ── API ──────────────────────────────────────────────────────
 
 export const api = {
@@ -115,5 +143,22 @@ export const api = {
   employees: {
     list: () => apiFetch<EmployeeListItem[]>('/employees'),
     get: (id: number) => apiFetch<EmployeeDetail>(`/employees/${id}`),
+  },
+
+  workHistories: {
+    list: (employeeId: number) =>
+      apiFetch<WorkHistory[]>(`/employees/${employeeId}/work-histories`),
+    create: (employeeId: number, body: WorkHistoryInput) =>
+      apiFetch<WorkHistory>(`/employees/${employeeId}/work-histories`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    update: (id: number, body: Partial<WorkHistoryInput>) =>
+      apiFetch<WorkHistory>(`/work-histories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    remove: (id: number) =>
+      apiFetch<void>(`/work-histories/${id}`, { method: 'DELETE' }),
   },
 };
