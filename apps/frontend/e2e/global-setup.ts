@@ -12,6 +12,7 @@ import path from 'path';
 
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const AUTH_STATE = path.resolve(__dirname, '.auth/admin.json');
+const MEMBER_AUTH_STATE = path.resolve(__dirname, '.auth/member.json');
 const FIXTURE_STATE = path.resolve(__dirname, '.fixture-state.json');
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -23,6 +24,9 @@ export interface FixtureState {
   loginIdentifier: string;
   password: string;
   organizationId: number;
+  memberEmployeeId: number;
+  memberLoginIdentifier: string;
+  memberPassword: string;
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -55,7 +59,23 @@ export default async function globalSetup(): Promise<void> {
   await page.waitForURL(/\/dashboard/, { timeout: 10_000 });
 
   await context.storageState({ path: AUTH_STATE });
+  await context.close();
+
+  // ─── Step 3: member ユーザー（非 HR_ADMIN）のブラウザログイン → storageState 保存 ──
+  fs.mkdirSync(path.dirname(MEMBER_AUTH_STATE), { recursive: true });
+
+  const memberContext = await browser.newContext();
+  const memberPage = await memberContext.newPage();
+
+  await memberPage.goto(`${BASE_URL}/login`);
+  await memberPage.fill('#tenantId', String(fixture.tenantId));
+  await memberPage.fill('#loginIdentifier', fixture.memberLoginIdentifier);
+  await memberPage.fill('#password', fixture.memberPassword);
+  await memberPage.click('button[type="submit"]');
+  await memberPage.waitForURL(/\/dashboard/, { timeout: 10_000 });
+
+  await memberContext.storageState({ path: MEMBER_AUTH_STATE });
   await browser.close();
 
-  console.log(`[globalSetup] fixture ready: tenantId=${fixture.tenantId}, employeeId=${fixture.employeeId}`);
+  console.log(`[globalSetup] fixture ready: tenantId=${fixture.tenantId}, employeeId=${fixture.employeeId}, memberEmployeeId=${fixture.memberEmployeeId}`);
 }

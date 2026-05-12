@@ -30,5 +30,6 @@ export class UpdateEmployeeDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10000)
   profileFreeText?: string;
 }

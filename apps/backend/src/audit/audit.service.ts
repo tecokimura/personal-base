@@ -4,7 +4,9 @@ import {
   AuditRepository,
   CreateLoginHistoryInput,
   CreateEditHistoryInput,
+  EditHistoryWithTarget,
 } from './audit.repository';
+import { AuditEventDto } from './dto/audit-event.dto';
 
 @Injectable()
 export class AuditService {
@@ -34,5 +36,34 @@ export class AuditService {
 
   async listEditHistory(tenantId: number): Promise<EditHistory[]> {
     return this.repo.findEditHistoryByTenant(tenantId);
+  }
+
+  async listEvents(tenantId: number): Promise<AuditEventDto[]> {
+    const [loginHistory, editHistory] = await Promise.all([
+      this.repo.findLoginHistoryByTenant(tenantId),
+      this.repo.findEditHistoryWithTargetByTenant(tenantId),
+    ]);
+
+    const loginEvents: AuditEventDto[] = loginHistory.map((h) => ({
+      eventType: 'LOGIN',
+      occurredAt: h.loggedInAt,
+      actorEmployeeId: h.employeeId,
+      targetEmployeeId: h.employeeId,
+      targetType: null,
+      operationType: 'LOGIN',
+    }));
+
+    const editEvents: AuditEventDto[] = (editHistory as EditHistoryWithTarget[]).map((h) => ({
+      eventType: 'EDIT',
+      occurredAt: h.changedAt,
+      actorEmployeeId: h.changedByEmployeeId,
+      targetEmployeeId: h.resolvedEmployeeId,
+      targetType: h.entityType,
+      operationType: h.actionType,
+    }));
+
+    return [...loginEvents, ...editEvents].sort(
+      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
+    );
   }
 }

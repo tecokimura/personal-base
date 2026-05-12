@@ -1,12 +1,14 @@
 /**
  * E2E テスト用フィクスチャのべき等セットアップコマンド。
- * テナント・HR_ADMIN ユーザー・組織を upsert し、JSON を stdout に出力する。
- * 出力 JSON: { tenantId, employeeId, loginIdentifier, password, organizationId }
+ * テナント・HR_ADMIN ユーザー・一般ユーザー（非 HR_ADMIN）・組織を upsert し、JSON を stdout に出力する。
+ * 出力 JSON: { tenantId, employeeId, loginIdentifier, password, organizationId,
+ *              memberEmployeeId, memberLoginIdentifier, memberPassword }
  *
  * 既存データがある場合も以下を保証する:
  *   - Employee が論理削除されていれば復元 (isDeleted=false, deletedAt=null, fullName を既知値に戻す)
  *   - UserAccount の passwordHash と status を既知値に戻す
  *   - HR_ADMIN + TENANT_ALL(scopeId=0) の RoleAssignment が有効状態で存在する
+ *   - member ユーザーは RoleAssignment をすべて削除して非 HR_ADMIN 状態を保証する
  *
  * Usage:
  *   DATABASE_URL=... pnpm --filter @personal-base/backend setup-e2e-fixtures
@@ -22,6 +24,10 @@ const FULL_NAME = 'E2E Admin';
 const ORG_CODE = 'E2EORG';
 const ORG_NAME = 'E2E テスト組織';
 
+const MEMBER_LOGIN_IDENTIFIER = 'e2e-member@test.local';
+const MEMBER_PASSWORD = 'E2ePassword1!';
+const MEMBER_FULL_NAME = 'E2E Member';
+
 const ROLE_TYPE_HR_ADMIN = 1;
 const SCOPE_TYPE_TENANT_ALL = 4;
 const SCOPE_ID_TENANT_ALL = 0;
@@ -32,6 +38,9 @@ interface FixtureState {
   loginIdentifier: string;
   password: string;
   organizationId: number;
+  memberEmployeeId: number;
+  memberLoginIdentifier: string;
+  memberPassword: string;
 }
 
 async function main(): Promise<void> {
@@ -127,7 +136,45 @@ async function main(): Promise<void> {
       employeeId = employee.id;
     }
 
-    // 3. Upsert organization
+    // 3. Upsert non-HR_ADMIN member user (RoleAssignment なし)
+    const existingMember = await prisma.userAccount.findFirst({
+      where: { tenantId: tenant.id, loginIdentifier: MEMBER_LOGIN_IDENTIFIER },
+    });
+
+    const memberPasswordHash = await bcrypt.hash(MEMBER_PASSWORD, 10);
+    let memberEmployeeId: number;
+
+    if (existingMember) {
+      memberEmployeeId = existingMember.employeeId;
+      await prisma.userAccount.update({
+        where: { id: existingMember.id },
+        data: { passwordHash: memberPasswordHash, status: 1 },
+      });
+      await prisma.employee.update({
+        where: { id: memberEmployeeId },
+        data: { isDeleted: false, deletedAt: null, fullName: MEMBER_FULL_NAME },
+      });
+      // 非 HR_ADMIN 前提を保証するため、既存の RoleAssignment をすべて削除する
+      await prisma.roleAssignment.deleteMany({
+        where: { tenantId: tenant.id, userAccountId: existingMember.id },
+      });
+    } else {
+      const memberEmployee = await prisma.employee.create({
+        data: { tenantId: tenant.id, fullName: MEMBER_FULL_NAME },
+      });
+      await prisma.userAccount.create({
+        data: {
+          tenantId: tenant.id,
+          employeeId: memberEmployee.id,
+          loginIdentifier: MEMBER_LOGIN_IDENTIFIER,
+          passwordHash: memberPasswordHash,
+          status: 1,
+        },
+      });
+      memberEmployeeId = memberEmployee.id;
+    }
+
+    // 4. Upsert organization
     const existingOrg = await prisma.organization.findFirst({
       where: { tenantId: tenant.id, organizationCode: ORG_CODE },
     });
@@ -152,6 +199,9 @@ async function main(): Promise<void> {
       loginIdentifier: LOGIN_IDENTIFIER,
       password: PASSWORD,
       organizationId,
+      memberEmployeeId,
+      memberLoginIdentifier: MEMBER_LOGIN_IDENTIFIER,
+      memberPassword: MEMBER_PASSWORD,
     };
 
     process.stdout.write(JSON.stringify(state) + '\n');

@@ -15,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { SessionGuard } from './guards/session.guard';
 import { AuthenticatedRequest } from './types/authenticated-request';
 import { AuditService } from '../audit/audit.service';
+import { RoleAssignmentService } from './role-assignment/role-assignment.service';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
@@ -24,6 +25,7 @@ interface MeResponse {
   employeeId: number;
   status: number;
   lastLoggedInAt: Date | null;
+  roleTypes: number[];
 }
 
 @Controller('auth')
@@ -31,6 +33,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly auditService: AuditService,
+    private readonly roleAssignmentService: RoleAssignmentService,
   ) {}
 
   @Post('login')
@@ -58,12 +61,14 @@ export class AuthController {
       userAgent: req.headers['user-agent'] ?? undefined,
     });
 
+    const roles = await this.roleAssignmentService.getActiveRoles(userAccount.id);
     return {
       id: userAccount.id,
       tenantId: userAccount.tenantId,
       employeeId: userAccount.employeeId,
       status: userAccount.status,
       lastLoggedInAt: userAccount.lastLoggedInAt,
+      roleTypes: roles.map((r) => r.roleType),
     };
   }
 
@@ -81,14 +86,16 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(SessionGuard)
-  me(@Req() req: AuthenticatedRequest): MeResponse {
+  async me(@Req() req: AuthenticatedRequest): Promise<MeResponse> {
     const { userAccount } = req;
+    const roles = await this.roleAssignmentService.getActiveRoles(userAccount.id);
     return {
       id: userAccount.id,
       tenantId: userAccount.tenantId,
       employeeId: userAccount.employeeId,
       status: userAccount.status,
       lastLoggedInAt: userAccount.lastLoggedInAt,
+      roleTypes: roles.map((r) => r.roleType),
     };
   }
 }

@@ -2,7 +2,7 @@
 
 - Status: Decided
 - Owner: Keith / Codex
-- Last Updated: 2026-04-30
+- Last Updated: 2026-05-11
 
 ## 目的
 
@@ -237,35 +237,246 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 
 以下を `MVP` 完了後から `第 2 フェーズ` までの確定実装順とする。
 
-12. `LoginHistory` と `EditHistory` の最小導入
-13. `WorkHistory` のデータモデルと API
-14. `WorkHistory` の本人登録 / 更新 / 一覧表示
-15. `MANAGER` と `HR_ADMIN` の補助編集
+### 第 2 フェーズの目標
+
+- バックエンド中心で成立した `MVP` を、人間がブラウザで触って確認できる状態へ進める
+- `WorkHistory`、監査 API、プロフィール改善を加え、ベータとして使いやすい形へ広げる
+- `Playwright` を第 2 フェーズの正式スコープに含め、主要画面のブラウザ確認を手動依存から段階的に外す
+
+### 第 2 フェーズの完了条件
+
+以下を満たした状態を `第 2 フェーズ完了` とみなす。
+
+1. `frontend` からログインし、認証済み状態で主要画面を確認できる
+2. 組織一覧 / 組織図 / 社員一覧 / 社員詳細をブラウザで確認できる
+3. `WorkHistory` を本人、`HR_ADMIN`、`MANAGER` が作成 / 更新 / 一覧確認できる
+4. `WorkHistory` の閲覧境界が、本人、同僚、管理者で仕様どおり反映されている
+5. `LoginHistory` と `EditHistory` の最小記録と `HR_ADMIN` 向け閲覧導線がある
+6. `profile_free_text` の Markdown 入力保存が可能である
+7. 第 2 フェーズ対象の権限、監査、回帰テストが追加されている
+8. `Playwright` による主要画面の E2E が導入され、少なくとも最小 4 シナリオが自動確認できる
+
+### 第 2 フェーズの着手単位
+
+13. `最小フロント確認導線`
+    - ログイン画面
+    - 認証状態確認
+    - 組織一覧 / 組織図
+    - 社員一覧 / 社員詳細
+14. `LoginHistory` と `EditHistory` の最小導入
+15. `WorkHistory` のデータモデルと API
+16. `WorkHistory` の本人登録 / 更新 / 一覧表示
+17. `WorkHistory` の公開範囲反映
+18. `MANAGER` と `HR_ADMIN` の補助編集
     - `MANAGER` による `profile_free_text`、顔写真、`Manager Employee ID` の補助更新を含める
     - 所属変更、兼務変更、役職変更、在籍状態変更は、この段階では即時更新 API にせず、申請 / 承認フローまたは下書き機能の追加候補として扱う
-16. `WorkHistory` の公開範囲反映
-17. 同僚向け `WorkHistory` 閲覧画面
-18. `profile_free_text` の Markdown 入力許可
-19. 第 2 フェーズ全体の監査・権限・回帰テスト
+19. `同僚向け WorkHistory 閲覧画面`
+20. `profile_free_text` の Markdown 入力許可
+21. `第 2 フェーズ全体の監査・権限・回帰テスト`
     - `ORG_ADMIN` の組織運用補助拡張と、見送った更新系の扱いを回帰観点に含める
+
+### 第 2 フェーズの確定事項
+
+#### `13. 最小フロント確認導線` の画面範囲
+
+- 第 2 フェーズ前半で作る画面は `ログイン`, `認証状態確認`, `組織一覧`, `組織図`, `社員一覧`, `社員詳細` とする
+- ここでの目的は、`MVP` バックエンドをブラウザで確認できる状態を作ることであり、管理用の高度な編集画面を一気に作ることではない
+- `Organization` / `Employee` の登録や更新は、必要なものから段階的に画面化し、当初は API 利用を残してよい
+
+#### `Playwright` の導入方針
+
+- `Playwright` は第 2 フェーズの正式スコープに含める
+- 最初は `Chromium` のみを対象にし、`headless` 実行を基本とする
+- E2E は `frontend + backend + db` をローカル起動した状態で実行する
+- 認証は API 偽装ではなく、UI からログインする流れを通す
+- テストデータは、管理コマンドと既存 API を使って毎回再投入できる最小 fixture を前提にする
+- 第 2 フェーズ前半では、以下の最小 4 シナリオを最初の到達点とする
+  - ログインできる
+  - 組織一覧が見える
+  - 社員一覧 / 社員詳細が見える
+  - `WorkHistory` を追加 / 更新 / 削除できる
+- 第 2 フェーズ完了までに、対象画面は原則として E2E 対象へ広げる
+  - `ログイン`
+  - `認証状態確認`
+  - `組織一覧`
+  - `組織図`
+  - `社員一覧`
+  - `社員詳細`
+  - `WorkHistory` 本人画面
+  - `WorkHistory` 同僚閲覧画面
+  - 監査 API の確認導線
+
+#### `WorkHistory` の最小入力項目
+
+- `employeeId`
+- `yearMonthFrom`
+- `yearMonthTo`
+- `isCurrent`
+- `workSummary`
+- `toolsUsed`
+- `roleName`
+- `teamSize`
+- `projectCode`
+
+補足:
+
+- `projectCode` は第 2 フェーズでは任意項目とする
+- `workSummary` はプレーンテキスト前提とし、Markdown や自由装飾は入れない
+- `toolsUsed` は初期は自由入力の文字列または文字列配列として扱い、`Skill` や辞書マスタ連携は第 3 フェーズ以降へ送る
+- `teamSize` は任意入力とし、未入力を許可する
+
+#### `WorkHistory` の更新主体と補助編集境界
+
+- 本人は自分の `WorkHistory` を作成 / 更新 / 一覧確認できる
+- `HR_ADMIN` は全社員の `WorkHistory` を作成 / 更新 / 一覧確認できる
+- `MANAGER` は `ORGANIZATION_TREE` 配下社員の `WorkHistory` を作成 / 更新 / 一覧確認できる
+- `ORG_ADMIN` は第 2 フェーズでは `WorkHistory` 専用の更新主体に含めない
+- `EXECUTIVE_VIEWER` は `WorkHistory` の更新主体に含めない
+- `MANAGER` による補助更新対象は `profile_free_text`, 顔写真, `managerEmployeeId`, `WorkHistory` とする
+- 所属変更、兼務変更、役職変更、在籍状態変更は、第 2 フェーズでは即時更新 API に拡張せず、後続フェーズの申請 / 承認または下書き機能候補として扱う
+
+#### `WorkHistory` の公開範囲
+
+- 本人は自分の `WorkHistory` 原文を全件閲覧できる
+- `HR_ADMIN` は全社員の `WorkHistory` 原文を全件閲覧できる
+- `MANAGER` は `ORGANIZATION_TREE` 配下社員の `WorkHistory` 原文を全件閲覧できる
+- `EXECUTIVE_VIEWER` は全社閲覧ロールとして `WorkHistory` 閲覧対象に含める
+- `EMPLOYEE` は主所属が同じ同僚の `WorkHistory` 原文を閲覧できる
+- `ORG_ADMIN` は第 2 フェーズでは `WorkHistory` 専用の通常閲覧主体に含めない
+- 論理削除社員の `WorkHistory` は `HR_ADMIN` と `ORG_ADMIN` のみ閲覧できる
+- AI サマリや公開範囲の本人設定は第 4 フェーズ以降へ送る
+
+#### `LoginHistory` / `EditHistory` の最小項目と閲覧主体
+
+- `LoginHistory` の最小項目は `tenantId`, `userAccountId`, `employeeId`, `loggedInAt`, `ipAddress`, `userAgent` とする
+- `EditHistory` の最小項目は `tenantId`, `entityType`, `entityId`, `actionType`, `changedByEmployeeId`, `changedAt`, `scopeSummary` とする
+- `LoginHistory` / `EditHistory` の閲覧主体は `HR_ADMIN` のみとする
+- 第 2 フェーズでは通常画面へ `updatedBy` / `updatedAt` を露出せず、監査 API または管理者向け確認導線に限定する
+
+#### Markdown の扱い
+
+- Markdown を許可する対象は `profile_free_text` のみとする
+- 第 2 フェーズでは Markdown の入力保存だけを扱う
+- 表示時は Markdown レンダリングせず、生テキストのまま表示する
+- `WorkHistory` には Markdown を入れず、構造化入力を維持する
+
+#### 第 2 フェーズで明示的に入れないもの
+
+- AI 要約、AI 推薦、AI アドバイス、AI チャット
+- `Skill` や `Position` の高度な検索体験
+- 所属変更、兼務変更、役職変更、在籍状態変更の申請 / 承認 UI
+- 一般社員向けの高度なプロフィール公開設定
+
+### 第 2 フェーズで作る最小実装
+
+以下は、第 2 フェーズで必ず作る最小実装である。
+
+- `frontend` の最小確認導線
+  - ログイン
+  - 認証状態確認
+  - 組織一覧
+  - 組織図
+  - 社員一覧
+  - 社員詳細
+- `LoginHistory` と `EditHistory` の最小記録と `HR_ADMIN` 向け閲覧
+- `WorkHistory` の最小データモデルと CRUD API
+- 本人向け `WorkHistory` 登録 / 更新 / 一覧確認
+- `HR_ADMIN` / `MANAGER` の補助編集
+- 同僚向け `WorkHistory` 閲覧画面
+- `profile_free_text` の Markdown 入力保存
+- 第 2 フェーズ対象の監査、権限、回帰テスト
+- `Playwright` による主要画面の E2E
+
+この段階での狙いは、「まず使えること」「ブラウザで確認できること」「後続拡張の土台がぶれないこと」である。
+
+### 第 3 フェーズへ送るもの
+
+以下は、第 2 フェーズでは扱わず、第 3 フェーズ以降へ送る。
+
+- 一般社員向け画面の高度化
+- 運用管理画面の拡張
+- 評価情報の集約と閲覧
+- `Skill` や `Position` を使った高度な検索
+- 所属変更、兼務変更、役職変更、在籍状態変更の申請 / 承認 UI
+- 本人による公開範囲設定
+- Markdown のリッチ表示
+
+補足:
+
+- AI 系は第 3 フェーズではなく、第 4 フェーズへ送る
+- 第 3 フェーズは、AI なしでもサービスとして使いやすくする拡張フェーズとして扱う
+
+### 第 2 フェーズで最初に確認できる状態
+
+以下を最初の到達点とする。
+
+- ブラウザでログインできる
+- 組織一覧、組織図、社員一覧、社員詳細をブラウザで確認できる
+- `WorkHistory` 導入前でも、今の `MVP` データを画面で確認できる
+- 以後の `WorkHistory` や監査追加を API 単体ではなく画面付きで確認できる
 
 ### 第 2 フェーズ順序の理由
 
+- `MVP` で不足していたのは「ブラウザでの確認導線」なので、最初に最小フロントを入れる
 - `WorkHistory` は補助編集と同僚公開があるため、先に監査の土台を入れた方が運用説明しやすい
-- `MANAGER` や `ORG_ADMIN` の更新対象を広げる論点は、監査と運用手順が先に固まってから扱う方が安全
 - データモデルと API を先に固めることで、本人 UI と管理者 UI を作り分けやすい
 - 公開範囲は確定済みだが、表示画面より先にサーバ側の境界を固める方が安全
+- `MANAGER` や `ORG_ADMIN` の更新対象を広げる論点は、監査と `WorkHistory` の基本導線が先に固まってから扱う方が安全
 - Markdown は `WorkHistory` と独立しているため、第 2 フェーズ終盤の作業として扱える
+
+### 第 2 フェーズの推奨チケット分解
+
+各着手単位は、以下の粒度で Backlog に分解する。
+
+13. `最小フロント確認導線`
+    - `frontend` 基盤とログイン画面
+    - 認証状態確認とセッション維持
+    - 組織一覧 / 組織図画面
+    - 社員一覧 / 社員詳細画面
+14. `LoginHistory` と `EditHistory` の最小導入
+    - schema / migration
+    - 記録処理
+    - `HR_ADMIN` 向け一覧 API または最小確認導線
+15. `WorkHistory` のデータモデルと API
+    - schema / migration
+    - repository / service
+    - CRUD API
+16. `WorkHistory` の本人登録 / 更新 / 一覧表示
+    - 本人向け画面
+    - 基本バリデーション
+    - 自分の履歴確認導線
+17. `WorkHistory` の公開範囲反映
+    - 閲覧スコープ反映
+    - 表示項目マスキング確認
+    - 同僚 / 管理者 / 本人の差分テスト
+18. `MANAGER` と `HR_ADMIN` の補助編集
+    - 補助編集 API
+    - 必要な最小画面
+    - 監査記録確認
+19. `同僚向け WorkHistory 閲覧画面`
+    - 同僚向け一覧 / 詳細
+    - 権限別の表示差分
+20. `profile_free_text` の Markdown 入力許可
+    - 入力保存
+    - 生テキスト表示維持
+    - 回帰確認
+21. `第 2 フェーズ全体の監査・権限・回帰テスト`
+    - フロント主要導線
+    - 権限制御
+    - 監査記録と監査 API 導線
+    - テナント越境防止
 
 ## 着手単位とチケット粒度
 
-以下を `MVP` の確定方針とする。
+以下を `MVP` と `第 2 フェーズ` を通した確定方針とする。
 
 ### 着手単位
 
 着手単位は `implementation-plan.md` の実装順を基準に切る。
 
-ただし、`2. 組織と社員台帳の基本 CRUD` は作業量が大きいため、以下の 2 つへ分割する。
+`MVP` では、`2. 組織と社員台帳の基本 CRUD` を `組織管理` と `社員台帳管理` に分割した。
+
+第 2 フェーズは、画面、監査、`WorkHistory`、補助編集、回帰テストを単位に切る。
 
 1. `認証・認可基盤`
 2. `組織管理`
@@ -301,5 +512,5 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 
 ## 次に決めること
 
-- `組織管理` の詳細設計
-- `認証・認可基盤` の実装順に沿った着手
+- Phase 2 整合対応 (`PMO_PJPERSONALBASE-39` から `44`) は完了済みである
+- 次に決めることは、Phase 3 の着手候補と将来課題の優先順位である

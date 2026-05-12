@@ -1,19 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ScopeResolverService } from './scope-resolver.service';
-import { ScopeType } from './constants';
+import { ScopeType, RoleType } from './constants';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { RoleAssignmentService } from '../auth/role-assignment/role-assignment.service';
 
-const ctx = { userAccountId: 99, tenantId: 1 };
+const ctx = { userAccountId: 99, employeeId: 10, tenantId: 1 };
 
-const makeRole = (scopeType: number, scopeId: number | null = null) => ({
+const makeRole = (scopeType: number, scopeId: number | null = null, roleType = RoleType.HR_ADMIN) => ({
   id: 1,
   userAccountId: 99,
   tenantId: 1,
-  roleType: 1,
+  roleType,
   scopeType,
-  scopeId,
-  isActive: true,
+  scopeId: scopeId ?? 0,
+  effectiveFrom: new Date(),
+  effectiveTo: null as Date | null,
   createdAt: new Date(),
   updatedAt: new Date(),
 });
@@ -35,8 +36,12 @@ describe('ScopeResolverService', () => {
       userAccount: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
+      employee: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       employment: {
         findFirst: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
 
@@ -199,6 +204,300 @@ describe('ScopeResolverService', () => {
     it('returns false for PRIMARY_ORG with null orgId', () => {
       const access = { kind: 'PRIMARY_ORG' as const, orgId: null };
       expect(service.orgInEmployeeListScope(access, 1)).toBe(false);
+    });
+  });
+
+  // ── canAccessEmployeeWorkHistory ─────────────────────────
+
+  describe('canAccessEmployeeWorkHistory', () => {
+    const TARGET_EMP = 20;
+
+    it('自分自身は常に閲覧可', async () => {
+      const result = await service.canAccessEmployeeWorkHistory(ctx, ctx.employeeId);
+      expect(result).toBe(true);
+    });
+
+    it('対象社員がテナントに存在しない場合は false', async () => {
+      prisma.employee.findFirst.mockResolvedValue(null);
+      roleAssignmentService.getActiveRoles.mockResolvedValue([]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('HR_ADMIN は通常社員の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('EXECUTIVE_VIEWER は通常社員の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.EXECUTIVE_VIEWER),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('MANAGER は配下組織社員の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+      // Org tree: 10 → 11
+      prisma.organization.findMany.mockResolvedValue([
+        { id: 10, parentOrganizationId: null },
+        { id: 11, parentOrganizationId: 10 },
+      ]);
+      // Target employee belongs to org 11
+      prisma.employment.findMany.mockResolvedValue([{ organizationId: 11 }]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('MANAGER は配下組織外社員の WorkHistory を閲覧不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+      prisma.organization.findMany.mockResolvedValue([
+        { id: 10, parentOrganizationId: null },
+      ]);
+      // Target belongs to org 99 (outside tree)
+      prisma.employment.findMany.mockResolvedValue([{ organizationId: 99 }]);
+      // Primary org query for EMPLOYEE fallback
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })  // caller
+        .mockResolvedValueOnce({ organizationId: 8 }); // target (different)
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('EMPLOYEE は主所属が同じ同僚の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.SELF, null, RoleType.EMPLOYEE),
+      ]);
+      // Both caller and target share primary org 5
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })  // caller's primary
+        .mockResolvedValueOnce({ organizationId: 5 }); // target's primary
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('EMPLOYEE は主所属が異なる同僚の WorkHistory を閲覧不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.SELF, null, RoleType.EMPLOYEE),
+      ]);
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })
+        .mockResolvedValueOnce({ organizationId: 9 });
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('ORG_ADMIN は通常社員の WorkHistory を閲覧不可（主所属が異なる場合）', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.ORG_ADMIN),
+      ]);
+      // ORG_ADMIN should not be treated as MANAGER for WorkHistory
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })
+        .mockResolvedValueOnce({ organizationId: 9 });
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('ORG_ADMIN は通常社員の WorkHistory を閲覧不可（主所属が同じでも EMPLOYEE ロールなしは不可）', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.ORG_ADMIN),
+      ]);
+      // primary org is same for both — must still be rejected because caller lacks EMPLOYEE role
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })
+        .mockResolvedValueOnce({ organizationId: 5 });
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('MANAGER は ORGANIZATION_TREE 外の社員を主所属一致でも閲覧不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+      prisma.organization.findMany.mockResolvedValue([
+        { id: 10, parentOrganizationId: null },
+      ]);
+      // Target belongs to org 99 (outside tree)
+      prisma.employment.findMany.mockResolvedValue([{ organizationId: 99 }]);
+      // primary org is same — must still be rejected because caller lacks EMPLOYEE role
+      prisma.employment.findFirst
+        .mockResolvedValueOnce({ organizationId: 5 })
+        .mockResolvedValueOnce({ organizationId: 5 });
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('HR_ADMIN は論理削除社員の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: true });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('ORG_ADMIN は論理削除社員の WorkHistory を閲覧可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: true });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.ORG_ADMIN),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('EXECUTIVE_VIEWER は論理削除社員の WorkHistory を閲覧不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: true });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.EXECUTIVE_VIEWER),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('テナント越境: 異テナントユーザーは閲覧不可 (employee.findFirst が null を返す)', async () => {
+      // target employee not found because tenantId differs → prisma returns null
+      prisma.employee.findFirst.mockResolvedValue(null);
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAccessEmployeeWorkHistory(
+        { ...ctx, tenantId: 2 },
+        TARGET_EMP,
+      );
+      expect(result).toBe(false);
+    });
+  });
+
+  // ── canAssistEditEmployeeWorkHistory ─────────────────────
+
+  describe('canAssistEditEmployeeWorkHistory', () => {
+    const TARGET_EMP = 20;
+
+    it('自分自身は常に編集可', async () => {
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, ctx.employeeId);
+      expect(result).toBe(true);
+    });
+
+    it('対象社員がテナントに存在しない場合は false', async () => {
+      prisma.employee.findFirst.mockResolvedValue(null);
+      roleAssignmentService.getActiveRoles.mockResolvedValue([]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('HR_ADMIN は通常社員の WorkHistory を編集可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('HR_ADMIN は論理削除社員の WorkHistory を編集可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: true });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('MANAGER は配下組織社員の WorkHistory を編集可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+      prisma.organization.findMany.mockResolvedValue([
+        { id: 10, parentOrganizationId: null },
+        { id: 11, parentOrganizationId: 10 },
+      ]);
+      prisma.employment.findMany.mockResolvedValue([{ organizationId: 11 }]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(true);
+    });
+
+    it('MANAGER は配下組織外社員の WorkHistory を編集不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+      prisma.organization.findMany.mockResolvedValue([
+        { id: 10, parentOrganizationId: null },
+      ]);
+      prisma.employment.findMany.mockResolvedValue([{ organizationId: 99 }]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('MANAGER は論理削除社員の WorkHistory を編集不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: true });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.ORGANIZATION_TREE, 10, RoleType.MANAGER),
+      ]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('EMPLOYEE は他社員の WorkHistory を編集不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue({ isDeleted: false });
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.SELF, null, RoleType.EMPLOYEE),
+      ]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(ctx, TARGET_EMP);
+      expect(result).toBe(false);
+    });
+
+    it('テナント越境: 異テナントユーザーは編集不可', async () => {
+      prisma.employee.findFirst.mockResolvedValue(null);
+      roleAssignmentService.getActiveRoles.mockResolvedValue([
+        makeRole(ScopeType.TENANT_ALL, null, RoleType.HR_ADMIN),
+      ]);
+
+      const result = await service.canAssistEditEmployeeWorkHistory(
+        { ...ctx, tenantId: 2 },
+        TARGET_EMP,
+      );
+      expect(result).toBe(false);
     });
   });
 });

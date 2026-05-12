@@ -63,6 +63,111 @@ export class ScopeResolverService {
     return false;
   }
 
+  /**
+   * WorkHistory 閲覧権限判定。
+   *
+   * 許可条件:
+   *   - 本人
+   *   - HR_ADMIN (全社・論理削除社員も可)
+   *   - ORG_ADMIN (論理削除社員のみ可、通常社員は不可)
+   *   - EXECUTIVE_VIEWER (通常社員のみ)
+   *   - MANAGER (ORGANIZATION_TREE 配下、通常社員のみ)
+   *   - EMPLOYEE (主所属が同じ同僚、通常社員のみ)
+   */
+  async canAccessEmployeeWorkHistory(
+    ctx: AuthContext,
+    targetEmployeeId: number,
+  ): Promise<boolean> {
+    // 1. Self
+    if (ctx.employeeId === targetEmployeeId) return true;
+
+    // 2. Tenant isolation: target must belong to same tenant
+    const target = await this.prisma.employee.findFirst({
+      where: { id: targetEmployeeId, tenantId: ctx.tenantId },
+      select: { isDeleted: true },
+    });
+    if (!target) return false;
+
+    const roles = await this.roleAssignmentService.getActiveRoles(ctx.userAccountId);
+    const roleTypes = new Set(roles.map(r => r.roleType));
+
+    // 3. Soft-deleted: only HR_ADMIN or ORG_ADMIN
+    if (target.isDeleted) {
+      return roleTypes.has(RoleType.HR_ADMIN) || roleTypes.has(RoleType.ORG_ADMIN);
+    }
+
+    // 4. HR_ADMIN
+    if (roleTypes.has(RoleType.HR_ADMIN)) return true;
+
+    // 5. EXECUTIVE_VIEWER
+    if (roleTypes.has(RoleType.EXECUTIVE_VIEWER)) return true;
+
+    // 6. MANAGER with ORGANIZATION_TREE scope
+    const managerRoles = roles.filter(
+      r => r.roleType === RoleType.MANAGER && r.scopeType === ScopeType.ORGANIZATION_TREE,
+    );
+    if (managerRoles.length > 0) {
+      const rootIds = managerRoles.map(r => r.scopeId);
+      const treeIds = await this.collectDescendantIds(rootIds, ctx.tenantId);
+      const targetOrgIds = await this.getEmployeeActiveOrgIds(targetEmployeeId, ctx.tenantId);
+      if (targetOrgIds.some(id => treeIds.has(id))) return true;
+    }
+
+    // 7. EMPLOYEE: same primary org (EMPLOYEE role required — ORG_ADMIN and others must not fall through here)
+    if (roleTypes.has(RoleType.EMPLOYEE)) {
+      const myPrimaryOrg = await this.getPrimaryOrgId(ctx.employeeId, ctx.tenantId);
+      const targetPrimaryOrg = await this.getPrimaryOrgId(targetEmployeeId, ctx.tenantId);
+      if (myPrimaryOrg !== null && myPrimaryOrg === targetPrimaryOrg) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * WorkHistory 補助編集権限判定。
+   *
+   * 許可条件:
+   *   - 本人
+   *   - HR_ADMIN (全社員・論理削除社員も可)
+   *   - MANAGER (ORGANIZATION_TREE 配下の通常社員のみ)
+   */
+  async canAssistEditEmployeeWorkHistory(
+    ctx: AuthContext,
+    targetEmployeeId: number,
+  ): Promise<boolean> {
+    // 1. Self
+    if (ctx.employeeId === targetEmployeeId) return true;
+
+    // 2. Tenant isolation
+    const target = await this.prisma.employee.findFirst({
+      where: { id: targetEmployeeId, tenantId: ctx.tenantId },
+      select: { isDeleted: true },
+    });
+    if (!target) return false;
+
+    const roles = await this.roleAssignmentService.getActiveRoles(ctx.userAccountId);
+    const roleTypes = new Set(roles.map((r) => r.roleType));
+
+    // 3. HR_ADMIN: all employees including soft-deleted
+    if (roleTypes.has(RoleType.HR_ADMIN)) return true;
+
+    // 4. Soft-deleted: only HR_ADMIN (already checked above)
+    if (target.isDeleted) return false;
+
+    // 5. MANAGER with ORGANIZATION_TREE scope covering target
+    const managerRoles = roles.filter(
+      (r) => r.roleType === RoleType.MANAGER && r.scopeType === ScopeType.ORGANIZATION_TREE,
+    );
+    if (managerRoles.length > 0) {
+      const rootIds = managerRoles.map((r) => r.scopeId);
+      const treeIds = await this.collectDescendantIds(rootIds, ctx.tenantId);
+      const targetOrgIds = await this.getEmployeeActiveOrgIds(targetEmployeeId, ctx.tenantId);
+      if (targetOrgIds.some((id) => treeIds.has(id))) return true;
+    }
+
+    return false;
+  }
+
   // ── Private ──────────────────────────────────────────────
 
   private async collectDescendantIds(rootIds: number[], tenantId: number): Promise<Set<number>> {
@@ -90,6 +195,14 @@ export class ScopeResolverService {
       queue.push(...children);
     }
     return result;
+  }
+
+  private async getEmployeeActiveOrgIds(employeeId: number, tenantId: number): Promise<number[]> {
+    const employments = await this.prisma.employment.findMany({
+      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS_ACTIVE },
+      select: { organizationId: true },
+    });
+    return employments.map(e => e.organizationId);
   }
 
   private async getEmployeeId(userAccountId: number): Promise<number | null> {

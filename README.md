@@ -54,7 +54,7 @@
 | 事業・プロダクトの骨子 | In Progress | Vision、Target Users、Core Use Cases の主要方針を反映済み |
 | 技術設計の骨子 | In Progress | 技術検討用の章立てを作成済み |
 | 詳細要件定義 | Not Started | 各ユースケースと業務フローの深掘りが必要 |
-| 実装計画 | In Progress | `MVP` の着手単位 `1` から `12` まで完了し、次は `第 2 フェーズ` の優先順位整理へ進む |
+| 実装計画 | In Progress | `MVP` の着手単位 `1` から `12` と `第 2 フェーズ` の着手単位 `13` から `21`、および整合対応 `PMO_PJPERSONALBASE-39` から `44` は完了済み。次は Phase 3 の着手候補と将来課題の優先順位を整理する |
 
 ## まず見る場所
 
@@ -88,7 +88,8 @@
 
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- 直近は `MVP 完了` 判定まで完了し、次は `第 2 フェーズ` の着手順確認に進む
+- `第 2 フェーズ` の実装と、その後の整合対応 (`PMO_PJPERSONALBASE-39` から `44`) は完了済みである
+- 次は Phase 3 の着手候補と将来課題の優先順位を整理する
 - `TypeScript` を使う実装では `any` を使わないことを厳守する
 - `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みである
 - 開発時の DB 起動用にルート `compose.yml` と `.env.example` を置き、`Prisma migrate dev` はホストから `localhost:5432` の `DATABASE_URL` で実行する前提にしている
@@ -107,8 +108,10 @@
   - `テストと初期運用`
   - `ベータ運用管理機能`
 - `MVP` は完了済み
-- 次は `第 2 フェーズ` の着手対象を確認する
+- `第 2 フェーズ` の着手単位 `13` から `21` は完了済み
 - 実装を止めない論点整理用として `PMO_PJPERSONALBASE-24` を起票済み
+- `tenantId` の DB レベル外部キー制約追加は将来課題 `PMO_PJPERSONALBASE-36` に記録済み
+- `create-hr-admin` の `--fullName` 追加検討は将来課題 `PMO_PJPERSONALBASE-37` に記録済み
 - Backlog の実行管理は `PMO_PJPERSONALBASE` を使い、運用ルールの正本は [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 
 ## 運用ルール

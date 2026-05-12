@@ -10,25 +10,25 @@ import { AuditService } from '../audit/audit.service';
 import { WorkHistoryRepository } from './work-history.repository';
 import { CreateWorkHistoryDto } from './dto/create-work-history.dto';
 import { UpdateWorkHistoryDto } from './dto/update-work-history.dto';
+import { ScopeResolverService } from '../authorization/scope-resolver.service';
 
 @Injectable()
 export class WorkHistoryService {
   constructor(
     private readonly repo: WorkHistoryRepository,
     private readonly auditService: AuditService,
+    private readonly scopeResolverService: ScopeResolverService,
   ) {}
 
   async list(ctx: AuthContext, employeeId: number): Promise<WorkHistory[]> {
-    if (ctx.employeeId !== employeeId) {
-      throw new ForbiddenException('You can only view your own work history');
-    }
+    const canAccess = await this.scopeResolverService.canAccessEmployeeWorkHistory(ctx, employeeId);
+    if (!canAccess) throw new ForbiddenException();
     return this.repo.findByEmployee(employeeId, ctx.tenantId);
   }
 
   async create(ctx: AuthContext, employeeId: number, dto: CreateWorkHistoryDto): Promise<WorkHistory> {
-    if (ctx.employeeId !== employeeId) {
-      throw new ForbiddenException('You can only create work history for yourself');
-    }
+    const canEdit = await this.scopeResolverService.canAssistEditEmployeeWorkHistory(ctx, employeeId);
+    if (!canEdit) throw new ForbiddenException();
     this.validateYearMonthRange(dto.yearMonthFrom, dto.yearMonthTo, dto.isCurrent);
 
     const record = await this.repo.create({
@@ -59,9 +59,8 @@ export class WorkHistoryService {
   async update(ctx: AuthContext, id: number, dto: UpdateWorkHistoryDto): Promise<WorkHistory> {
     const existing = await this.repo.findById(id, ctx.tenantId);
     if (!existing) throw new NotFoundException(`WorkHistory ${id} not found`);
-    if (existing.employeeId !== ctx.employeeId) {
-      throw new ForbiddenException('You can only update your own work history');
-    }
+    const canEdit = await this.scopeResolverService.canAssistEditEmployeeWorkHistory(ctx, existing.employeeId);
+    if (!canEdit) throw new ForbiddenException();
 
     const nextFrom = dto.yearMonthFrom ?? existing.yearMonthFrom;
     const nextTo = dto.yearMonthTo !== undefined ? dto.yearMonthTo : existing.yearMonthTo ?? undefined;
@@ -94,9 +93,8 @@ export class WorkHistoryService {
   async remove(ctx: AuthContext, id: number): Promise<void> {
     const existing = await this.repo.findById(id, ctx.tenantId);
     if (!existing) throw new NotFoundException(`WorkHistory ${id} not found`);
-    if (existing.employeeId !== ctx.employeeId) {
-      throw new ForbiddenException('You can only delete your own work history');
-    }
+    const canEdit = await this.scopeResolverService.canAssistEditEmployeeWorkHistory(ctx, existing.employeeId);
+    if (!canEdit) throw new ForbiddenException();
 
     await this.repo.delete(id, ctx.tenantId);
 

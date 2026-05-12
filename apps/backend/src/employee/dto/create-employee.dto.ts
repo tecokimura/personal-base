@@ -35,5 +35,6 @@ export class CreateEmployeeDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10000)
   profileFreeText?: string;
 }

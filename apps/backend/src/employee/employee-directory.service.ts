@@ -499,6 +499,14 @@ export class EmployeeDirectoryService {
         profileFreeText: input.profileFreeText,
         updatedBy: ctx.userAccountId,
       });
+      void this.auditService.logEdit({
+        tenantId: ctx.tenantId,
+        entityType: 'Employee',
+        entityId: employeeId,
+        actionType: 'ASSIST_UPDATE',
+        changedByEmployeeId: ctx.employeeId,
+        scopeSummary: 'profileFreeText',
+      });
     }
   }
 
@@ -516,10 +524,19 @@ export class EmployeeDirectoryService {
       await this.assertEmployeeExistsInTenant(managerEmployeeId, ctx.tenantId);
     }
 
-    return this.employmentRepo.update(employment.id, ctx.tenantId, {
+    const updated = await this.employmentRepo.update(employment.id, ctx.tenantId, {
       managerEmployeeId,
       updatedBy: ctx.userAccountId,
     });
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employment',
+      entityId: employment.id,
+      actionType: 'ASSIST_UPDATE',
+      changedByEmployeeId: ctx.employeeId,
+      scopeSummary: `employeeId=${employeeId} managerEmployeeId=${String(managerEmployeeId)}`,
+    });
+    return updated;
   }
 
   async uploadPhoto(
@@ -548,6 +565,14 @@ export class EmployeeDirectoryService {
       await this.storageService.delete(oldKey);
     }
 
+    void this.auditService.logEdit({
+      tenantId: ctx.tenantId,
+      entityType: 'Employee',
+      entityId: employeeId,
+      actionType: 'ASSIST_UPDATE',
+      changedByEmployeeId: ctx.employeeId,
+      scopeSummary: 'photo',
+    });
     return key;
   }
 
@@ -560,6 +585,14 @@ export class EmployeeDirectoryService {
       await this.employeeRepo.update(employeeId, ctx.tenantId, {
         photoStorageKey: null,
         updatedBy: ctx.userAccountId,
+      });
+      void this.auditService.logEdit({
+        tenantId: ctx.tenantId,
+        entityType: 'Employee',
+        entityId: employeeId,
+        actionType: 'ASSIST_UPDATE',
+        changedByEmployeeId: ctx.employeeId,
+        scopeSummary: 'photo_delete',
       });
     }
   }

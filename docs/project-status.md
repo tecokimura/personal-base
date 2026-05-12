@@ -2,7 +2,7 @@
 
 - Status: Draft
 - Owner: Keith / Codex
-- Last Updated: 2026-05-03
+- Last Updated: 2026-05-11
 
 ## 目的
 
@@ -42,11 +42,17 @@
 
 ### Backlog 管理状況
 
-- Backlog プロジェクト `PMO_PJPERSONALBASE` の初期設定を開始済み
+- Backlog プロジェクト `PMO_PJPERSONALBASE` を継続利用中である
 - Backlog 運用ルールの正本は [prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 - 初期マイルストーンとして `MVP-基盤構築`、`MVP-業務コア実装`、`Phase 2-拡張機能` を作成済み
-- `implementation-plan.md` の着手単位を基準に、MVP の親課題を作成済み
-- 直近着手対象として `認証・認可基盤` の子課題を起票済み
+- `implementation-plan.md` の着手単位を基準に、`MVP` の親課題と実行課題は完了済み
+- `implementation-plan.md` の第 2 フェーズ着手単位 `13` から `21` も Backlog 起票済みである
+- 第 2 フェーズでは、`PMO_PJPERSONALBASE-28` から `-35` の対象課題がすべて完了している
+- `PMO_PJPERSONALBASE-25` の懸念整理は完了している
+- Phase 2 完了後の整合対応として、`PMO_PJPERSONALBASE-39` から `44` は完了済みである
+- 次の作業は、Phase 3 の着手候補と将来課題の優先順位を整理することである
+- `tenantId` の DB レベル外部キー制約追加は将来課題 `PMO_PJPERSONALBASE-36` に切り出した
+- `create-hr-admin` の `--fullName` 追加検討は将来課題 `PMO_PJPERSONALBASE-37` に切り出した
 - 仕様、設計、ロードマップ、運用ルールの正本は常に `docs/` とし、Backlog は進捗管理と実行管理に使う
 - `認証・認可基盤` 実装後の確認論点は `PMO_PJPERSONALBASE-19` を起点に整理し、正本は `docs/architecture/security.md` と `docs/setup/initial-bootstrap.md` に反映する
 - `PMO_PJPERSONALBASE-19` の主要回答方針として、`OrganizationLeader.leader_type` は `1=部門長, 2=副部門長`、`OrganizationLeader.status` は `1=有効, 2=終了済み` を採用する
@@ -64,7 +70,7 @@
 - `Organization.deactivate` は有効な `Employment` が残っている場合に拒否する
 - `組織図表示` は `org-chart` 集約モジュールとして実装し、`GET /org-chart/tree`, `GET /org-chart/organizations/:id`, `GET /org-chart/organizations/:id/members` を第一候補 API とする
 - `組織図表示` の `EmployeeCard.positionName` は `PositionMaster` 導入までの暫定で `null` 固定とし、その後に正本マスタ参照へ切り替える
-- `閲覧権限制御` では `ScopeResolverService` を追加し、`TENANT_ALL / ORG_TREE / PRIMARY_ORG` の閲覧スコープ解決を実装中とする
+- `閲覧権限制御` は `ScopeResolverService` を追加し、`TENANT_ALL / ORG_TREE / PRIMARY_ORG` の閲覧スコープ解決まで実装完了している
 
 ### ドメインモデル方針
 
@@ -300,7 +306,7 @@
 - `WorkHistory` は第 2 フェーズで導入し、完成形では必須機能とする
 - `WorkHistory` が必須である理由は、社員本人が自分のこれまでの仕事や履歴を管理、確認できるようにするためである
 - 業務実績の履歴は `WorkHistory` を主に参照し、過去所属履歴は補助情報として扱う
-- `WorkHistory` の第一候補項目は `年月`, `業務内容`, `開発環境やツール`, `役割`, `開発チーム人数`, `project_code` とする
+- `WorkHistory` の最小項目は `employeeId`, `yearMonthFrom`, `yearMonthTo`, `isCurrent`, `workSummary`, `toolsUsed`, `roleName`, `teamSize`, `projectCode` とする
 - `project_code` は第 2 フェーズでは任意項目とする
 - `WorkHistory` は本人に加えて `HR_ADMIN` と `MANAGER` が補助編集できる前提とする
 - `WorkHistory` は最初から `updated_by` を持つ
@@ -315,11 +321,11 @@
 - 論理削除社員の `WorkHistory` は `HR_ADMIN` と `ORG_ADMIN` のみ閲覧できる
 - `WorkHistory` の AI サマリは、本人のこれまでの業務内容を要約し、他者にスキルをアピールする文章を生成する目的で使う
 - AI サマリは本人以外にも公開してよい情報として扱い、同僚や管理者も閲覧できる前提とする
-- 同僚は `WorkHistory` 全件にアクセスできるが、標準表示は `直近 1 年の原文 + それ以前の AI サマリ` を第一候補とする
+- 同僚は `WorkHistory` 全件にアクセスできるが、AI サマリ導入後の標準表示は `直近 1 年の原文 + それ以前の AI サマリ` を第一候補とする
 - 過去原文は、詳細表示やページングでたどれる前提とする
 - 本人、`HR_ADMIN`、`MANAGER` は、設定した期間単位のページングで `WorkHistory` の原文を全件閲覧できる方向とする
-- AI サマリは MVP や第 2 フェーズの必須対象には置かず、`フェーズ 3` の対象とする
-- `WorkHistory` の AI サマリを `フェーズ 3` に入れる前提条件は、`WorkHistory` 入力運用、原文閲覧ルール、監査ログ運用が最低限安定していることとする
+- AI サマリは MVP や第 2 フェーズの必須対象には置かず、`フェーズ 4` の対象とする
+- `WorkHistory` の AI サマリを `フェーズ 4` に入れる前提条件は、`WorkHistory` 入力運用、原文閲覧ルール、監査ログ運用が最低限安定していることとする
 - AI サマリは都度生成ではなく、`WorkHistory` 登録・更新時に再生成する方向とする
 - AI サマリは、履歴全体のサマリ文と、利用ツール・技術を表形式または一覧で見せる方向とする
 - AI サマリの文字数は設定値で持ち、実装後に調整できる方向とする
@@ -328,13 +334,19 @@
 - AI サマリの表示順は、`キャリアサマリ` → `スキルアピール文` → `ツール・技術一覧` を第一候補とする
 - `WorkHistory` は履歴書出力を見据え、自由装飾よりも構造化入力を優先する
 - `LoginHistory` と `EditHistory` は第 2 フェーズで導入する推奨とする
-- 第 2 フェーズでは `profile_free_text` の改善、監査の最小導入、`WorkHistory` の登録・閲覧・同僚公開までを優先し、AI サマリは第 3 フェーズ以降へ送る
+- 第 2 フェーズでは `profile_free_text` の改善、最小フロント、監査の最小導入、`WorkHistory` の登録・閲覧・同僚公開までを優先し、AI サマリは第 4 フェーズ以降へ送る
+- 第 2 フェーズでは `Playwright` を正式スコープに含め、主要画面のブラウザ E2E を段階的に整備する
+- `Playwright` の最初の対象は `ログイン`、`組織一覧`、`社員一覧 / 社員詳細`、`WorkHistory` の追加 / 更新 / 削除とする
+- 第 2 フェーズ完了までに、対象画面は原則として `ログイン`、`認証状態確認`、`組織一覧`、`組織図`、`社員一覧`、`社員詳細`、`WorkHistory` 本人画面、`WorkHistory` 同僚閲覧画面まで広げる
+- 監査は Phase 2 の最終整合対応として、`HR_ADMIN` 向け読み取り専用の監査一覧画面 (`/audit`) まで追加した
+- 詳細検索、CSV エクスポート、差分の詳細表示は後続フェーズ候補とする
 - `LoginHistory` と `EditHistory` の閲覧は `HR_ADMIN` のみに許可する前提とする
 - `EditHistory` の対象エンティティ第一候補は `Employee`, `Employment`, `OrganizationLeader`, `WorkHistory`, `RoleAssignment` とする
 - 監査ログの保存先は DB テーブルを基本としつつ、標準出力や syslog に拡張できる形を第一候補とする
 - 監査ログの最小カラム案は、`LoginHistory = tenant_id / employee_id / logged_in_at / ip_address / user_agent`、`EditHistory = tenant_id / entity_type / entity_id / action_type / changed_by_employee_id / changed_at / scope_summary` とする
 - 監査ログの保持期間第一候補は、`LoginHistory = 365 日`、`EditHistory = 1825 日 (5 年)` とする
 - 監査ログの保持期間は、システム設定または管理者向けサービス設定で変更できる方向とする
+- `フェーズ 3` は AI なしでもサービスとして使いやすくする段階とし、評価情報、検索性、運用画面、一般社員向け画面改善を主対象とする
 - `フェーズ 4` の AI 機能優先順位は、`AI 検索 / 推薦` → `AI アドバイス文` → `AI 相談チャット` とする
 - `AI 検索 / 推薦` は必要機能として扱うが、AI を使うか通常検索拡張で始めるかは現時点では確定しない
 
@@ -355,10 +367,9 @@
 
 優先候補は以下。
 
-1. `顔写真と profile_free_text` の着手準備
-2. `PositionMaster` の最小導入タイミングと初期コード表整理
-3. `在籍終了者一覧 API` の実装タイミング整理
-4. `TypeScript` を使う領域では `any` を使わない実装ルールを維持する
+1. Phase 3 の着手候補と将来課題の優先順位を整理する
+2. `PMO_PJPERSONALBASE-36`, `-37` のような将来課題は、直近の機能着手とは分けて技術的負債として扱う
+3. `TypeScript` を使う領域では `any` を使わない実装ルールを維持する
 
 ### マルチテナント方式の現時点推奨
 

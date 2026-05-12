@@ -9,13 +9,7 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-    ...init,
-  });
-
+async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let message = res.statusText;
     try {
@@ -26,9 +20,26 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, message);
   }
-
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    ...init,
+  });
+  return handleResponse<T>(res);
+}
+
+async function apiFetchUpload<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    credentials: 'same-origin',
+    method: 'POST',
+    body: formData,
+  });
+  return handleResponse<T>(res);
 }
 
 // ── Types ────────────────────────────────────────────────────
@@ -39,6 +50,7 @@ export interface MeResponse {
   employeeId: number;
   status: number;
   lastLoggedInAt: string | null;
+  roleTypes: number[];
 }
 
 export interface OrganizationView {
@@ -80,6 +92,7 @@ export interface EmploymentView {
   organizationId: number;
   positionName: string | null;
   isPrimaryAssignment: boolean;
+  managerEmployeeId: number | null;
   startDate: string;
   endDate: string | null;
   status: number;
@@ -119,6 +132,15 @@ export interface WorkHistoryInput {
   projectCode?: string;
 }
 
+export interface AuditEvent {
+  eventType: 'LOGIN' | 'EDIT';
+  occurredAt: string;
+  actorEmployeeId: number;
+  targetEmployeeId: number | null;
+  targetType: string | null;
+  operationType: string;
+}
+
 // ── API ──────────────────────────────────────────────────────
 
 export const api = {
@@ -143,6 +165,23 @@ export const api = {
   employees: {
     list: () => apiFetch<EmployeeListItem[]>('/employees'),
     get: (id: number) => apiFetch<EmployeeDetail>(`/employees/${id}`),
+    assistUpdateProfile: (id: number, body: { profileFreeText?: string }) =>
+      apiFetch<void>(`/employees/${id}/profile`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    uploadPhoto: (id: number, file: File) => {
+      const fd = new FormData();
+      fd.append('photo', file);
+      return apiFetchUpload<{ photoStorageKey: string }>(`/employees/${id}/photo`, fd);
+    },
+    deletePhoto: (id: number) =>
+      apiFetch<void>(`/employees/${id}/photo`, { method: 'DELETE' }),
+    setManagerEmployee: (id: number, empId: number, managerEmployeeId: number | null) =>
+      apiFetch<unknown>(`/employees/${id}/employments/${empId}/set-manager`, {
+        method: 'PATCH',
+        body: JSON.stringify({ managerEmployeeId }),
+      }),
   },
 
   workHistories: {
@@ -160,5 +199,9 @@ export const api = {
       }),
     remove: (id: number) =>
       apiFetch<void>(`/work-histories/${id}`, { method: 'DELETE' }),
+  },
+
+  audit: {
+    listEvents: () => apiFetch<AuditEvent[]>('/admin/audit/events'),
   },
 };

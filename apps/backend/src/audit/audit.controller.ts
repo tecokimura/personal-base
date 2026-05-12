@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { AuthorizationService } from '../authorization/authorization.service';
 import { Permission } from '../authorization/constants';
 import { AuditService } from './audit.service';
+import { AuditEventDto } from './dto/audit-event.dto';
 
 @Controller('admin/audit')
 @UseGuards(SessionGuard)
@@ -34,5 +35,16 @@ export class AuditController {
     };
     await this.authorizationService.assertCan(ctx, Permission.VIEW_AUDIT_LOGS, ctx.tenantId);
     return this.auditService.listEditHistory(ctx.tenantId);
+  }
+
+  @Get('events')
+  async listEvents(@Req() req: AuthenticatedRequest): Promise<AuditEventDto[]> {
+    const ctx = {
+      userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
+      tenantId: req.userAccount.tenantId,
+    };
+    await this.authorizationService.assertCan(ctx, Permission.VIEW_AUDIT_LOGS, ctx.tenantId);
+    return this.auditService.listEvents(ctx.tenantId);
   }
 }
