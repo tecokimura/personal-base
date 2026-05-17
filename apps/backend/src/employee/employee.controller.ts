@@ -137,6 +137,7 @@ export class EmployeeController {
       employmentType: dto.employmentType,
       positionMasterId: dto.positionMasterId,
       managerEmployeeId: dto.managerEmployeeId,
+      isPrimaryAssignment: dto.isPrimaryAssignment,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
     });
   }

@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type OrganizationView, type PositionMasterView, ApiError } from '@/lib/api';
+import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, ApiError } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -97,6 +97,12 @@ export default function EmployeeDetailPage() {
   const [addEmpError, setAddEmpError] = useState('');
   const [addEmpSaving, setAddEmpSaving] = useState(false);
 
+  // 所属編集
+  const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
+  const [editEmpForm, setEditEmpForm] = useState<EditEmploymentForm>(EMPTY_EDIT_EMP_FORM);
+  const [editEmpError, setEditEmpError] = useState('');
+  const [editEmpSaving, setEditEmpSaving] = useState(false);
+
   // 組織一覧（所属追加フォーム用）
   const [organizations, setOrganizations] = useState<OrganizationView[] | null>(null);
 
@@ -121,6 +127,9 @@ export default function EmployeeDetailPage() {
     setAddingEmployment(false);
     setAddEmpForm(EMPTY_ADD_EMP_FORM);
     setAddEmpError('');
+    setEditingEmpId(null);
+    setEditEmpForm(EMPTY_EDIT_EMP_FORM);
+    setEditEmpError('');
     setOrganizations(null);
     setPositionMasters(null);
     setAllEmployees(null);
@@ -292,6 +301,29 @@ export default function EmployeeDetailPage() {
       setAddEmpError(err instanceof ApiError && err.status === 403 ? '追加権限がありません' : String(err));
     } finally {
       setAddEmpSaving(false);
+    }
+  }
+
+  async function handleEditEmployment(e: React.FormEvent) {
+    e.preventDefault();
+    if (editingEmpId == null) return;
+    setEditEmpSaving(true);
+    setEditEmpError('');
+    try {
+      const input: UpdateEmploymentInput = {
+        organizationId: editEmpForm.organizationId ? Number(editEmpForm.organizationId) : undefined,
+        employmentType: editEmpForm.employmentType ? Number(editEmpForm.employmentType) : undefined,
+        positionMasterId: editEmpForm.positionMasterId !== '' ? Number(editEmpForm.positionMasterId) : null,
+        isPrimaryAssignment: editEmpForm.isPrimaryAssignment,
+        startDate: editEmpForm.startDate || undefined,
+      };
+      const updated = await api.employees.updateEmployment(id, editingEmpId, input);
+      setEmployee((prev) => prev ? { ...prev, employments: prev.employments.map((emp) => emp.id === editingEmpId ? updated : emp) } : prev);
+      setEditingEmpId(null);
+    } catch (err) {
+      setEditEmpError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+    } finally {
+      setEditEmpSaving(false);
     }
   }
 
@@ -478,17 +510,55 @@ export default function EmployeeDetailPage() {
                         </span>
                       </td>
                       {canAssistEdit && (
-                        <td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <button
+                            className="btn-secondary"
+                            style={{ fontSize: 11, marginRight: 4 }}
+                            onClick={() => {
+                              if (editingEmpId === emp.id) {
+                                setEditingEmpId(null);
+                              } else {
+                                setEditingEmpId(emp.id);
+                                setEditEmpForm({
+                                  organizationId: String(emp.organizationId),
+                                  employmentType: emp.employmentType !== undefined ? String(emp.employmentType) : '1',
+                                  isPrimaryAssignment: emp.isPrimaryAssignment,
+                                  startDate: emp.startDate ? emp.startDate.substring(0, 10) : '',
+                                  positionMasterId: '',
+                                });
+                                setEditEmpError('');
+                                setManagerEditingEmpId(null);
+                              }
+                            }}
+                          >
+                            {editingEmpId === emp.id ? 'キャンセル' : '編集'}
+                          </button>
                           <button
                             className="btn-secondary"
                             style={{ fontSize: 11 }}
-                            onClick={() => { managerEditingEmpId === emp.id ? setManagerEditingEmpId(null) : startManagerEdit(emp); }}
+                            onClick={() => { managerEditingEmpId === emp.id ? setManagerEditingEmpId(null) : startManagerEdit(emp); setEditingEmpId(null); }}
                           >
                             {managerEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
                           </button>
                         </td>
                       )}
                     </tr>
+                    {canAssistEdit && editingEmpId === emp.id && (
+                      <tr>
+                        <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
+                          <EmploymentEditForm
+                            form={editEmpForm}
+                            onChange={setEditEmpForm}
+                            onSubmit={handleEditEmployment}
+                            onCancel={() => { setEditingEmpId(null); setEditEmpError(''); }}
+                            error={editEmpError}
+                            saving={editEmpSaving}
+                            organizations={organizations}
+                            positionMasters={positionMasters}
+                          />
+                        </td>
+                      </tr>
+                    )}
                     {canAssistEdit && managerEditingEmpId === emp.id && (
                       <tr>
                         <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
@@ -746,6 +816,123 @@ const inputStyle: React.CSSProperties = {
   padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4,
   fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 };
+
+// ─── 所属編集フォーム ──────────────────────────────────────────
+
+type EditEmploymentForm = {
+  organizationId: string;
+  employmentType: string;
+  isPrimaryAssignment: boolean;
+  startDate: string;
+  positionMasterId: string;
+};
+
+const EMPTY_EDIT_EMP_FORM: EditEmploymentForm = {
+  organizationId: '',
+  employmentType: '1',
+  isPrimaryAssignment: false,
+  startDate: '',
+  positionMasterId: '',
+};
+
+function EmploymentEditForm({
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  error,
+  saving,
+  organizations,
+  positionMasters,
+}: {
+  form: EditEmploymentForm;
+  onChange: (f: EditEmploymentForm) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+  error: string;
+  saving: boolean;
+  organizations: OrganizationView[] | null;
+  positionMasters: PositionMasterView[] | null;
+}) {
+  function field(key: keyof EditEmploymentForm) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange({ ...form, [key]: e.target.value });
+  }
+
+  function orgLabel(org: OrganizationView): string {
+    return org.organizationCode
+      ? `${org.organizationName} [Code: ${org.organizationCode}]`
+      : org.organizationName;
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <label style={labelStyle}>
+          組織
+          {organizations === null ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+          ) : (
+            <select style={inputStyle} value={form.organizationId} onChange={field('organizationId')}>
+              <option value="">未変更</option>
+              {organizations.map((org) => (
+                <option key={org.id} value={String(org.id)}>
+                  {orgLabel(org)}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+        <label style={labelStyle}>
+          雇用区分
+          <select style={inputStyle} value={form.employmentType} onChange={field('employmentType')}>
+            <option value="1">正社員</option>
+            <option value="2">契約社員</option>
+            <option value="3">パートタイム</option>
+            <option value="4">派遣</option>
+            <option value="5">業務委託</option>
+          </select>
+        </label>
+        <label style={labelStyle}>
+          開始日
+          <input type="date" style={inputStyle} value={form.startDate} onChange={field('startDate')} />
+        </label>
+        <label style={labelStyle}>
+          役職（任意）
+          {positionMasters === null ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+          ) : (
+            <select style={inputStyle} value={form.positionMasterId} onChange={field('positionMasterId')}>
+              <option value="">未変更</option>
+              {positionMasters.filter((p) => p.isActive).map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+      </div>
+      <label style={{ ...labelStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <input
+          type="checkbox"
+          checked={form.isPrimaryAssignment}
+          onChange={(e) => onChange({ ...form, isPrimaryAssignment: e.target.checked })}
+        />
+        主所属として設定する
+      </label>
+      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+          {saving ? '更新中...' : '更新'}
+        </button>
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+          キャンセル
+        </button>
+      </div>
+    </form>
+  );
+}
 
 // ─── 所属追加フォーム ──────────────────────────────────────────
 

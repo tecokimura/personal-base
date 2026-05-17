@@ -109,6 +109,14 @@ export interface AddEmploymentInput {
   status?: number;
 }
 
+export interface UpdateEmploymentInput {
+  organizationId?: number;
+  employmentType?: number;
+  positionMasterId?: number | null;
+  isPrimaryAssignment?: boolean;
+  startDate?: string;
+}
+
 export interface EmployeeDetail extends EmployeeListItem {
   primaryEmployment: EmploymentView | null;
   employments: EmploymentView[];
@@ -208,6 +216,11 @@ export const api = {
     addEmployment: (id: number, body: AddEmploymentInput) =>
       apiFetch<EmploymentView>(`/employees/${id}/employments`, {
         method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    updateEmployment: (id: number, empId: number, body: UpdateEmploymentInput) =>
+      apiFetch<EmploymentView>(`/employees/${id}/employments/${empId}`, {
+        method: 'PATCH',
         body: JSON.stringify(body),
       }),
   },

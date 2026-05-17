@@ -52,6 +52,7 @@ export interface UpdateEmploymentInput {
   employmentType?: number;
   positionMasterId?: number;
   managerEmployeeId?: number;
+  isPrimaryAssignment?: boolean;
   startDate?: Date;
 }
 
@@ -388,6 +389,17 @@ export class EmployeeDirectoryService {
       await this.assertEmployeeExistsInTenant(input.managerEmployeeId, ctx.tenantId);
     }
 
+    if (input.isPrimaryAssignment === true && !employment.isPrimaryAssignment) {
+      const hasPrimary = await this.employmentRepo.hasActivePrimaryAssignment(
+        employeeId,
+        ctx.tenantId,
+        employmentId,
+      );
+      if (hasPrimary) {
+        throw new ConflictException('Employee already has an active primary assignment');
+      }
+    }
+
     if (input.startDate !== undefined) {
       if (employment.endDate && input.startDate > employment.endDate) {
         throw new UnprocessableEntityException('startDate must be on or before endDate');
@@ -400,6 +412,9 @@ export class EmployeeDirectoryService {
       ...(input.positionMasterId !== undefined && { positionMasterId: input.positionMasterId }),
       ...(input.managerEmployeeId !== undefined && {
         managerEmployeeId: input.managerEmployeeId,
+      }),
+      ...(input.isPrimaryAssignment !== undefined && {
+        isPrimaryAssignment: input.isPrimaryAssignment,
       }),
       ...(input.startDate !== undefined && { startDate: input.startDate }),
       updatedBy: ctx.userAccountId,
