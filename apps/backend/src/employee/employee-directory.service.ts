@@ -42,7 +42,7 @@ export interface AddEmploymentInput {
   employmentType: number;
   isPrimaryAssignment: boolean;
   positionMasterId?: number;
-  managerEmployeeId?: number;
+  supervisorEmployeeId?: number;
   startDate: Date;
   status?: number;
 }
@@ -51,7 +51,7 @@ export interface UpdateEmploymentInput {
   organizationId?: number;
   employmentType?: number;
   positionMasterId?: number;
-  managerEmployeeId?: number;
+  supervisorEmployeeId?: number;
   isPrimaryAssignment?: boolean;
   startDate?: Date;
 }
@@ -89,7 +89,7 @@ export interface EmploymentPublicView {
   positionMasterId: number | null;
   positionName: string | null;
   isPrimaryAssignment: boolean;
-  managerEmployeeId: number | null;
+  supervisorEmployeeId: number | null;
   startDate: Date;
   endDate: Date | null;
   status: number;
@@ -317,8 +317,8 @@ export class EmployeeDirectoryService {
     await this.assertEmployeeExists(employeeId, ctx.tenantId);
     await this.assertOrgExistsInTenant(input.organizationId, ctx.tenantId);
 
-    if (input.managerEmployeeId !== undefined) {
-      await this.assertEmployeeExistsInTenant(input.managerEmployeeId, ctx.tenantId);
+    if (input.supervisorEmployeeId !== undefined) {
+      await this.assertEmployeeExistsInTenant(input.supervisorEmployeeId, ctx.tenantId);
     }
 
     if (input.isPrimaryAssignment) {
@@ -351,7 +351,7 @@ export class EmployeeDirectoryService {
       positionMasterId: input.positionMasterId ?? null,
       employmentType: input.employmentType,
       isPrimaryAssignment: input.isPrimaryAssignment,
-      managerEmployeeId: input.managerEmployeeId ?? null,
+      supervisorEmployeeId: input.supervisorEmployeeId ?? null,
       startDate,
       status: input.status ?? EMPLOYMENT_STATUS.ACTIVE,
       updatedBy: ctx.userAccountId,
@@ -385,8 +385,8 @@ export class EmployeeDirectoryService {
       await this.assertOrgExistsInTenant(input.organizationId, ctx.tenantId);
     }
 
-    if (input.managerEmployeeId !== undefined) {
-      await this.assertEmployeeExistsInTenant(input.managerEmployeeId, ctx.tenantId);
+    if (input.supervisorEmployeeId !== undefined) {
+      await this.assertEmployeeExistsInTenant(input.supervisorEmployeeId, ctx.tenantId);
     }
 
     if (input.isPrimaryAssignment === true && !employment.isPrimaryAssignment) {
@@ -410,8 +410,8 @@ export class EmployeeDirectoryService {
       ...(input.organizationId !== undefined && { organizationId: input.organizationId }),
       ...(input.employmentType !== undefined && { employmentType: input.employmentType }),
       ...(input.positionMasterId !== undefined && { positionMasterId: input.positionMasterId }),
-      ...(input.managerEmployeeId !== undefined && {
-        managerEmployeeId: input.managerEmployeeId,
+      ...(input.supervisorEmployeeId !== undefined && {
+        supervisorEmployeeId: input.supervisorEmployeeId,
       }),
       ...(input.isPrimaryAssignment !== undefined && {
         isPrimaryAssignment: input.isPrimaryAssignment,
@@ -525,22 +525,22 @@ export class EmployeeDirectoryService {
     }
   }
 
-  async setManagerEmployee(
+  async setSupervisorEmployee(
     ctx: AuthContext,
     employeeId: number,
     employmentId: number,
-    managerEmployeeId: number | null,
+    supervisorEmployeeId: number | null,
   ): Promise<Employment> {
     await this.assertEmployeeExists(employeeId, ctx.tenantId);
     await this.assertCanEditProfile(ctx, employeeId);
     const employment = await this.assertEmploymentBelongsToEmployee(employmentId, employeeId, ctx.tenantId);
 
-    if (managerEmployeeId !== null) {
-      await this.assertEmployeeExistsInTenant(managerEmployeeId, ctx.tenantId);
+    if (supervisorEmployeeId !== null) {
+      await this.assertEmployeeExistsInTenant(supervisorEmployeeId, ctx.tenantId);
     }
 
     const updated = await this.employmentRepo.update(employment.id, ctx.tenantId, {
-      managerEmployeeId,
+      supervisorEmployeeId,
       updatedBy: ctx.userAccountId,
     });
     void this.auditService.logEdit({
@@ -549,7 +549,7 @@ export class EmployeeDirectoryService {
       entityId: employment.id,
       actionType: 'ASSIST_UPDATE',
       changedByEmployeeId: ctx.employeeId,
-      scopeSummary: `employeeId=${employeeId} managerEmployeeId=${String(managerEmployeeId)}`,
+      scopeSummary: `employeeId=${employeeId} supervisorEmployeeId=${String(supervisorEmployeeId)}`,
     });
     return updated;
   }
@@ -649,7 +649,7 @@ export class EmployeeDirectoryService {
       positionMasterId: employment.positionMasterId,
       positionName: employment.positionMasterId ? (positionMap.get(employment.positionMasterId) ?? null) : null,
       isPrimaryAssignment: employment.isPrimaryAssignment,
-      managerEmployeeId: employment.managerEmployeeId,
+      supervisorEmployeeId: employment.supervisorEmployeeId,
       startDate: employment.startDate,
       endDate: employment.endDate,
       status: employment.status,

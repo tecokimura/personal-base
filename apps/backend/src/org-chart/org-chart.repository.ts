@@ -25,7 +25,7 @@ export interface EmploymentRow {
   organizationId: number;
   employeeId: number;
   isPrimaryAssignment: boolean;
-  managerEmployeeId: number | null;
+  supervisorEmployeeId: number | null;
   positionMasterId: number | null;
   employeeNumber: string | null;
   displayName: string | null;
@@ -128,7 +128,7 @@ export class OrgChartRepository {
         organizationId: true,
         employeeId: true,
         isPrimaryAssignment: true,
-        managerEmployeeId: true,
+        supervisorEmployeeId: true,
         positionMasterId: true,
         employee: {
           select: {
@@ -146,7 +146,7 @@ export class OrgChartRepository {
       organizationId: r.organizationId,
       employeeId: r.employeeId,
       isPrimaryAssignment: r.isPrimaryAssignment,
-      managerEmployeeId: r.managerEmployeeId,
+      supervisorEmployeeId: r.supervisorEmployeeId,
       positionMasterId: r.positionMasterId,
       employeeNumber: r.employee.employeeNumber,
       displayName: r.employee.displayName,

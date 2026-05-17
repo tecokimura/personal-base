@@ -332,7 +332,7 @@ MVP と第 2 フェーズの実装順を明確にし、後戻りを減らす。
 - `MANAGER` は `ORGANIZATION_TREE` 配下社員の `WorkHistory` を作成 / 更新 / 一覧確認できる
 - `ORG_ADMIN` は第 2 フェーズでは `WorkHistory` 専用の更新主体に含めない
 - `EXECUTIVE_VIEWER` は `WorkHistory` の更新主体に含めない
-- `MANAGER` による補助更新対象は `profile_free_text`, 顔写真, `managerEmployeeId`, `WorkHistory` とする
+- `MANAGER` による補助更新対象は `profile_free_text`, 顔写真, `supervisorEmployeeId`, `WorkHistory` とする
 - 所属変更、兼務変更、役職変更、在籍状態変更は、第 2 フェーズでは即時更新 API に拡張せず、後続フェーズの申請 / 承認または下書き機能候補として扱う
 
 #### `WorkHistory` の公開範囲

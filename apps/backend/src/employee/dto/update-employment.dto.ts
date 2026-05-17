@@ -28,7 +28,7 @@ export class UpdateEmploymentDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  managerEmployeeId?: number;
+  supervisorEmployeeId?: number;
 
   @IsOptional()
   @IsBoolean()

@@ -33,7 +33,7 @@ export class AddEmploymentDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  managerEmployeeId?: number;
+  supervisorEmployeeId?: number;
 
   @IsDateString()
   startDate!: string;

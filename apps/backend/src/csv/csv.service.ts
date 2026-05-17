@@ -139,15 +139,15 @@ export class CsvService {
         if (!employeeId) continue;
 
         const managerNumber = row.manager_employee_number.trim();
-        let managerEmployeeId: number | null = null;
+        let supervisorEmployeeId: number | null = null;
         if (managerNumber) {
-          managerEmployeeId = employeeNumberToId.get(managerNumber) ?? null;
-          if (!managerEmployeeId) {
+          supervisorEmployeeId = employeeNumberToId.get(managerNumber) ?? null;
+          if (!supervisorEmployeeId) {
             const mgr = await tx.employee.findFirst({
               where: { tenantId: ctx.tenantId, employeeNumber: managerNumber, isDeleted: false },
               select: { id: true },
             });
-            managerEmployeeId = mgr?.id ?? null;
+            supervisorEmployeeId = mgr?.id ?? null;
           }
         }
 
@@ -158,7 +158,7 @@ export class CsvService {
             organizationId: parseInt(orgIdRaw, 10),
             employmentType: parseInt(row.employment_type.trim(), 10),
             isPrimaryAssignment: true,
-            managerEmployeeId,
+            supervisorEmployeeId,
             positionMasterId: row.position_master_id.trim()
               ? parseInt(row.position_master_id.trim(), 10)
               : null,
@@ -189,20 +189,20 @@ export class CsvService {
       },
     });
 
-    // Build manager employee_number lookup map
-    const managerIds = employees
+    // Build supervisor employee_number lookup map
+    const supervisorIds = employees
       .flatMap((e) => e.employments)
-      .map((emp) => emp.managerEmployeeId)
+      .map((emp) => emp.supervisorEmployeeId)
       .filter((id): id is number => id !== null);
 
-    const managerMap = new Map<number, string | null>();
-    if (managerIds.length > 0) {
-      const managers = await this.prisma.employee.findMany({
-        where: { id: { in: managerIds } },
+    const supervisorMap = new Map<number, string | null>();
+    if (supervisorIds.length > 0) {
+      const supervisors = await this.prisma.employee.findMany({
+        where: { id: { in: supervisorIds } },
         select: { id: true, employeeNumber: true },
       });
-      for (const m of managers) {
-        managerMap.set(m.id, m.employeeNumber);
+      for (const m of supervisors) {
+        supervisorMap.set(m.id, m.employeeNumber);
       }
     }
 
@@ -220,7 +220,7 @@ export class CsvService {
         emp ? String(emp.employmentType) : '',
         emp ? formatDate(emp.startDate) : '',
         emp?.positionMasterId ? String(emp.positionMasterId) : '',
-        emp?.managerEmployeeId ? (managerMap.get(emp.managerEmployeeId) ?? '') : '',
+        emp?.supervisorEmployeeId ? (supervisorMap.get(emp.supervisorEmployeeId) ?? '') : '',
       ]
         .map(csvEscape)
         .join(',');

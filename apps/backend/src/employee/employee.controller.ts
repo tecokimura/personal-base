@@ -29,7 +29,7 @@ import { AssistUpdateProfileDto } from './dto/assist-update-profile.dto';
 import { AddEmploymentDto } from './dto/add-employment.dto';
 import { UpdateEmploymentDto } from './dto/update-employment.dto';
 import { TerminateEmploymentDto } from './dto/terminate-employment.dto';
-import { SetManagerEmployeeDto } from './dto/set-manager-employee.dto';
+import { SetSupervisorEmployeeDto } from './dto/set-supervisor-employee.dto';
 
 @Controller('employees')
 @UseGuards(SessionGuard)
@@ -119,7 +119,7 @@ export class EmployeeController {
       employmentType: dto.employmentType,
       isPrimaryAssignment: dto.isPrimaryAssignment,
       positionMasterId: dto.positionMasterId,
-      managerEmployeeId: dto.managerEmployeeId,
+      supervisorEmployeeId: dto.supervisorEmployeeId,
       startDate: new Date(dto.startDate),
       status: dto.status,
     });
@@ -136,7 +136,7 @@ export class EmployeeController {
       organizationId: dto.organizationId,
       employmentType: dto.employmentType,
       positionMasterId: dto.positionMasterId,
-      managerEmployeeId: dto.managerEmployeeId,
+      supervisorEmployeeId: dto.supervisorEmployeeId,
       isPrimaryAssignment: dto.isPrimaryAssignment,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
     });
@@ -179,14 +179,14 @@ export class EmployeeController {
     return this.service.deletePhoto(this.ctx(req), id);
   }
 
-  @Patch(':id/employments/:empId/set-manager')
-  setManagerEmployee(
+  @Patch(':id/employments/:empId/set-supervisor')
+  setSupervisorEmployee(
     @Param('id', ParseIntPipe) id: number,
     @Param('empId', ParseIntPipe) empId: number,
     @Req() req: AuthenticatedRequest,
-    @Body() dto: SetManagerEmployeeDto,
+    @Body() dto: SetSupervisorEmployeeDto,
   ) {
-    return this.service.setManagerEmployee(this.ctx(req), id, empId, dto.managerEmployeeId);
+    return this.service.setSupervisorEmployee(this.ctx(req), id, empId, dto.supervisorEmployeeId);
   }
 
   @Post(':id/employments/:empId/set-primary')

@@ -17,7 +17,7 @@ interface CreateEmploymentData {
   positionMasterId?: number | null;
   employmentType: number;
   isPrimaryAssignment: boolean;
-  managerEmployeeId?: number | null;
+  supervisorEmployeeId?: number | null;
   startDate: Date;
   status: number;
   updatedBy?: number | null;
@@ -28,7 +28,7 @@ interface UpdateEmploymentData {
   positionMasterId?: number | null;
   employmentType?: number;
   isPrimaryAssignment?: boolean;
-  managerEmployeeId?: number | null;
+  supervisorEmployeeId?: number | null;
   startDate?: Date;
   endDate?: Date | null;
   status?: number;

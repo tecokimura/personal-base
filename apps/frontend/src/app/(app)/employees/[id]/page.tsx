@@ -85,11 +85,11 @@ export default function EmployeeDetailPage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
 
-  // マネージャー設定
-  const [managerEditingEmpId, setManagerEditingEmpId] = useState<number | null>(null);
-  const [managerInput, setManagerInput] = useState('');
-  const [managerSaving, setManagerSaving] = useState(false);
-  const [managerError, setManagerError] = useState('');
+  // 上長設定
+  const [supervisorEditingEmpId, setSupervisorEditingEmpId] = useState<number | null>(null);
+  const [supervisorInput, setSupervisorInput] = useState('');
+  const [supervisorSaving, setSupervisorSaving] = useState(false);
+  const [supervisorError, setSupervisorError] = useState('');
 
   // 所属追加
   const [addingEmployment, setAddingEmployment] = useState(false);
@@ -123,7 +123,7 @@ export default function EmployeeDetailPage() {
     setAssistCreateForm(EMPTY_FORM);
     setAssistCreateError('');
     setProfileSaved(false);
-    setManagerEditingEmpId(null);
+    setSupervisorEditingEmpId(null);
     setAddingEmployment(false);
     setAddEmpForm(EMPTY_ADD_EMP_FORM);
     setAddEmpError('');
@@ -249,33 +249,33 @@ export default function EmployeeDetailPage() {
     }
   }
 
-  function startManagerEdit(emp: EmploymentView) {
-    setManagerEditingEmpId(emp.id);
-    setManagerInput(emp.managerEmployeeId != null ? String(emp.managerEmployeeId) : '');
-    setManagerError('');
+  function startSupervisorEdit(emp: EmploymentView) {
+    setSupervisorEditingEmpId(emp.id);
+    setSupervisorInput(emp.supervisorEmployeeId != null ? String(emp.supervisorEmployeeId) : '');
+    setSupervisorError('');
   }
 
-  async function handleSaveManager(e: React.FormEvent, empId: number) {
+  async function handleSaveSupervisor(e: React.FormEvent, empId: number) {
     e.preventDefault();
-    setManagerSaving(true);
-    setManagerError('');
-    const managerEmployeeId = managerInput ? Number(managerInput) : null;
+    setSupervisorSaving(true);
+    setSupervisorError('');
+    const supervisorEmployeeId = supervisorInput ? Number(supervisorInput) : null;
     try {
-      await api.employees.setManagerEmployee(id, empId, managerEmployeeId);
+      await api.employees.setSupervisorEmployee(id, empId, supervisorEmployeeId);
       setEmployee((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           employments: prev.employments.map((e) =>
-            e.id === empId ? { ...e, managerEmployeeId } : e,
+            e.id === empId ? { ...e, supervisorEmployeeId } : e,
           ),
         };
       });
-      setManagerEditingEmpId(null);
+      setSupervisorEditingEmpId(null);
     } catch (err) {
-      setManagerError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+      setSupervisorError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
     } finally {
-      setManagerSaving(false);
+      setSupervisorSaving(false);
     }
   }
 
@@ -290,7 +290,7 @@ export default function EmployeeDetailPage() {
         isPrimaryAssignment: addEmpForm.isPrimaryAssignment,
         startDate: addEmpForm.startDate,
         positionMasterId: addEmpForm.positionMasterId ? Number(addEmpForm.positionMasterId) : undefined,
-        managerEmployeeId: addEmpForm.managerEmployeeId ? Number(addEmpForm.managerEmployeeId) : undefined,
+        supervisorEmployeeId: addEmpForm.supervisorEmployeeId ? Number(addEmpForm.supervisorEmployeeId) : undefined,
         status: addEmpForm.status ? Number(addEmpForm.status) : undefined,
       };
       const emp = await api.employees.addEmployment(id, input);
@@ -501,7 +501,7 @@ export default function EmployeeDetailPage() {
                       <td>{emp.employmentType !== undefined ? (EMPLOYMENT_TYPE[emp.employmentType] ?? emp.employmentType) : '—'}</td>
                       <td>{emp.positionName ?? '—'}</td>
                       <td>{emp.isPrimaryAssignment ? <span className="badge badge-green">主所属</span> : '—'}</td>
-                      <td>{emp.managerEmployeeId != null ? `社員ID: ${emp.managerEmployeeId}` : '—'}</td>
+                      <td>{emp.supervisorEmployeeId != null ? `社員ID: ${emp.supervisorEmployeeId}` : '—'}</td>
                       <td>{emp.startDate ? new Date(emp.startDate).toLocaleDateString('ja-JP') : '—'}</td>
                       <td>{emp.endDate ? new Date(emp.endDate).toLocaleDateString('ja-JP') : '—'}</td>
                       <td>
@@ -527,7 +527,7 @@ export default function EmployeeDetailPage() {
                                   positionMasterId: '',
                                 });
                                 setEditEmpError('');
-                                setManagerEditingEmpId(null);
+                                setSupervisorEditingEmpId(null);
                               }
                             }}
                           >
@@ -536,9 +536,9 @@ export default function EmployeeDetailPage() {
                           <button
                             className="btn-secondary"
                             style={{ fontSize: 11 }}
-                            onClick={() => { managerEditingEmpId === emp.id ? setManagerEditingEmpId(null) : startManagerEdit(emp); setEditingEmpId(null); }}
+                            onClick={() => { supervisorEditingEmpId === emp.id ? setSupervisorEditingEmpId(null) : startSupervisorEdit(emp); setEditingEmpId(null); }}
                           >
-                            {managerEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
+                            {supervisorEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
                           </button>
                         </td>
                       )}
@@ -559,10 +559,10 @@ export default function EmployeeDetailPage() {
                         </td>
                       </tr>
                     )}
-                    {canAssistEdit && managerEditingEmpId === emp.id && (
+                    {canAssistEdit && supervisorEditingEmpId === emp.id && (
                       <tr>
                         <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
-                          <form onSubmit={(e) => { void handleSaveManager(e, emp.id); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <form onSubmit={(e) => { void handleSaveSupervisor(e, emp.id); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                             <label style={{ ...labelStyle, flex: '0 0 auto' }}>
                               上長（空欄で解除）
                               {allEmployees === null ? (
@@ -570,8 +570,8 @@ export default function EmployeeDetailPage() {
                               ) : (
                                 <select
                                   style={{ ...inputStyle, width: 260 }}
-                                  value={managerInput}
-                                  onChange={(e) => setManagerInput(e.target.value)}
+                                  value={supervisorInput}
+                                  onChange={(e) => setSupervisorInput(e.target.value)}
                                 >
                                   <option value="">未設定（解除）</option>
                                   {allEmployees.filter((e) => e.id !== id).map((e) => (
@@ -582,9 +582,9 @@ export default function EmployeeDetailPage() {
                                 </select>
                               )}
                             </label>
-                            {managerError && <p className="error-msg" style={{ margin: 0, alignSelf: 'center' }}>{managerError}</p>}
-                            <button type="submit" className="btn-primary" disabled={managerSaving} style={{ fontSize: 12, marginBottom: 1 }}>
-                              {managerSaving ? '設定中...' : '設定'}
+                            {supervisorError && <p className="error-msg" style={{ margin: 0, alignSelf: 'center' }}>{supervisorError}</p>}
+                            <button type="submit" className="btn-primary" disabled={supervisorSaving} style={{ fontSize: 12, marginBottom: 1 }}>
+                              {supervisorSaving ? '設定中...' : '設定'}
                             </button>
                           </form>
                         </td>
@@ -942,7 +942,7 @@ type AddEmploymentForm = {
   isPrimaryAssignment: boolean;
   startDate: string;
   positionMasterId: string;
-  managerEmployeeId: string;
+  supervisorEmployeeId: string;
   status: string;
 };
 
@@ -952,7 +952,7 @@ const EMPTY_ADD_EMP_FORM: AddEmploymentForm = {
   isPrimaryAssignment: false,
   startDate: '',
   positionMasterId: '',
-  managerEmployeeId: '',
+  supervisorEmployeeId: '',
   status: '1',
 };
 
@@ -1066,8 +1066,8 @@ function EmploymentAddForm({
           ) : (
             <select
               style={inputStyle}
-              value={form.managerEmployeeId}
-              onChange={field('managerEmployeeId')}
+              value={form.supervisorEmployeeId}
+              onChange={field('supervisorEmployeeId')}
             >
               <option value="">未設定</option>
               {allEmployees.map((e) => (

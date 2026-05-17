@@ -24,7 +24,7 @@ export const Permission = {
   MANAGE_SOFT_DELETED: 'MANAGE_SOFT_DELETED',
   MANAGE_ROLE_ASSIGNMENTS: 'MANAGE_ROLE_ASSIGNMENTS',
   MANAGE_ORGANIZATION: 'MANAGE_ORGANIZATION',
-  // Limited auxiliary update: profile_free_text, photo, managerEmployeeId for ORG_TREE subordinates
+  // Limited auxiliary update: profile_free_text, photo, supervisorEmployeeId for ORG_TREE subordinates
   ASSIST_UPDATE_PROFILE: 'ASSIST_UPDATE_PROFILE',
   VIEW_AUDIT_LOGS: 'VIEW_AUDIT_LOGS',
 } as const;

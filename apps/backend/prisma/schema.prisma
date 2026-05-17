@@ -89,7 +89,7 @@ model Employment {
   positionMasterId    Int?
   employmentType      Int              @db.SmallInt
   isPrimaryAssignment Boolean          @default(false)
-  managerEmployeeId   Int?
+  supervisorEmployeeId Int?             @map("managerEmployeeId")
   startDate           DateTime         @db.Date
   endDate             DateTime?        @db.Date
   status              Int              @db.SmallInt

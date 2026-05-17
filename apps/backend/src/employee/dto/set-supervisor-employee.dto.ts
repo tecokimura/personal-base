@@ -1,7 +1,7 @@
 import { IsInt, IsOptional } from 'class-validator';
 
-export class SetManagerEmployeeDto {
+export class SetSupervisorEmployeeDto {
   @IsOptional()
   @IsInt()
-  managerEmployeeId!: number | null;
+  supervisorEmployeeId!: number | null;
 }

@@ -92,7 +92,7 @@ export interface EmploymentView {
   organizationId: number;
   positionName: string | null;
   isPrimaryAssignment: boolean;
-  managerEmployeeId: number | null;
+  supervisorEmployeeId: number | null;
   startDate: string;
   endDate: string | null;
   status: number;
@@ -105,7 +105,7 @@ export interface AddEmploymentInput {
   isPrimaryAssignment: boolean;
   startDate: string;
   positionMasterId?: number;
-  managerEmployeeId?: number;
+  supervisorEmployeeId?: number;
   status?: number;
 }
 
@@ -208,10 +208,10 @@ export const api = {
     },
     deletePhoto: (id: number) =>
       apiFetch<void>(`/employees/${id}/photo`, { method: 'DELETE' }),
-    setManagerEmployee: (id: number, empId: number, managerEmployeeId: number | null) =>
-      apiFetch<unknown>(`/employees/${id}/employments/${empId}/set-manager`, {
+    setSupervisorEmployee: (id: number, empId: number, supervisorEmployeeId: number | null) =>
+      apiFetch<unknown>(`/employees/${id}/employments/${empId}/set-supervisor`, {
         method: 'PATCH',
-        body: JSON.stringify({ managerEmployeeId }),
+        body: JSON.stringify({ supervisorEmployeeId }),
       }),
     addEmployment: (id: number, body: AddEmploymentInput) =>
       apiFetch<EmploymentView>(`/employees/${id}/employments`, {

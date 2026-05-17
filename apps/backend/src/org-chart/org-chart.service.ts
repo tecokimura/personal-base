@@ -19,7 +19,7 @@ export interface EmployeeCard {
   assignmentLabel: '主所属' | '兼務';
   /** null until PositionMaster table is implemented */
   positionName: string | null;
-  managerDisplayName: string | null;
+  supervisorDisplayName: string | null;
   /** Populated only for concurrent (兼務) members */
   primaryOrganizationName: string | null;
 }
@@ -182,15 +182,15 @@ export class OrgChartService {
     tenantId: number,
     access: OrgAccess,
   ): Promise<OrgChartMembers> {
-    const managerIds = [
-      ...new Set(employments.map((e) => e.managerEmployeeId).filter((id): id is number => id !== null)),
+    const supervisorIds = [
+      ...new Set(employments.map((e) => e.supervisorEmployeeId).filter((id): id is number => id !== null)),
     ];
 
-    const managerNames = new Map<number, string | null>();
+    const supervisorNames = new Map<number, string | null>();
     await Promise.all(
-      managerIds.map(async (id) => {
+      supervisorIds.map(async (id) => {
         const name = await this.repo.findEmployeeDisplayNameById(id, tenantId);
-        managerNames.set(id, name);
+        supervisorNames.set(id, name);
       }),
     );
 
@@ -218,7 +218,7 @@ export class OrgChartService {
       photoStorageKey: e.photoStorageKey,
       assignmentLabel: e.isPrimaryAssignment ? '主所属' : '兼務',
       positionName: e.positionMasterId ? (positionNames.get(e.positionMasterId) ?? null) : null,
-      managerDisplayName: e.managerEmployeeId ? (managerNames.get(e.managerEmployeeId) ?? null) : null,
+      supervisorDisplayName: e.supervisorEmployeeId ? (supervisorNames.get(e.supervisorEmployeeId) ?? null) : null,
       primaryOrganizationName: e.isPrimaryAssignment ? null : (primaryOrgNames.get(e.employeeId) ?? null),
     });
 
