@@ -4,38 +4,120 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type OrgChartNode } from '@/lib/api';
 
-function OrgNode({ node, depth = 0 }: { node: OrgChartNode; depth?: number }) {
+const LEVEL_COLORS = ['#2563eb', '#0891b2', '#0284c7', '#6366f1', '#7c3aed'];
+
+function levelColor(depth: number): string {
+  return LEVEL_COLORS[depth % LEVEL_COLORS.length];
+}
+
+function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; depth?: number; isLast?: boolean }) {
   const [open, setOpen] = useState(depth < 2);
+  const hasChildren = node.children.length > 0;
+  const color = levelColor(depth);
 
   return (
-    <li style={{ paddingLeft: depth === 0 ? 0 : 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-        {node.children.length > 0 && (
+    <li style={{ position: 'relative', listStyle: 'none' }}>
+      {/* 縦の接続線（最後の子以外） */}
+      {depth > 0 && !isLast && (
+        <span style={{
+          position: 'absolute',
+          left: -16,
+          top: 0,
+          bottom: 0,
+          width: 1,
+          background: '#e2e8f0',
+        }} />
+      )}
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '5px 0',
+        position: 'relative',
+      }}>
+        {/* 横の接続線 */}
+        {depth > 0 && (
+          <span style={{
+            position: 'absolute',
+            left: -16,
+            top: '50%',
+            width: 12,
+            height: 1,
+            background: '#e2e8f0',
+          }} />
+        )}
+
+        {/* 展開ボタン or スペーサー */}
+        {hasChildren ? (
           <button
             onClick={() => setOpen((v) => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: '#888', fontSize: 12 }}
+            style={{
+              background: color,
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              color: '#fff',
+              fontSize: 10,
+              width: 18,
+              height: 18,
+              borderRadius: 3,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {open ? '▾' : '▸'}
           </button>
+        ) : (
+          <span style={{ width: 18, height: 18, flexShrink: 0, display: 'inline-block' }} />
         )}
-        {node.children.length === 0 && <span style={{ width: 20 }} />}
-        <span className="org-node-name">{node.organizationName}</span>
-        {node.organizationCode && (
-          <span className="org-node-meta">[{node.organizationCode}]</span>
-        )}
-        <span className="org-node-meta">
-          メンバー {node.memberCount} 名
+
+        {/* 組織名バッジ */}
+        <span style={{
+          fontWeight: 600,
+          fontSize: 13,
+          color,
+          borderLeft: `3px solid ${color}`,
+          paddingLeft: 6,
+          lineHeight: '1.4',
+        }}>
+          {node.organizationName}
         </span>
+
+        {node.organizationCode && (
+          <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
+            {node.organizationCode}
+          </span>
+        )}
+
+        <span style={{ fontSize: 11, color: '#94a3b8' }}>
+          {node.memberCount} 名
+        </span>
+
         {node.primaryLeader && (
-          <span className="org-node-meta" style={{ color: '#0070f3' }}>
+          <span style={{
+            fontSize: 11,
+            color: '#0070f3',
+            background: '#eff6ff',
+            borderRadius: 4,
+            padding: '1px 6px',
+          }}>
             部門長: {node.primaryLeader.displayName}
           </span>
         )}
       </div>
-      {open && node.children.length > 0 && (
-        <ul style={{ listStyle: 'none', paddingLeft: 24, margin: 0 }}>
-          {node.children.map((child) => (
-            <OrgNode key={child.organizationId} node={child} depth={depth + 1} />
+
+      {open && hasChildren && (
+        <ul style={{ listStyle: 'none', paddingLeft: 32, margin: 0, position: 'relative' }}>
+          {node.children.map((child, idx) => (
+            <OrgNode
+              key={child.organizationId}
+              node={child}
+              depth={depth + 1}
+              isLast={idx === node.children.length - 1}
+            />
           ))}
         </ul>
       )}
@@ -69,8 +151,13 @@ export default function OrgChartPage() {
           <p style={{ color: '#aaa', margin: 0 }}>組織データなし</p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {tree.map((node) => (
-              <OrgNode key={node.organizationId} node={node} />
+            {tree.map((node, idx) => (
+              <OrgNode
+                key={node.organizationId}
+                node={node}
+                depth={0}
+                isLast={idx === tree.length - 1}
+              />
             ))}
           </ul>
         )}
