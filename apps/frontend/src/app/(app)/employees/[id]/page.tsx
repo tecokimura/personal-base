@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type OrganizationView, type PositionMasterView, ApiError } from '@/lib/api';
 
-const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍', 2: '休職', 3: '退職' };
+const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
   1: '正社員',
   2: '契約社員',
@@ -437,7 +437,7 @@ export default function EmployeeDetailPage() {
               saving={addEmpSaving}
               organizations={organizations}
               positionMasters={positionMasters}
-              allEmployees={allEmployees}
+              allEmployees={allEmployees !== null ? allEmployees.filter((e) => e.id !== id) : null}
             />
           </div>
         )}
@@ -504,7 +504,7 @@ export default function EmployeeDetailPage() {
                                   onChange={(e) => setManagerInput(e.target.value)}
                                 >
                                   <option value="">未設定（解除）</option>
-                                  {allEmployees.map((e) => (
+                                  {allEmployees.filter((e) => e.id !== id).map((e) => (
                                     <option key={e.id} value={String(e.id)}>
                                       {`${e.displayName ?? e.fullName} (ID: ${e.id})`}
                                     </option>
@@ -849,8 +849,8 @@ function EmploymentAddForm({
         <label style={labelStyle}>
           状態
           <select style={inputStyle} value={form.status} onChange={field('status')}>
-            <option value="1">在籍</option>
-            <option value="2">休職</option>
+            <option value="1">在籍中</option>
+            <option value="2">休職中</option>
           </select>
         </label>
         <label style={labelStyle}>

@@ -282,4 +282,24 @@ test.describe('HR_ADMIN による上長候補選択 UI', () => {
     // 所属追加フォームに上長候補 select が表示される
     await expect(page.locator('label:has-text("上長（任意）") select')).toBeVisible();
   });
+
+  test('所属追加フォームの上長候補に対象社員本人が含まれない', async ({ page }) => {
+    const createRes = await page.request.post('/api/employees', {
+      data: { fullName: 'E2E 自己除外確認テスト用社員' },
+    });
+    expect(createRes.ok()).toBeTruthy();
+    const newEmployee = await createRes.json() as { id: number };
+    tempEmployeeId = newEmployee.id;
+
+    await page.goto(`/employees/${tempEmployeeId}`);
+    await expect(page.locator('h1.page-title')).toHaveText('E2E 自己除外確認テスト用社員', { timeout: 8_000 });
+
+    await page.locator('button:has-text("所属を追加")').click();
+    await expect(page.locator('label:has-text("上長（任意）") select')).toBeVisible();
+
+    // 対象社員本人は上長候補に表示されない
+    await expect(
+      page.locator(`label:has-text("上長（任意）") select option[value="${tempEmployeeId}"]`),
+    ).not.toBeAttached();
+  });
 });
