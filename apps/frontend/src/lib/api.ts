@@ -99,6 +99,16 @@ export interface EmploymentView {
   employmentType?: number;
 }
 
+export interface AddEmploymentInput {
+  organizationId: number;
+  employmentType: number;
+  isPrimaryAssignment: boolean;
+  startDate: string;
+  positionMasterId?: number;
+  managerEmployeeId?: number;
+  status?: number;
+}
+
 export interface EmployeeDetail extends EmployeeListItem {
   primaryEmployment: EmploymentView | null;
   employments: EmploymentView[];
@@ -132,6 +142,15 @@ export interface WorkHistoryInput {
   projectCode?: string;
 }
 
+export interface PositionMasterView {
+  id: number;
+  tenantId: number;
+  name: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface AuditEvent {
   eventType: 'LOGIN' | 'EDIT';
   occurredAt: string;
@@ -158,6 +177,10 @@ export const api = {
     list: () => apiFetch<OrganizationView[]>('/organizations'),
   },
 
+  positionMasters: {
+    list: () => apiFetch<PositionMasterView[]>('/position-masters'),
+  },
+
   orgChart: {
     tree: () => apiFetch<OrgChartNode[]>('/org-chart/tree'),
   },
@@ -181,6 +204,11 @@ export const api = {
       apiFetch<unknown>(`/employees/${id}/employments/${empId}/set-manager`, {
         method: 'PATCH',
         body: JSON.stringify({ managerEmployeeId }),
+      }),
+    addEmployment: (id: number, body: AddEmploymentInput) =>
+      apiFetch<EmploymentView>(`/employees/${id}/employments`, {
+        method: 'POST',
+        body: JSON.stringify(body),
       }),
   },
 

@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeDetail, type EmploymentView, type WorkHistory, type WorkHistoryInput, ApiError } from '@/lib/api';
+import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type OrganizationView, type PositionMasterView, ApiError } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍', 2: '休職', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -91,6 +91,21 @@ export default function EmployeeDetailPage() {
   const [managerSaving, setManagerSaving] = useState(false);
   const [managerError, setManagerError] = useState('');
 
+  // 所属追加
+  const [addingEmployment, setAddingEmployment] = useState(false);
+  const [addEmpForm, setAddEmpForm] = useState<AddEmploymentForm>(EMPTY_ADD_EMP_FORM);
+  const [addEmpError, setAddEmpError] = useState('');
+  const [addEmpSaving, setAddEmpSaving] = useState(false);
+
+  // 組織一覧（所属追加フォーム用）
+  const [organizations, setOrganizations] = useState<OrganizationView[] | null>(null);
+
+  // 役職マスタ一覧（所属追加フォーム用）
+  const [positionMasters, setPositionMasters] = useState<PositionMasterView[] | null>(null);
+
+  // 社員一覧（マネージャー候補選択用）
+  const [allEmployees, setAllEmployees] = useState<EmployeeListItem[] | null>(null);
+
   useEffect(() => {
     if (authLoading || !id) return;
 
@@ -103,6 +118,12 @@ export default function EmployeeDetailPage() {
     setAssistCreateError('');
     setProfileSaved(false);
     setManagerEditingEmpId(null);
+    setAddingEmployment(false);
+    setAddEmpForm(EMPTY_ADD_EMP_FORM);
+    setAddEmpError('');
+    setOrganizations(null);
+    setPositionMasters(null);
+    setAllEmployees(null);
 
     api.employees
       .get(id)
@@ -122,6 +143,9 @@ export default function EmployeeDetailPage() {
           setWhError('職歴の読み込みに失敗しました');
         }
       });
+    api.organizations.list().then(setOrganizations).catch(() => setOrganizations([]));
+    api.positionMasters.list().then(setPositionMasters).catch(() => setPositionMasters([]));
+    api.employees.list().then(setAllEmployees).catch(() => setAllEmployees([]));
   }, [authLoading, id]);
 
   const isSelf = !!me && me.employeeId === id;
@@ -246,6 +270,31 @@ export default function EmployeeDetailPage() {
     }
   }
 
+  async function handleAddEmployment(e: React.FormEvent) {
+    e.preventDefault();
+    setAddEmpSaving(true);
+    setAddEmpError('');
+    try {
+      const input: AddEmploymentInput = {
+        organizationId: Number(addEmpForm.organizationId),
+        employmentType: Number(addEmpForm.employmentType),
+        isPrimaryAssignment: addEmpForm.isPrimaryAssignment,
+        startDate: addEmpForm.startDate,
+        positionMasterId: addEmpForm.positionMasterId ? Number(addEmpForm.positionMasterId) : undefined,
+        managerEmployeeId: addEmpForm.managerEmployeeId ? Number(addEmpForm.managerEmployeeId) : undefined,
+        status: addEmpForm.status ? Number(addEmpForm.status) : undefined,
+      };
+      const emp = await api.employees.addEmployment(id, input);
+      setEmployee((prev) => prev ? { ...prev, employments: [...prev.employments, emp] } : prev);
+      setAddingEmployment(false);
+      setAddEmpForm(EMPTY_ADD_EMP_FORM);
+    } catch (err) {
+      setAddEmpError(err instanceof ApiError && err.status === 403 ? '追加権限がありません' : String(err));
+    } finally {
+      setAddEmpSaving(false);
+    }
+  }
+
   if (authLoading || loading) return <p>読み込み中...</p>;
   if (error) return <p className="error-msg">{error}</p>;
   if (!employee) return null;
@@ -364,7 +413,34 @@ export default function EmployeeDetailPage() {
       )}
 
       <div className="card" style={{ marginTop: 8 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#555' }}>所属情報</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>所属情報</h2>
+          {canAssistEdit && !addingEmployment && (
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 12 }}
+              onClick={() => { setAddingEmployment(true); setAddEmpForm(EMPTY_ADD_EMP_FORM); setAddEmpError(''); }}
+            >
+              所属を追加
+            </button>
+          )}
+        </div>
+        {canAssistEdit && addingEmployment && (
+          <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>所属を新規追加</p>
+            <EmploymentAddForm
+              form={addEmpForm}
+              onChange={setAddEmpForm}
+              onSubmit={handleAddEmployment}
+              onCancel={() => { setAddingEmployment(false); setAddEmpError(''); }}
+              error={addEmpError}
+              saving={addEmpSaving}
+              organizations={organizations}
+              positionMasters={positionMasters}
+              allEmployees={allEmployees}
+            />
+          </div>
+        )}
         {employee.employments.length === 0 ? (
           <p style={{ color: '#aaa', margin: 0 }}>所属なし</p>
         ) : (
@@ -377,7 +453,7 @@ export default function EmployeeDetailPage() {
                   <th>種別</th>
                   <th>役職</th>
                   <th>主所属</th>
-                  <th>担当マネージャー</th>
+                  <th>上長</th>
                   <th>開始日</th>
                   <th>終了日</th>
                   <th>状態</th>
@@ -408,7 +484,7 @@ export default function EmployeeDetailPage() {
                             style={{ fontSize: 11 }}
                             onClick={() => { managerEditingEmpId === emp.id ? setManagerEditingEmpId(null) : startManagerEdit(emp); }}
                           >
-                            {managerEditingEmpId === emp.id ? 'キャンセル' : 'マネージャー設定'}
+                            {managerEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
                           </button>
                         </td>
                       )}
@@ -418,15 +494,23 @@ export default function EmployeeDetailPage() {
                         <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
                           <form onSubmit={(e) => { void handleSaveManager(e, emp.id); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                             <label style={{ ...labelStyle, flex: '0 0 auto' }}>
-                              マネージャー社員ID（空欄で解除）
-                              <input
-                                type="number"
-                                min={1}
-                                style={{ ...inputStyle, width: 140 }}
-                                value={managerInput}
-                                onChange={(e) => setManagerInput(e.target.value)}
-                                placeholder="社員ID"
-                              />
+                              上長（空欄で解除）
+                              {allEmployees === null ? (
+                                <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+                              ) : (
+                                <select
+                                  style={{ ...inputStyle, width: 260 }}
+                                  value={managerInput}
+                                  onChange={(e) => setManagerInput(e.target.value)}
+                                >
+                                  <option value="">未設定（解除）</option>
+                                  {allEmployees.map((e) => (
+                                    <option key={e.id} value={String(e.id)}>
+                                      {`${e.displayName ?? e.fullName} (ID: ${e.id})`}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
                             </label>
                             {managerError && <p className="error-msg" style={{ margin: 0, alignSelf: 'center' }}>{managerError}</p>}
                             <button type="submit" className="btn-primary" disabled={managerSaving} style={{ fontSize: 12, marginBottom: 1 }}>
@@ -662,3 +746,169 @@ const inputStyle: React.CSSProperties = {
   padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4,
   fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 };
+
+// ─── 所属追加フォーム ──────────────────────────────────────────
+
+type AddEmploymentForm = {
+  organizationId: string;
+  employmentType: string;
+  isPrimaryAssignment: boolean;
+  startDate: string;
+  positionMasterId: string;
+  managerEmployeeId: string;
+  status: string;
+};
+
+const EMPTY_ADD_EMP_FORM: AddEmploymentForm = {
+  organizationId: '',
+  employmentType: '1',
+  isPrimaryAssignment: false,
+  startDate: '',
+  positionMasterId: '',
+  managerEmployeeId: '',
+  status: '1',
+};
+
+function EmploymentAddForm({
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  error,
+  saving,
+  organizations,
+  positionMasters,
+  allEmployees,
+}: {
+  form: AddEmploymentForm;
+  onChange: (f: AddEmploymentForm) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+  error: string;
+  saving: boolean;
+  organizations: OrganizationView[] | null;
+  positionMasters: PositionMasterView[] | null;
+  allEmployees: EmployeeListItem[] | null;
+}) {
+  function field(key: keyof AddEmploymentForm) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange({ ...form, [key]: e.target.value });
+  }
+
+  function orgLabel(org: OrganizationView): string {
+    return org.organizationCode
+      ? `${org.organizationName} [Code: ${org.organizationCode}]`
+      : org.organizationName;
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <label style={labelStyle}>
+          組織 <span style={{ color: 'red' }}>*</span>
+          {organizations === null ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+          ) : organizations.length === 0 ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>登録された組織がありません</span>
+          ) : (
+            <select
+              style={inputStyle}
+              value={form.organizationId}
+              onChange={field('organizationId')}
+              required
+            >
+              <option value="">選択してください</option>
+              {organizations.map((org) => (
+                <option key={org.id} value={String(org.id)}>
+                  {orgLabel(org)}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+        <label style={labelStyle}>
+          雇用区分 <span style={{ color: 'red' }}>*</span>
+          <select style={inputStyle} value={form.employmentType} onChange={field('employmentType')} required>
+            <option value="1">正社員</option>
+            <option value="2">契約社員</option>
+            <option value="3">パートタイム</option>
+            <option value="4">派遣</option>
+            <option value="5">業務委託</option>
+          </select>
+        </label>
+        <label style={labelStyle}>
+          開始日 <span style={{ color: 'red' }}>*</span>
+          <input
+            type="date"
+            style={inputStyle}
+            value={form.startDate}
+            onChange={field('startDate')}
+            required
+          />
+        </label>
+        <label style={labelStyle}>
+          状態
+          <select style={inputStyle} value={form.status} onChange={field('status')}>
+            <option value="1">在籍</option>
+            <option value="2">休職</option>
+          </select>
+        </label>
+        <label style={labelStyle}>
+          役職（任意）
+          {positionMasters === null ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+          ) : (
+            <select
+              style={inputStyle}
+              value={form.positionMasterId}
+              onChange={field('positionMasterId')}
+            >
+              <option value="">未設定</option>
+              {positionMasters.filter((p) => p.isActive).map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+        <label style={labelStyle}>
+          上長（任意）
+          {allEmployees === null ? (
+            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+          ) : (
+            <select
+              style={inputStyle}
+              value={form.managerEmployeeId}
+              onChange={field('managerEmployeeId')}
+            >
+              <option value="">未設定</option>
+              {allEmployees.map((e) => (
+                <option key={e.id} value={String(e.id)}>
+                  {`${e.displayName ?? e.fullName} (ID: ${e.id})`}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+      </div>
+      <label style={{ ...labelStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <input
+          type="checkbox"
+          checked={form.isPrimaryAssignment}
+          onChange={(e) => onChange({ ...form, isPrimaryAssignment: e.target.checked })}
+        />
+        主所属として設定する
+      </label>
+      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+          {saving ? '追加中...' : '追加'}
+        </button>
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+          キャンセル
+        </button>
+      </div>
+    </form>
+  );
+}
