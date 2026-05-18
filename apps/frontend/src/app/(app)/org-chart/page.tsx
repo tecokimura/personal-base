@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type OrgChartNode } from '@/lib/api';
+import { api, type OrgChartNode, type OrgChartMembers, type EmployeeCard } from '@/lib/api';
 
 const LEVEL_COLORS = ['#2563eb', '#0891b2', '#0284c7', '#6366f1', '#7c3aed'];
 
@@ -10,10 +10,79 @@ function levelColor(depth: number): string {
   return LEVEL_COLORS[depth % LEVEL_COLORS.length];
 }
 
+function MemberRow({ member }: { member: EmployeeCard }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', padding: '3px 0', fontSize: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontWeight: 500 }}>{member.displayName}</span>
+      {member.positionName && (
+        <span style={{ color: '#64748b', fontSize: 11 }}>{member.positionName}</span>
+      )}
+      {member.supervisorDisplayName && (
+        <span style={{ color: '#94a3b8', fontSize: 11 }}>上長: {member.supervisorDisplayName}</span>
+      )}
+      {member.primaryOrganizationName && (
+        <span style={{ color: '#94a3b8', fontSize: 11 }}>主所属: {member.primaryOrganizationName}</span>
+      )}
+    </div>
+  );
+}
+
+function MemberList({ members }: { members: OrgChartMembers }) {
+  const total = members.primaryMembers.length + members.concurrentMembers.length;
+  if (total === 0) {
+    return <p style={{ fontSize: 12, color: '#aaa', margin: '4px 0 0' }}>所属メンバーなし</p>;
+  }
+  return (
+    <div style={{
+      background: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: 6,
+      padding: '8px 12px',
+      marginTop: 4,
+    }}>
+      {members.primaryMembers.length > 0 && (
+        <>
+          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 4px', fontWeight: 600 }}>主所属</p>
+          {members.primaryMembers.map((m) => (
+            <MemberRow key={m.employeeId} member={m} />
+          ))}
+        </>
+      )}
+      {members.concurrentMembers.length > 0 && (
+        <>
+          <p style={{ fontSize: 11, color: '#64748b', margin: `${members.primaryMembers.length > 0 ? 8 : 0}px 0 4px`, fontWeight: 600 }}>兼務</p>
+          {members.concurrentMembers.map((m) => (
+            <MemberRow key={m.employeeId} member={m} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; depth?: number; isLast?: boolean }) {
   const [open, setOpen] = useState(depth < 2);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [members, setMembers] = useState<OrgChartMembers | null>(null);
+  const [membersLoading, setMembersLoading] = useState(false);
   const hasChildren = node.children.length > 0;
   const color = levelColor(depth);
+
+  function toggleMembers() {
+    if (membersOpen) {
+      setMembersOpen(false);
+      return;
+    }
+    setMembersOpen(true);
+    if (!members && !membersLoading) {
+      setMembersLoading(true);
+      api.orgChart
+        .members(node.organizationId)
+        .then(setMembers)
+        .catch(() => {})
+        .finally(() => setMembersLoading(false));
+    }
+  }
 
   return (
     <li style={{ position: 'relative', listStyle: 'none' }}>
@@ -35,6 +104,7 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
         gap: 6,
         padding: '5px 0',
         position: 'relative',
+        flexWrap: 'wrap',
       }}>
         {/* 横の接続線 */}
         {depth > 0 && (
@@ -107,7 +177,35 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
             部門長: {node.primaryLeader.displayName}
           </span>
         )}
+
+        {node.memberCount > 0 && (
+          <button
+            onClick={toggleMembers}
+            style={{
+              fontSize: 11,
+              border: '1px solid #cbd5e1',
+              background: membersOpen ? '#f1f5f9' : 'transparent',
+              borderRadius: 4,
+              padding: '1px 7px',
+              cursor: 'pointer',
+              color: '#64748b',
+            }}
+          >
+            {membersOpen ? 'メンバーを閉じる' : 'メンバーを表示'}
+          </button>
+        )}
       </div>
+
+      {/* メンバー一覧 */}
+      {membersOpen && (
+        <div style={{ marginLeft: 24, marginBottom: 6 }}>
+          {membersLoading ? (
+            <p style={{ fontSize: 12, color: '#aaa', margin: '4px 0 0' }}>読み込み中...</p>
+          ) : members ? (
+            <MemberList members={members} />
+          ) : null}
+        </div>
+      )}
 
       {open && hasChildren && (
         <ul style={{ listStyle: 'none', paddingLeft: 32, margin: 0, position: 'relative' }}>

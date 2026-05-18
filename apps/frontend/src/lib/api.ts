@@ -75,6 +75,22 @@ export interface OrgChartNode {
   children: OrgChartNode[];
 }
 
+export interface EmployeeCard {
+  employeeId: number;
+  employeeNumber: string | null;
+  displayName: string;
+  photoStorageKey: string | null;
+  assignmentLabel: '主所属' | '兼務';
+  positionName: string | null;
+  supervisorDisplayName: string | null;
+  primaryOrganizationName: string | null;
+}
+
+export interface OrgChartMembers {
+  primaryMembers: EmployeeCard[];
+  concurrentMembers: EmployeeCard[];
+}
+
 export interface EmployeeListItem {
   id: number;
   tenantId: number;
@@ -191,6 +207,7 @@ export const api = {
 
   orgChart: {
     tree: () => apiFetch<OrgChartNode[]>('/org-chart/tree'),
+    members: (orgId: number) => apiFetch<OrgChartMembers>(`/org-chart/${orgId}/members`),
   },
 
   employees: {
