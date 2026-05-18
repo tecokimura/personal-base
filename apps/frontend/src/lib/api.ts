@@ -207,7 +207,7 @@ export const api = {
 
   orgChart: {
     tree: () => apiFetch<OrgChartNode[]>('/org-chart/tree'),
-    members: (orgId: number) => apiFetch<OrgChartMembers>(`/org-chart/${orgId}/members`),
+    members: (orgId: number) => apiFetch<OrgChartMembers>(`/org-chart/organizations/${orgId}/members`),
   },
 
   employees: {
