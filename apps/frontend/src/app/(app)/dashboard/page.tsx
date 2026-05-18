@@ -50,6 +50,8 @@ export default function DashboardPage() {
           <a href="/organizations" className="btn btn-primary btn-sm">組織一覧</a>
           <a href="/org-chart" className="btn btn-primary btn-sm">組織図</a>
           <a href="/employees" className="btn btn-primary btn-sm">社員一覧</a>
+          <a href={`/employees/${me.employeeId}`} className="btn btn-primary btn-sm">自分のプロフィール</a>
+          <a href="/work-histories" className="btn btn-primary btn-sm">自分の職歴</a>
         </div>
       </div>
 

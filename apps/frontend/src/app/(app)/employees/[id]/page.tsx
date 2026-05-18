@@ -159,6 +159,8 @@ export default function EmployeeDetailPage() {
 
   const isSelf = !!me && me.employeeId === id;
   const canAssistEdit = !isSelf && !!me && me.roleTypes.some((r) => ASSIST_EDIT_ROLES.has(r));
+  // isSelf でもプロフィール/写真/所属追加・編集は許可（上長設定は canAssistEdit のみ）
+  const canEditSelf = canAssistEdit || isSelf;
 
   async function handleAssistCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -298,7 +300,18 @@ export default function EmployeeDetailPage() {
       setAddingEmployment(false);
       setAddEmpForm(EMPTY_ADD_EMP_FORM);
     } catch (err) {
-      setAddEmpError(err instanceof ApiError && err.status === 403 ? '追加権限がありません' : String(err));
+      if (err instanceof ApiError && err.status === 409) {
+        const msg = err.message;
+        setAddEmpError(
+          msg.includes('already has an active primary assignment')
+            ? '既に主所属が設定されています。「主所属として設定する」のチェックを外してください。'
+            : msg.includes('overlapping period')
+            ? 'この組織への所属が既に登録されています（期間重複）。'
+            : `競合エラー: ${msg}`,
+        );
+      } else {
+        setAddEmpError(err instanceof ApiError && err.status === 403 ? '追加権限がありません' : String(err));
+      }
     } finally {
       setAddEmpSaving(false);
     }
@@ -321,7 +334,18 @@ export default function EmployeeDetailPage() {
       setEmployee((prev) => prev ? { ...prev, employments: prev.employments.map((emp) => emp.id === editingEmpId ? updated : emp) } : prev);
       setEditingEmpId(null);
     } catch (err) {
-      setEditEmpError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+      if (err instanceof ApiError && err.status === 409) {
+        const msg = err.message;
+        setEditEmpError(
+          msg.includes('already has an active primary assignment') || msg.includes('already has another active primary assignment')
+            ? '既に主所属が設定されています。先に現在の主所属を変更してください。'
+            : msg.includes('overlapping period')
+            ? 'この組織への所属が既に登録されています（期間重複）。'
+            : `競合エラー: ${msg}`,
+        );
+      } else {
+        setEditEmpError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+      }
     } finally {
       setEditEmpSaving(false);
     }
@@ -379,7 +403,7 @@ export default function EmployeeDetailPage() {
         </dl>
       </div>
 
-      {canAssistEdit && (
+      {canEditSelf && (
         <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #4f83cc' }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: '#4f83cc' }}>補助編集</h2>
 
@@ -447,7 +471,7 @@ export default function EmployeeDetailPage() {
       <div className="card" style={{ marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>所属情報</h2>
-          {canAssistEdit && !addingEmployment && (
+          {canEditSelf && !addingEmployment && (
             <button
               className="btn-secondary"
               style={{ fontSize: 12 }}
@@ -457,7 +481,7 @@ export default function EmployeeDetailPage() {
             </button>
           )}
         </div>
-        {canAssistEdit && addingEmployment && (
+        {canEditSelf && addingEmployment && (
           <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
             <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>所属を新規追加</p>
             <EmploymentAddForm
@@ -489,7 +513,7 @@ export default function EmployeeDetailPage() {
                   <th>開始日</th>
                   <th>終了日</th>
                   <th>状態</th>
-                  {canAssistEdit && <th>操作</th>}
+                  {canEditSelf && <th>操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -509,7 +533,7 @@ export default function EmployeeDetailPage() {
                           {EMPLOYMENT_STATUS[emp.status] ?? emp.status}
                         </span>
                       </td>
-                      {canAssistEdit && (
+                      {canEditSelf && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           <button
                             className="btn-secondary"
@@ -533,17 +557,19 @@ export default function EmployeeDetailPage() {
                           >
                             {editingEmpId === emp.id ? 'キャンセル' : '編集'}
                           </button>
-                          <button
-                            className="btn-secondary"
-                            style={{ fontSize: 11 }}
-                            onClick={() => { supervisorEditingEmpId === emp.id ? setSupervisorEditingEmpId(null) : startSupervisorEdit(emp); setEditingEmpId(null); }}
-                          >
-                            {supervisorEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
-                          </button>
+                          {canAssistEdit && (
+                            <button
+                              className="btn-secondary"
+                              style={{ fontSize: 11 }}
+                              onClick={() => { supervisorEditingEmpId === emp.id ? setSupervisorEditingEmpId(null) : startSupervisorEdit(emp); setEditingEmpId(null); }}
+                            >
+                              {supervisorEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
+                            </button>
+                          )}
                         </td>
                       )}
                     </tr>
-                    {canAssistEdit && editingEmpId === emp.id && (
+                    {canEditSelf && editingEmpId === emp.id && (
                       <tr>
                         <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
                           <EmploymentEditForm
@@ -913,7 +939,7 @@ function EmploymentEditForm({
           )}
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <label style={{ ...labelStyle, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <input
           type="checkbox"
           checked={form.isPrimaryAssignment}
@@ -921,6 +947,9 @@ function EmploymentEditForm({
         />
         主所属として設定する
       </label>
+      <p style={{ fontSize: 11, color: '#888', margin: '0 0 12px' }}>
+        ※ 主所属は社員1人につき1件のみ。既に別の主所属がある場合は設定できません。
+      </p>
       {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
@@ -1079,7 +1108,7 @@ function EmploymentAddForm({
           )}
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <label style={{ ...labelStyle, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <input
           type="checkbox"
           checked={form.isPrimaryAssignment}
@@ -1087,6 +1116,9 @@ function EmploymentAddForm({
         />
         主所属として設定する
       </label>
+      <p style={{ fontSize: 11, color: '#888', margin: '0 0 12px' }}>
+        ※ 主所属は社員1人につき1件のみ。既に主所属がある場合はチェックしないでください。
+      </p>
       {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
