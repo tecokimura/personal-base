@@ -32,6 +32,36 @@ const ROLE_TYPE_HR_ADMIN = 1;
 const SCOPE_TYPE_TENANT_ALL = 4;
 const SCOPE_ID_TENANT_ALL = 0;
 
+// ── 追加組織定義 ────────────────────────────────────────────────
+const EXTRA_ORGS = [
+  { code: 'EXEC',    name: '役員',       parent: null,   order: 10 },
+  { code: 'MGMT',    name: '管理部',     parent: 'EXEC', order: 20 },
+  { code: 'SYS',     name: 'システム部', parent: 'EXEC', order: 30 },
+  { code: 'SVC',     name: 'サービス部', parent: 'EXEC', order: 40 },
+] as const;
+
+// ── 追加社員定義（supervisor は employeeNumber で参照） ──────────
+const EXTRA_EMPLOYEES: Array<{
+  number: string;
+  fullName: string;
+  orgCode: string;
+  supervisorNumber: string | null;
+}> = [
+  { number: 'EMP-001', fullName: '山田 太郎', orgCode: 'EXEC', supervisorNumber: null },
+  { number: 'EMP-002', fullName: '鈴木 一郎', orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
+  { number: 'EMP-003', fullName: '田中 花子', orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
+  { number: 'EMP-004', fullName: '佐藤 次郎', orgCode: 'MGMT', supervisorNumber: 'EMP-002' },
+  { number: 'EMP-005', fullName: '高橋 美咲', orgCode: 'MGMT', supervisorNumber: 'EMP-004' },
+  { number: 'EMP-006', fullName: '伊藤 健太', orgCode: 'SYS',  supervisorNumber: 'EMP-003' },
+  { number: 'EMP-007', fullName: '渡辺 雅人', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-008', fullName: '山本 聡',   orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-009', fullName: '中村 友里', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-010', fullName: '小林 拓也', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-011', fullName: '加藤 由美', orgCode: 'SVC',  supervisorNumber: 'EMP-003' },
+  { number: 'EMP-012', fullName: '吉田 晶',   orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
+  { number: 'EMP-013', fullName: '松本 直樹', orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
+];
+
 interface FixtureState {
   tenantId: number;
   employeeId: number;
@@ -191,6 +221,80 @@ async function main(): Promise<void> {
         },
       });
       organizationId = org.id;
+    }
+
+    // 5. Upsert extra organizations (役員 / 管理部 / システム部 / サービス部)
+    const orgIdByCode = new Map<string, number>();
+    for (const def of EXTRA_ORGS) {
+      const existing = await prisma.organization.findFirst({
+        where: { tenantId: tenant.id, organizationCode: def.code },
+        select: { id: true },
+      });
+      if (existing) {
+        orgIdByCode.set(def.code, existing.id);
+      } else {
+        const parentId = def.parent ? (orgIdByCode.get(def.parent) ?? null) : null;
+        const created = await prisma.organization.create({
+          data: {
+            tenantId: tenant.id,
+            organizationCode: def.code,
+            organizationName: def.name,
+            parentOrganizationId: parentId,
+            displayOrder: def.order,
+            isActive: true,
+          },
+        });
+        orgIdByCode.set(def.code, created.id);
+      }
+    }
+
+    // 6. Upsert extra employees and their primary employments
+    // Pass 1: create employee records, build number→id map
+    const empIdByNumber = new Map<string, number>();
+    for (const def of EXTRA_EMPLOYEES) {
+      const existing = await prisma.employee.findFirst({
+        where: { tenantId: tenant.id, employeeNumber: def.number, isDeleted: false },
+        select: { id: true },
+      });
+      if (existing) {
+        empIdByNumber.set(def.number, existing.id);
+      } else {
+        const created = await prisma.employee.create({
+          data: {
+            tenantId: tenant.id,
+            employeeNumber: def.number,
+            fullName: def.fullName,
+            displayName: def.fullName,
+          },
+        });
+        empIdByNumber.set(def.number, created.id);
+      }
+    }
+
+    // Pass 2: create primary employments with supervisor references
+    for (const def of EXTRA_EMPLOYEES) {
+      const empId = empIdByNumber.get(def.number)!;
+      const orgId = orgIdByCode.get(def.orgCode)!;
+      const supervisorId = def.supervisorNumber ? (empIdByNumber.get(def.supervisorNumber) ?? null) : null;
+
+      const existingEmp = await prisma.employment.findFirst({
+        where: { tenantId: tenant.id, employeeId: empId, isPrimaryAssignment: true, status: 1 },
+        select: { id: true },
+      });
+      if (!existingEmp) {
+        await prisma.employment.create({
+          data: {
+            tenantId: tenant.id,
+            employeeId: empId,
+            organizationId: orgId,
+            employmentType: 1,
+            isPrimaryAssignment: true,
+            supervisorEmployeeId: supervisorId,
+            startDate: new Date('2023-04-01'),
+            status: 1,
+          },
+        });
+      }
     }
 
     const state: FixtureState = {
