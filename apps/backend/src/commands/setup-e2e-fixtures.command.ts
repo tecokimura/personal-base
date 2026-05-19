@@ -34,10 +34,10 @@ const SCOPE_ID_TENANT_ALL = 0;
 
 // ── 追加組織定義 ────────────────────────────────────────────────
 const EXTRA_ORGS = [
-  { code: 'EXEC',    name: '役員',       parent: null,   order: 10 },
-  { code: 'MGMT',    name: '管理部',     parent: 'EXEC', order: 20 },
-  { code: 'SYS',     name: 'システム部', parent: 'EXEC', order: 30 },
-  { code: 'SVC',     name: 'サービス部', parent: 'EXEC', order: 40 },
+  { code: 'EXEC',    name: '役員',       parent: ORG_CODE, order: 10 },
+  { code: 'MGMT',    name: '管理部',     parent: 'EXEC',   order: 20 },
+  { code: 'SYS',     name: 'システム部', parent: 'EXEC',   order: 30 },
+  { code: 'SVC',     name: 'サービス部', parent: 'EXEC',   order: 40 },
 ] as const;
 
 // ── 追加社員定義（supervisor は employeeNumber で参照） ──────────
@@ -224,16 +224,26 @@ async function main(): Promise<void> {
     }
 
     // 5. Upsert extra organizations (役員 / 管理部 / システム部 / サービス部)
+    // E2EORG をルートとして事前登録し、EXEC の親として参照できるようにする
     const orgIdByCode = new Map<string, number>();
+    orgIdByCode.set(ORG_CODE, organizationId);
+
     for (const def of EXTRA_ORGS) {
+      const parentId = orgIdByCode.get(def.parent) ?? null;
       const existing = await prisma.organization.findFirst({
         where: { tenantId: tenant.id, organizationCode: def.code },
-        select: { id: true },
+        select: { id: true, parentOrganizationId: true },
       });
       if (existing) {
         orgIdByCode.set(def.code, existing.id);
+        // 親が変わっていれば更新（E2EORG → EXEC 階層修正のべき等対応）
+        if (existing.parentOrganizationId !== parentId) {
+          await prisma.organization.update({
+            where: { id: existing.id },
+            data: { parentOrganizationId: parentId },
+          });
+        }
       } else {
-        const parentId = def.parent ? (orgIdByCode.get(def.parent) ?? null) : null;
         const created = await prisma.organization.create({
           data: {
             tenantId: tenant.id,
