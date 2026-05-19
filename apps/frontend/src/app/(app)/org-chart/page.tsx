@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type OrgChartNode, type OrgChartMembers, type EmployeeCard } from '@/lib/api';
 
@@ -13,7 +14,10 @@ function levelColor(depth: number): string {
 function MemberRow({ member }: { member: EmployeeCard }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', padding: '3px 0', fontSize: 12, flexWrap: 'wrap' }}>
-      <span style={{ fontWeight: 500 }}>{member.displayName}</span>
+      <Link href={`/employees/${member.employeeId}`} style={{ fontWeight: 500, color: '#2563eb', textDecoration: 'none' }}
+        onMouseOver={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
+        onMouseOut={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
+      >{member.displayName}</Link>
       {member.positionName && (
         <span style={{ color: '#64748b', fontSize: 11 }}>{member.positionName}</span>
       )}
