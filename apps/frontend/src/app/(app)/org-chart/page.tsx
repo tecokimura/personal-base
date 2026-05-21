@@ -24,16 +24,12 @@ function MemberRow({ member }: { member: EmployeeCard }) {
       {member.supervisorDisplayName && (
         <span style={{ color: '#94a3b8', fontSize: 11 }}>上長: {member.supervisorDisplayName}</span>
       )}
-      {member.primaryOrganizationName && (
-        <span style={{ color: '#94a3b8', fontSize: 11 }}>主所属: {member.primaryOrganizationName}</span>
-      )}
     </div>
   );
 }
 
 function MemberList({ members }: { members: OrgChartMembers }) {
-  const total = members.primaryMembers.length + members.concurrentMembers.length;
-  if (total === 0) {
+  if (members.primaryMembers.length === 0) {
     return <p style={{ fontSize: 12, color: '#aaa', margin: '4px 0 0' }}>所属メンバーなし</p>;
   }
   return (
@@ -44,22 +40,9 @@ function MemberList({ members }: { members: OrgChartMembers }) {
       padding: '8px 12px',
       marginTop: 4,
     }}>
-      {members.primaryMembers.length > 0 && (
-        <>
-          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 4px', fontWeight: 600 }}>主所属</p>
-          {members.primaryMembers.map((m) => (
-            <MemberRow key={m.employeeId} member={m} />
-          ))}
-        </>
-      )}
-      {members.concurrentMembers.length > 0 && (
-        <>
-          <p style={{ fontSize: 11, color: '#64748b', margin: `${members.primaryMembers.length > 0 ? 8 : 0}px 0 4px`, fontWeight: 600 }}>兼務</p>
-          {members.concurrentMembers.map((m) => (
-            <MemberRow key={m.employeeId} member={m} />
-          ))}
-        </>
-      )}
+      {members.primaryMembers.map((m) => (
+        <MemberRow key={m.employeeId} member={m} />
+      ))}
     </div>
   );
 }

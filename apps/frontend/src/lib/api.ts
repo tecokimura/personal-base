@@ -80,10 +80,8 @@ export interface EmployeeCard {
   employeeNumber: string | null;
   displayName: string;
   photoStorageKey: string | null;
-  assignmentLabel: '主所属' | '兼務';
   positionName: string | null;
   supervisorDisplayName: string | null;
-  primaryOrganizationName: string | null;
 }
 
 export interface OrgChartMembers {
@@ -107,7 +105,6 @@ export interface EmploymentView {
   id: number;
   organizationId: number;
   positionName: string | null;
-  isPrimaryAssignment: boolean;
   supervisorEmployeeId: number | null;
   startDate: string;
   endDate: string | null;
@@ -118,7 +115,6 @@ export interface EmploymentView {
 export interface AddEmploymentInput {
   organizationId: number;
   employmentType: number;
-  isPrimaryAssignment: boolean;
   startDate: string;
   positionMasterId?: number;
   supervisorEmployeeId?: number;
@@ -129,7 +125,6 @@ export interface UpdateEmploymentInput {
   organizationId?: number;
   employmentType?: number;
   positionMasterId?: number | null;
-  isPrimaryAssignment?: boolean;
   startDate?: string;
 }
 

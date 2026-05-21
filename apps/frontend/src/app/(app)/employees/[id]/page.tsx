@@ -289,7 +289,6 @@ export default function EmployeeDetailPage() {
       const input: AddEmploymentInput = {
         organizationId: Number(addEmpForm.organizationId),
         employmentType: Number(addEmpForm.employmentType),
-        isPrimaryAssignment: addEmpForm.isPrimaryAssignment,
         startDate: addEmpForm.startDate,
         positionMasterId: addEmpForm.positionMasterId ? Number(addEmpForm.positionMasterId) : undefined,
         supervisorEmployeeId: addEmpForm.supervisorEmployeeId ? Number(addEmpForm.supervisorEmployeeId) : undefined,
@@ -303,9 +302,7 @@ export default function EmployeeDetailPage() {
       if (err instanceof ApiError && err.status === 409) {
         const msg = err.message;
         setAddEmpError(
-          msg.includes('already has an active primary assignment')
-            ? '既に主所属が設定されています。「主所属として設定する」のチェックを外してください。'
-            : msg.includes('overlapping period')
+          msg.includes('overlapping period')
             ? 'この組織への所属が既に登録されています（期間重複）。'
             : `競合エラー: ${msg}`,
         );
@@ -327,7 +324,6 @@ export default function EmployeeDetailPage() {
         organizationId: editEmpForm.organizationId ? Number(editEmpForm.organizationId) : undefined,
         employmentType: editEmpForm.employmentType ? Number(editEmpForm.employmentType) : undefined,
         positionMasterId: editEmpForm.positionMasterId !== '' ? Number(editEmpForm.positionMasterId) : null,
-        isPrimaryAssignment: editEmpForm.isPrimaryAssignment,
         startDate: editEmpForm.startDate || undefined,
       };
       const updated = await api.employees.updateEmployment(id, editingEmpId, input);
@@ -337,9 +333,7 @@ export default function EmployeeDetailPage() {
       if (err instanceof ApiError && err.status === 409) {
         const msg = err.message;
         setEditEmpError(
-          msg.includes('already has an active primary assignment') || msg.includes('already has another active primary assignment')
-            ? '既に主所属が設定されています。先に現在の主所属を変更してください。'
-            : msg.includes('overlapping period')
+          msg.includes('overlapping period')
             ? 'この組織への所属が既に登録されています（期間重複）。'
             : `競合エラー: ${msg}`,
         );
@@ -508,7 +502,6 @@ export default function EmployeeDetailPage() {
                   <th>組織 ID</th>
                   <th>種別</th>
                   <th>役職</th>
-                  <th>主所属</th>
                   <th>上長</th>
                   <th>開始日</th>
                   <th>終了日</th>
@@ -524,7 +517,6 @@ export default function EmployeeDetailPage() {
                       <td>{emp.organizationId}</td>
                       <td>{emp.employmentType !== undefined ? (EMPLOYMENT_TYPE[emp.employmentType] ?? emp.employmentType) : '—'}</td>
                       <td>{emp.positionName ?? '—'}</td>
-                      <td>{emp.isPrimaryAssignment ? <span className="badge badge-green">主所属</span> : '—'}</td>
                       <td>{emp.supervisorEmployeeId != null ? `社員ID: ${emp.supervisorEmployeeId}` : '—'}</td>
                       <td>{emp.startDate ? new Date(emp.startDate).toLocaleDateString('ja-JP') : '—'}</td>
                       <td>{emp.endDate ? new Date(emp.endDate).toLocaleDateString('ja-JP') : '—'}</td>
@@ -546,7 +538,6 @@ export default function EmployeeDetailPage() {
                                 setEditEmpForm({
                                   organizationId: String(emp.organizationId),
                                   employmentType: emp.employmentType !== undefined ? String(emp.employmentType) : '1',
-                                  isPrimaryAssignment: emp.isPrimaryAssignment,
                                   startDate: emp.startDate ? emp.startDate.substring(0, 10) : '',
                                   positionMasterId: '',
                                 });
@@ -848,7 +839,6 @@ const inputStyle: React.CSSProperties = {
 type EditEmploymentForm = {
   organizationId: string;
   employmentType: string;
-  isPrimaryAssignment: boolean;
   startDate: string;
   positionMasterId: string;
 };
@@ -856,7 +846,6 @@ type EditEmploymentForm = {
 const EMPTY_EDIT_EMP_FORM: EditEmploymentForm = {
   organizationId: '',
   employmentType: '1',
-  isPrimaryAssignment: false,
   startDate: '',
   positionMasterId: '',
 };
@@ -939,17 +928,6 @@ function EmploymentEditForm({
           )}
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <input
-          type="checkbox"
-          checked={form.isPrimaryAssignment}
-          onChange={(e) => onChange({ ...form, isPrimaryAssignment: e.target.checked })}
-        />
-        主所属として設定する
-      </label>
-      <p style={{ fontSize: 11, color: '#888', margin: '0 0 12px' }}>
-        ※ 主所属は社員1人につき1件のみ。既に別の主所属がある場合は設定できません。
-      </p>
       {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
@@ -968,7 +946,6 @@ function EmploymentEditForm({
 type AddEmploymentForm = {
   organizationId: string;
   employmentType: string;
-  isPrimaryAssignment: boolean;
   startDate: string;
   positionMasterId: string;
   supervisorEmployeeId: string;
@@ -978,7 +955,6 @@ type AddEmploymentForm = {
 const EMPTY_ADD_EMP_FORM: AddEmploymentForm = {
   organizationId: '',
   employmentType: '1',
-  isPrimaryAssignment: false,
   startDate: '',
   positionMasterId: '',
   supervisorEmployeeId: '',
@@ -1108,17 +1084,6 @@ function EmploymentAddForm({
           )}
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <input
-          type="checkbox"
-          checked={form.isPrimaryAssignment}
-          onChange={(e) => onChange({ ...form, isPrimaryAssignment: e.target.checked })}
-        />
-        主所属として設定する
-      </label>
-      <p style={{ fontSize: 11, color: '#888', margin: '0 0 12px' }}>
-        ※ 主所属は社員1人につき1件のみ。既に主所属がある場合はチェックしないでください。
-      </p>
       {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
