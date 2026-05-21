@@ -288,7 +288,7 @@ async function main(): Promise<void> {
       const supervisorId = def.supervisorNumber ? (empIdByNumber.get(def.supervisorNumber) ?? null) : null;
 
       const existingEmp = await prisma.employment.findFirst({
-        where: { tenantId: tenant.id, employeeId: empId, isPrimaryAssignment: true, status: 1 },
+        where: { tenantId: tenant.id, employeeId: empId, status: 1 },
         select: { id: true },
       });
       if (!existingEmp) {
@@ -298,7 +298,6 @@ async function main(): Promise<void> {
             employeeId: empId,
             organizationId: orgId,
             employmentType: 1,
-            isPrimaryAssignment: true,
             supervisorEmployeeId: supervisorId,
             startDate: new Date('2023-04-01'),
             status: 1,

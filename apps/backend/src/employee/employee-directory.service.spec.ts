@@ -40,8 +40,7 @@ const makeEmployment = (overrides: Record<string, unknown> = {}) => ({
   organizationId: 5,
   positionMasterId: null as number | null,
   employmentType: 1,
-  isPrimaryAssignment: true,
-  managerEmployeeId: null as number | null,
+  supervisorEmployeeId: null as number | null,
   startDate: new Date('2026-01-01'),
   endDate: null as Date | null,
   status: EMPLOYMENT_STATUS.ACTIVE,
@@ -86,7 +85,6 @@ describe('EmployeeDirectoryService', () => {
     employmentRepo = {
       findById: vi.fn(),
       findByEmployeeId: vi.fn().mockResolvedValue([]),
-      findPrimaryActive: vi.fn().mockResolvedValue(null),
       hasActivePrimaryAssignment: vi.fn().mockResolvedValue(false),
       hasOverlappingActiveEmployment: vi.fn().mockResolvedValue(false),
       hasActiveEmployments: vi.fn().mockResolvedValue(false),
@@ -218,11 +216,10 @@ describe('EmployeeDirectoryService', () => {
   describe('findById', () => {
     it('returns employee detail with employments for TENANT_ALL scope', async () => {
       const employee = makeEmployee();
-      const employments = [makeEmployment()];
       const primary = makeEmployment();
+      const employments = [primary];
       employeeRepo.findById.mockResolvedValue(employee);
       employmentRepo.findByEmployeeId.mockResolvedValue(employments);
-      employmentRepo.findPrimaryActive.mockResolvedValue(primary);
 
       const result = await service.findById(ctx, 1);
 
@@ -247,9 +244,7 @@ describe('EmployeeDirectoryService', () => {
       scopeResolver.resolveOrgAccess.mockResolvedValue({ kind: 'PRIMARY_ORG', orgId: 5 });
       employeeRepo.findById.mockResolvedValue(makeEmployee({ id: 2, employeeNumber: 'EMP002' }));
       employeeRepo.findEmployeeIdByUserAccount.mockResolvedValue(99); // caller ≠ target
-      const targetPrimary = makeEmployment({ employeeId: 2, organizationId: 5 });
-      employmentRepo.findPrimaryActive.mockResolvedValue(targetPrimary);
-      employmentRepo.findByEmployeeId.mockResolvedValue([makeEmployment({ employmentType: 2 })]);
+      employmentRepo.findByEmployeeId.mockResolvedValue([makeEmployment({ employeeId: 2, organizationId: 5, employmentType: 2 })]);
 
       const result = await service.findById(ctx, 2);
 
@@ -273,7 +268,7 @@ describe('EmployeeDirectoryService', () => {
       scopeResolver.resolveOrgAccess.mockResolvedValue({ kind: 'PRIMARY_ORG', orgId: 5 });
       employeeRepo.findById.mockResolvedValue(makeEmployee({ id: 2 }));
       employeeRepo.findEmployeeIdByUserAccount.mockResolvedValue(1); // caller is id=1, not id=2
-      employmentRepo.findPrimaryActive.mockResolvedValue(makeEmployment({ organizationId: 99 })); // different org
+      employmentRepo.findByEmployeeId.mockResolvedValue([makeEmployment({ organizationId: 99 })]); // different org
 
       await expect(service.findById(ctx, 2)).rejects.toThrow(NotFoundException);
     });
@@ -322,7 +317,7 @@ describe('EmployeeDirectoryService', () => {
       scopeResolver.resolveOrgAccess.mockResolvedValue({ kind: 'PRIMARY_ORG', orgId: 5 });
       employeeRepo.findById.mockResolvedValue(makeEmployee({ id: 2 }));
       employeeRepo.findEmployeeIdByUserAccount.mockResolvedValue(1); // caller is not target
-      employmentRepo.findPrimaryActive.mockResolvedValue(makeEmployment({ organizationId: 99 })); // different org
+      employmentRepo.findByEmployeeId.mockResolvedValue([makeEmployment({ organizationId: 99 })]); // different org
 
       await expect(service.getEmployments(ctx, 2)).rejects.toThrow(NotFoundException);
     });
@@ -473,7 +468,6 @@ describe('EmployeeDirectoryService', () => {
     const input = {
       organizationId: 5,
       employmentType: 1,
-      isPrimaryAssignment: true,
       startDate: new Date('2026-04-01'),
     };
 
@@ -489,26 +483,16 @@ describe('EmployeeDirectoryService', () => {
         expect.objectContaining({
           employeeId: 1,
           organizationId: 5,
-          isPrimaryAssignment: true,
           status: EMPLOYMENT_STATUS.ACTIVE,
         }),
       );
-    });
-
-    it('throws ConflictException when primary assignment already exists', async () => {
-      employeeRepo.findById.mockResolvedValue(makeEmployee());
-      employmentRepo.hasActivePrimaryAssignment.mockResolvedValue(true);
-
-      await expect(service.addEmployment(ctx, 1, input)).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when overlapping active employment exists', async () => {
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employmentRepo.hasOverlappingActiveEmployment.mockResolvedValue(true);
 
-      await expect(
-        service.addEmployment(ctx, 1, { ...input, isPrimaryAssignment: false }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.addEmployment(ctx, 1, input)).rejects.toThrow(ConflictException);
     });
 
     it('throws NotFoundException when organization not found', async () => {
@@ -518,12 +502,12 @@ describe('EmployeeDirectoryService', () => {
       await expect(service.addEmployment(ctx, 1, input)).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException when manager employee not found in tenant', async () => {
+    it('throws NotFoundException when supervisor employee not found in tenant', async () => {
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employeeRepo.existsInTenant.mockResolvedValue(false);
 
       await expect(
-        service.addEmployment(ctx, 1, { ...input, managerEmployeeId: 999 }),
+        service.addEmployment(ctx, 1, { ...input, supervisorEmployeeId: 999 }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -574,46 +558,6 @@ describe('EmployeeDirectoryService', () => {
       await expect(service.terminateEmployment(ctx, 1, 10, new Date('2026-12-31'))).rejects.toThrow(
         NotFoundException,
       );
-    });
-  });
-
-  // --- setPrimaryAssignment ---
-
-  describe('setPrimaryAssignment', () => {
-    it('sets an active employment as primary', async () => {
-      const employment = makeEmployment({ isPrimaryAssignment: false });
-      employeeRepo.findById.mockResolvedValue(makeEmployee());
-      employmentRepo.findById.mockResolvedValue(employment);
-      employmentRepo.update.mockResolvedValue({ ...employment, isPrimaryAssignment: true });
-
-      const result = await service.setPrimaryAssignment(ctx, 1, 10);
-
-      expect(result.isPrimaryAssignment).toBe(true);
-      expect(employmentRepo.hasActivePrimaryAssignment).toHaveBeenCalledWith(1, 1, 10);
-    });
-
-    it('throws ConflictException when already primary', async () => {
-      employeeRepo.findById.mockResolvedValue(makeEmployee());
-      employmentRepo.findById.mockResolvedValue(makeEmployment({ isPrimaryAssignment: true }));
-
-      await expect(service.setPrimaryAssignment(ctx, 1, 10)).rejects.toThrow(ConflictException);
-    });
-
-    it('throws ConflictException when employment is not active', async () => {
-      employeeRepo.findById.mockResolvedValue(makeEmployee());
-      employmentRepo.findById.mockResolvedValue(
-        makeEmployment({ isPrimaryAssignment: false, status: EMPLOYMENT_STATUS.RESIGNED }),
-      );
-
-      await expect(service.setPrimaryAssignment(ctx, 1, 10)).rejects.toThrow(ConflictException);
-    });
-
-    it('throws ConflictException when another primary already exists', async () => {
-      employeeRepo.findById.mockResolvedValue(makeEmployee());
-      employmentRepo.findById.mockResolvedValue(makeEmployment({ isPrimaryAssignment: false }));
-      employmentRepo.hasActivePrimaryAssignment.mockResolvedValue(true);
-
-      await expect(service.setPrimaryAssignment(ctx, 1, 10)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -872,7 +816,6 @@ describe('EmployeeDirectoryService', () => {
         service.addEmployment(ctx, 1, {
           organizationId: 999,
           employmentType: 1,
-          isPrimaryAssignment: false,
           startDate: new Date('2026-01-01'),
         }),
       ).rejects.toThrow(NotFoundException);

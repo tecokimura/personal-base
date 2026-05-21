@@ -88,7 +88,6 @@ model Employment {
   organizationId      Int
   positionMasterId    Int?
   employmentType      Int              @db.SmallInt
-  isPrimaryAssignment Boolean          @default(false)
   supervisorEmployeeId Int?             @map("managerEmployeeId")
   startDate           DateTime         @db.Date
   endDate             DateTime?        @db.Date
@@ -103,7 +102,6 @@ model Employment {
   @@index([tenantId])
   @@index([employeeId])
   @@index([organizationId])
-  @@index([tenantId, isPrimaryAssignment])
   @@index([status])
 }
 

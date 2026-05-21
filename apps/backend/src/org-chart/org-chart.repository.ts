@@ -24,7 +24,6 @@ export interface EmploymentRow {
   id: number;
   organizationId: number;
   employeeId: number;
-  isPrimaryAssignment: boolean;
   supervisorEmployeeId: number | null;
   positionMasterId: number | null;
   employeeNumber: string | null;
@@ -122,12 +121,11 @@ export class OrgChartRepository {
   ): Promise<EmploymentRow[]> {
     const rows = await this.prisma.employment.findMany({
       where: { organizationId, tenantId, status: EMPLOYMENT_ACTIVE },
-      orderBy: [{ isPrimaryAssignment: 'desc' }],
+      orderBy: [{ id: 'asc' }],
       select: {
         id: true,
         organizationId: true,
         employeeId: true,
-        isPrimaryAssignment: true,
         supervisorEmployeeId: true,
         positionMasterId: true,
         employee: {
@@ -145,7 +143,6 @@ export class OrgChartRepository {
       id: r.id,
       organizationId: r.organizationId,
       employeeId: r.employeeId,
-      isPrimaryAssignment: r.isPrimaryAssignment,
       supervisorEmployeeId: r.supervisorEmployeeId,
       positionMasterId: r.positionMasterId,
       employeeNumber: r.employee.employeeNumber,
@@ -180,12 +177,8 @@ export class OrgChartRepository {
     tenantId: number,
   ): Promise<string | null> {
     const primary = await this.prisma.employment.findFirst({
-      where: {
-        employeeId,
-        tenantId,
-        isPrimaryAssignment: true,
-        status: EMPLOYMENT_ACTIVE,
-      },
+      where: { employeeId, tenantId, status: EMPLOYMENT_ACTIVE },
+      orderBy: { id: 'asc' },
       select: { organization: { select: { organizationName: true } } },
     });
     return primary?.organization.organizationName ?? null;

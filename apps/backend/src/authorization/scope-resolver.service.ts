@@ -215,7 +215,7 @@ export class ScopeResolverService {
 
   private async getPrimaryOrgId(employeeId: number, tenantId: number): Promise<number | null> {
     const employment = await this.prisma.employment.findFirst({
-      where: { employeeId, tenantId, isPrimaryAssignment: true, status: EMPLOYMENT_STATUS_ACTIVE },
+      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS_ACTIVE },
       select: { organizationId: true },
     });
     return employment?.organizationId ?? null;

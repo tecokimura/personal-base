@@ -16,7 +16,6 @@ interface CreateEmploymentData {
   organizationId: number;
   positionMasterId?: number | null;
   employmentType: number;
-  isPrimaryAssignment: boolean;
   supervisorEmployeeId?: number | null;
   startDate: Date;
   status: number;
@@ -27,7 +26,6 @@ interface UpdateEmploymentData {
   organizationId?: number;
   positionMasterId?: number | null;
   employmentType?: number;
-  isPrimaryAssignment?: boolean;
   supervisorEmployeeId?: number | null;
   startDate?: Date;
   endDate?: Date | null;
@@ -48,25 +46,6 @@ export class EmploymentRepository {
       where: { employeeId, tenantId },
       orderBy: { startDate: 'desc' },
     });
-  }
-
-  async findPrimaryActive(employeeId: number, tenantId: number): Promise<Employment | null> {
-    return this.prisma.employment.findFirst({
-      where: { employeeId, tenantId, isPrimaryAssignment: true, status: EMPLOYMENT_STATUS.ACTIVE },
-    });
-  }
-
-  async hasActivePrimaryAssignment(employeeId: number, tenantId: number, excludeId?: number): Promise<boolean> {
-    const count = await this.prisma.employment.count({
-      where: {
-        employeeId,
-        tenantId,
-        isPrimaryAssignment: true,
-        status: EMPLOYMENT_STATUS.ACTIVE,
-        ...(excludeId !== undefined ? { NOT: { id: excludeId } } : {}),
-      },
-    });
-    return count > 0;
   }
 
   async hasOverlappingActiveEmployment(

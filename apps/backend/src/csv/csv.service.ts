@@ -157,7 +157,6 @@ export class CsvService {
             employeeId,
             organizationId: parseInt(orgIdRaw, 10),
             employmentType: parseInt(row.employment_type.trim(), 10),
-            isPrimaryAssignment: true,
             supervisorEmployeeId,
             positionMasterId: row.position_master_id.trim()
               ? parseInt(row.position_master_id.trim(), 10)
@@ -183,7 +182,8 @@ export class CsvService {
       orderBy: { id: 'asc' },
       include: {
         employments: {
-          where: { isPrimaryAssignment: true, status: EMPLOYMENT_STATUS.ACTIVE },
+          where: { status: EMPLOYMENT_STATUS.ACTIVE },
+          orderBy: { id: 'asc' },
           take: 1,
         },
       },

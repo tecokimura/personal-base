@@ -67,7 +67,7 @@ export class EmployeeRepository {
     selfEmployeeId: number,
   ): Promise<Employee[]> {
     const employments = await this.prisma.employment.findMany({
-      where: { tenantId, organizationId: orgId, isPrimaryAssignment: true, status: 1 },
+      where: { tenantId, organizationId: orgId, status: 1 },
       select: { employeeId: true },
       distinct: ['employeeId'],
     });

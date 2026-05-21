@@ -72,7 +72,6 @@ describe('CsvService', () => {
           data: expect.objectContaining({
             organizationId: 5,
             employmentType: 1,
-            isPrimaryAssignment: true,
             status: 1,
           }),
         }),

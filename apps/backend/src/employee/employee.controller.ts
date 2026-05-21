@@ -117,7 +117,6 @@ export class EmployeeController {
     return this.service.addEmployment(this.ctx(req), id, {
       organizationId: dto.organizationId,
       employmentType: dto.employmentType,
-      isPrimaryAssignment: dto.isPrimaryAssignment,
       positionMasterId: dto.positionMasterId,
       supervisorEmployeeId: dto.supervisorEmployeeId,
       startDate: new Date(dto.startDate),
@@ -137,7 +136,6 @@ export class EmployeeController {
       employmentType: dto.employmentType,
       positionMasterId: dto.positionMasterId,
       supervisorEmployeeId: dto.supervisorEmployeeId,
-      isPrimaryAssignment: dto.isPrimaryAssignment,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
     });
   }
@@ -187,15 +185,6 @@ export class EmployeeController {
     @Body() dto: SetSupervisorEmployeeDto,
   ) {
     return this.service.setSupervisorEmployee(this.ctx(req), id, empId, dto.supervisorEmployeeId);
-  }
-
-  @Post(':id/employments/:empId/set-primary')
-  setPrimaryAssignment(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('empId', ParseIntPipe) empId: number,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.service.setPrimaryAssignment(this.ctx(req), id, empId);
   }
 
   private ctx(req: AuthenticatedRequest): AuthContext {

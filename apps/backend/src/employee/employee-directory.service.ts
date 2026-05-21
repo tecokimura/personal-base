@@ -40,7 +40,6 @@ export interface AssistUpdateProfileInput {
 export interface AddEmploymentInput {
   organizationId: number;
   employmentType: number;
-  isPrimaryAssignment: boolean;
   positionMasterId?: number;
   supervisorEmployeeId?: number;
   startDate: Date;
@@ -52,7 +51,6 @@ export interface UpdateEmploymentInput {
   employmentType?: number;
   positionMasterId?: number;
   supervisorEmployeeId?: number;
-  isPrimaryAssignment?: boolean;
   startDate?: Date;
 }
 
@@ -88,7 +86,6 @@ export interface EmploymentPublicView {
   organizationId: number;
   positionMasterId: number | null;
   positionName: string | null;
-  isPrimaryAssignment: boolean;
   supervisorEmployeeId: number | null;
   startDate: Date;
   endDate: Date | null;
@@ -165,10 +162,8 @@ export class EmployeeDirectoryService {
     const access = await this.scopeResolver.resolveOrgAccess(ctx);
     await this.assertEmployeeInScope(access, id, ctx);
 
-    const [employments, primaryEmployment] = await Promise.all([
-      this.employmentRepo.findByEmployeeId(id, ctx.tenantId),
-      this.employmentRepo.findPrimaryActive(id, ctx.tenantId),
-    ]);
+    const employments = await this.employmentRepo.findByEmployeeId(id, ctx.tenantId);
+    const primaryEmployment = employments.find((e) => e.status === EMPLOYMENT_STATUS.ACTIVE) ?? null;
 
     const positionMap = await this.resolvePositionNames(employments);
 
@@ -321,16 +316,6 @@ export class EmployeeDirectoryService {
       await this.assertEmployeeExistsInTenant(input.supervisorEmployeeId, ctx.tenantId);
     }
 
-    if (input.isPrimaryAssignment) {
-      const hasPrimary = await this.employmentRepo.hasActivePrimaryAssignment(
-        employeeId,
-        ctx.tenantId,
-      );
-      if (hasPrimary) {
-        throw new ConflictException('Employee already has an active primary assignment');
-      }
-    }
-
     const startDate = input.startDate;
     const hasOverlap = await this.employmentRepo.hasOverlappingActiveEmployment(
       employeeId,
@@ -350,7 +335,6 @@ export class EmployeeDirectoryService {
       organizationId: input.organizationId,
       positionMasterId: input.positionMasterId ?? null,
       employmentType: input.employmentType,
-      isPrimaryAssignment: input.isPrimaryAssignment,
       supervisorEmployeeId: input.supervisorEmployeeId ?? null,
       startDate,
       status: input.status ?? EMPLOYMENT_STATUS.ACTIVE,
@@ -389,17 +373,6 @@ export class EmployeeDirectoryService {
       await this.assertEmployeeExistsInTenant(input.supervisorEmployeeId, ctx.tenantId);
     }
 
-    if (input.isPrimaryAssignment === true && !employment.isPrimaryAssignment) {
-      const hasPrimary = await this.employmentRepo.hasActivePrimaryAssignment(
-        employeeId,
-        ctx.tenantId,
-        employmentId,
-      );
-      if (hasPrimary) {
-        throw new ConflictException('Employee already has an active primary assignment');
-      }
-    }
-
     if (input.startDate !== undefined) {
       if (employment.endDate && input.startDate > employment.endDate) {
         throw new UnprocessableEntityException('startDate must be on or before endDate');
@@ -412,9 +385,6 @@ export class EmployeeDirectoryService {
       ...(input.positionMasterId !== undefined && { positionMasterId: input.positionMasterId }),
       ...(input.supervisorEmployeeId !== undefined && {
         supervisorEmployeeId: input.supervisorEmployeeId,
-      }),
-      ...(input.isPrimaryAssignment !== undefined && {
-        isPrimaryAssignment: input.isPrimaryAssignment,
       }),
       ...(input.startDate !== undefined && { startDate: input.startDate }),
       updatedBy: ctx.userAccountId,
@@ -460,44 +430,6 @@ export class EmployeeDirectoryService {
       actionType: 'TERMINATE',
       changedByEmployeeId: ctx.employeeId,
       scopeSummary: `employeeId=${employeeId}`,
-    });
-  }
-
-  async setPrimaryAssignment(
-    ctx: AuthContext,
-    employeeId: number,
-    employmentId: number,
-  ): Promise<Employment> {
-    await this.authorizationService.assertCan(ctx, Permission.MANAGE_EMPLOYEE, ctx.tenantId);
-    await this.assertEmployeeExists(employeeId, ctx.tenantId);
-    const employment = await this.assertEmploymentBelongsToEmployee(
-      employmentId,
-      employeeId,
-      ctx.tenantId,
-    );
-
-    if (employment.status !== EMPLOYMENT_STATUS.ACTIVE) {
-      throw new ConflictException('Cannot set a non-active employment as primary');
-    }
-
-    if (employment.isPrimaryAssignment) {
-      throw new ConflictException('Employment is already the primary assignment');
-    }
-
-    const hasPrimary = await this.employmentRepo.hasActivePrimaryAssignment(
-      employeeId,
-      ctx.tenantId,
-      employmentId,
-    );
-    if (hasPrimary) {
-      throw new ConflictException(
-        'Employee already has another active primary assignment. Terminate it first.',
-      );
-    }
-
-    return this.employmentRepo.update(employmentId, ctx.tenantId, {
-      isPrimaryAssignment: true,
-      updatedBy: ctx.userAccountId,
     });
   }
 
@@ -648,7 +580,6 @@ export class EmployeeDirectoryService {
       organizationId: employment.organizationId,
       positionMasterId: employment.positionMasterId,
       positionName: employment.positionMasterId ? (positionMap.get(employment.positionMasterId) ?? null) : null,
-      isPrimaryAssignment: employment.isPrimaryAssignment,
       supervisorEmployeeId: employment.supervisorEmployeeId,
       startDate: employment.startDate,
       endDate: employment.endDate,
@@ -709,8 +640,11 @@ export class EmployeeDirectoryService {
       throw new NotFoundException(`Employee ${employeeId} not found`);
     }
 
-    const targetPrimary = await this.employmentRepo.findPrimaryActive(employeeId, ctx.tenantId);
-    if (!targetPrimary || targetPrimary.organizationId !== access.orgId) {
+    const targetEmployments = await this.employmentRepo.findByEmployeeId(employeeId, ctx.tenantId);
+    const inPrimaryOrg = targetEmployments.some(
+      (e) => e.status === EMPLOYMENT_STATUS.ACTIVE && e.organizationId === access.orgId,
+    );
+    if (!inPrimaryOrg) {
       throw new NotFoundException(`Employee ${employeeId} not found`);
     }
   }

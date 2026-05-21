@@ -1,7 +1,6 @@
 import {
   IsInt,
   IsIn,
-  IsBoolean,
   IsOptional,
   IsDateString,
   Min,
@@ -29,10 +28,6 @@ export class UpdateEmploymentDto {
   @IsInt()
   @Min(1)
   supervisorEmployeeId?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  isPrimaryAssignment?: boolean;
 
   @IsOptional()
   @IsDateString()

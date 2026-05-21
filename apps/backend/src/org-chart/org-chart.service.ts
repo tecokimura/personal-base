@@ -194,21 +194,6 @@ export class OrgChartService {
       }),
     );
 
-    // For concurrent members, we need to find their primary org name
-    const concurrentEmployeeIds = employments
-      .filter((e) => !e.isPrimaryAssignment)
-      .map((e) => e.employeeId);
-
-    const primaryOrgNames = new Map<number, string | null>();
-    await Promise.all(
-      concurrentEmployeeIds.map(async (id) => {
-        if (!primaryOrgNames.has(id)) {
-          const name = await this.repo.findPrimaryOrgNameForEmployee(id, tenantId);
-          primaryOrgNames.set(id, name);
-        }
-      }),
-    );
-
     const positionNames = await this.repo.findPositionMastersByTenant(tenantId);
 
     const toCard = (e: EmploymentRow): EmployeeCard => ({
@@ -216,23 +201,17 @@ export class OrgChartService {
       employeeNumber: access.kind === 'PRIMARY_ORG' ? null : e.employeeNumber,
       displayName: e.displayName ?? e.fullName,
       photoStorageKey: e.photoStorageKey,
-      assignmentLabel: e.isPrimaryAssignment ? '主所属' : '兼務',
+      assignmentLabel: '主所属',
       positionName: e.positionMasterId ? (positionNames.get(e.positionMasterId) ?? null) : null,
       supervisorDisplayName: e.supervisorEmployeeId ? (supervisorNames.get(e.supervisorEmployeeId) ?? null) : null,
-      primaryOrganizationName: e.isPrimaryAssignment ? null : (primaryOrgNames.get(e.employeeId) ?? null),
+      primaryOrganizationName: null,
     });
 
     const primaryMembers = employments
-      .filter((e) => e.isPrimaryAssignment)
       .map(toCard)
       .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ja'));
 
-    const concurrentMembers = employments
-      .filter((e) => !e.isPrimaryAssignment)
-      .map(toCard)
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ja'));
-
-    return { primaryMembers, concurrentMembers };
+    return { primaryMembers, concurrentMembers: [] };
   }
 
   private toLeaderCard(leader: LeaderRow): LeaderCard {

@@ -28,8 +28,7 @@ const makeEmployment = (overrides: Partial<EmploymentRow> = {}): EmploymentRow =
   id: 100,
   organizationId: 1,
   employeeId: 20,
-  isPrimaryAssignment: true,
-  managerEmployeeId: null,
+  supervisorEmployeeId: null,
   positionMasterId: null,
   employeeNumber: 'EMP001',
   displayName: '山田 花子',
@@ -176,7 +175,7 @@ describe('OrgChartService', () => {
       const org = makeOrg({ id: 1 });
       const child = makeOrg({ id: 2, organizationName: '開発1課', parentOrganizationId: 1 });
       const leader = makeLeader();
-      const employment = makeEmployment({ isPrimaryAssignment: true });
+      const employment = makeEmployment();
 
       repo.findActiveOrganizations.mockResolvedValue([org, child]);
       repo.findActiveLeadersByOrg.mockResolvedValue([leader]);
@@ -205,26 +204,25 @@ describe('OrgChartService', () => {
       await expect(service.getOrganizationDetail(1, ctx)).rejects.toThrow(NotFoundException);
     });
 
-    it('separates primary and concurrent members', async () => {
+    it('all members are in primaryMembers, concurrentMembers is empty', async () => {
       const org = makeOrg();
-      const primary = makeEmployment({ id: 100, employeeId: 20, isPrimaryAssignment: true });
-      const concurrent = makeEmployment({ id: 101, employeeId: 21, isPrimaryAssignment: false });
+      const e1 = makeEmployment({ id: 100, employeeId: 20 });
+      const e2 = makeEmployment({ id: 101, employeeId: 21 });
 
       repo.findActiveOrganizations.mockResolvedValue([org]);
       repo.findActiveLeadersByOrg.mockResolvedValue([]);
-      repo.findActiveEmploymentsByOrg.mockResolvedValue([primary, concurrent]);
+      repo.findActiveEmploymentsByOrg.mockResolvedValue([e1, e2]);
 
       const result = await service.getOrganizationDetail(1, ctx);
 
-      expect(result.primaryMembers).toHaveLength(1);
+      expect(result.primaryMembers).toHaveLength(2);
       expect(result.primaryMembers[0].assignmentLabel).toBe('主所属');
-      expect(result.concurrentMembers).toHaveLength(1);
-      expect(result.concurrentMembers[0].assignmentLabel).toBe('兼務');
+      expect(result.concurrentMembers).toHaveLength(0);
     });
 
-    it('includes manager display name in employee card', async () => {
+    it('includes supervisor display name in employee card', async () => {
       const org = makeOrg();
-      const employment = makeEmployment({ managerEmployeeId: 99 });
+      const employment = makeEmployment({ supervisorEmployeeId: 99 });
       repo.findActiveOrganizations.mockResolvedValue([org]);
       repo.findActiveLeadersByOrg.mockResolvedValue([]);
       repo.findActiveEmploymentsByOrg.mockResolvedValue([employment]);
@@ -232,7 +230,7 @@ describe('OrgChartService', () => {
 
       const result = await service.getOrganizationDetail(1, ctx);
 
-      expect(result.primaryMembers[0].managerDisplayName).toBe('上長 次郎');
+      expect(result.primaryMembers[0].supervisorDisplayName).toBe('上長 次郎');
       expect(repo.findEmployeeDisplayNameById).toHaveBeenCalledWith(99, 1);
     });
 
@@ -259,17 +257,16 @@ describe('OrgChartService', () => {
       expect(result.primaryMembers[0].positionName).toBe('部長');
     });
 
-    it('includes primaryOrganizationName for concurrent member', async () => {
+    it('primaryOrganizationName is always null', async () => {
       const org = makeOrg();
-      const concurrent = makeEmployment({ isPrimaryAssignment: false, employeeId: 30 });
+      const employment = makeEmployment({ employeeId: 30 });
       repo.findActiveOrganizations.mockResolvedValue([org]);
       repo.findActiveLeadersByOrg.mockResolvedValue([]);
-      repo.findActiveEmploymentsByOrg.mockResolvedValue([concurrent]);
-      repo.findPrimaryOrgNameForEmployee.mockResolvedValue('営業部');
+      repo.findActiveEmploymentsByOrg.mockResolvedValue([employment]);
 
       const result = await service.getOrganizationDetail(1, ctx);
 
-      expect(result.concurrentMembers[0].primaryOrganizationName).toBe('営業部');
+      expect(result.primaryMembers[0].primaryOrganizationName).toBeNull();
     });
 
     it('masks employeeNumber to null for PRIMARY_ORG scope', async () => {
@@ -326,8 +323,8 @@ describe('OrgChartService', () => {
 
     it('sorts members by displayName', async () => {
       const org = makeOrg();
-      const e1 = makeEmployment({ id: 1, employeeId: 1, displayName: '鈴木 一郎', isPrimaryAssignment: true });
-      const e2 = makeEmployment({ id: 2, employeeId: 2, displayName: '阿部 花子', isPrimaryAssignment: true });
+      const e1 = makeEmployment({ id: 1, employeeId: 1, displayName: '鈴木 一郎' });
+      const e2 = makeEmployment({ id: 2, employeeId: 2, displayName: '阿部 花子' });
       repo.findActiveOrganizations.mockResolvedValue([org]);
       repo.findActiveEmploymentsByOrg.mockResolvedValue([e1, e2]);
 

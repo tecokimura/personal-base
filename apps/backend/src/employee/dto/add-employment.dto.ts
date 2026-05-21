@@ -1,7 +1,6 @@
 import {
   IsInt,
   IsIn,
-  IsBoolean,
   IsOptional,
   IsDateString,
   Min,
@@ -21,9 +20,6 @@ export class AddEmploymentDto {
   @IsInt()
   @IsIn(VALID_EMPLOYMENT_TYPES)
   employmentType!: number;
-
-  @IsBoolean()
-  isPrimaryAssignment!: boolean;
 
   @IsOptional()
   @IsInt()
