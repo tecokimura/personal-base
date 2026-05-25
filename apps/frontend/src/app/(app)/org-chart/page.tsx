@@ -48,7 +48,6 @@ function MemberList({ members }: { members: OrgChartMembers }) {
 }
 
 function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; depth?: number; isLast?: boolean }) {
-  const [open, setOpen] = useState(depth < 2);
   const [membersOpen, setMembersOpen] = useState(false);
   const [members, setMembers] = useState<OrgChartMembers | null>(null);
   const [membersLoading, setMembersLoading] = useState(false);
@@ -103,32 +102,6 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
             height: 1,
             background: '#e2e8f0',
           }} />
-        )}
-
-        {/* 展開ボタン or スペーサー */}
-        {hasChildren ? (
-          <button
-            onClick={() => setOpen((v) => !v)}
-            style={{
-              background: color,
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              color: '#fff',
-              fontSize: 10,
-              width: 18,
-              height: 18,
-              borderRadius: 3,
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {open ? '▾' : '▸'}
-          </button>
-        ) : (
-          <span style={{ width: 18, height: 18, flexShrink: 0, display: 'inline-block' }} />
         )}
 
         {/* 組織名バッジ */}
@@ -194,7 +167,7 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
         </div>
       )}
 
-      {open && hasChildren && (
+      {hasChildren && (
         <ul style={{ listStyle: 'none', paddingLeft: 32, margin: 0, position: 'relative' }}>
           {node.children.map((child, idx) => (
             <OrgNode
