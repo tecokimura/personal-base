@@ -377,7 +377,7 @@ export default function EmployeeDetailPage() {
           <dd style={{ margin: 0 }}>{employee.fullName}</dd>
 
           <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>
-            表示名
+            よみ・英語名
             <span style={{ fontWeight: 400, fontSize: 11, color: '#aaa', marginLeft: 6 }}>
               例: Yamada Taro
             </span>
