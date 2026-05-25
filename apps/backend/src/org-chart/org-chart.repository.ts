@@ -34,7 +34,6 @@ export interface EmploymentRow {
 
 // status codes
 const ORG_LEADER_ACTIVE = 1;
-const EMPLOYMENT_ACTIVE = 1;
 
 @Injectable()
 export class OrgChartRepository {
@@ -108,7 +107,7 @@ export class OrgChartRepository {
   async countActiveEmploymentsByOrg(tenantId: number): Promise<Map<number, number>> {
     const counts = await this.prisma.employment.groupBy({
       by: ['organizationId'],
-      where: { tenantId, status: EMPLOYMENT_ACTIVE },
+      where: { tenantId, endDate: null },
       _count: { id: true },
     });
 
@@ -120,7 +119,7 @@ export class OrgChartRepository {
     tenantId: number,
   ): Promise<EmploymentRow[]> {
     const rows = await this.prisma.employment.findMany({
-      where: { organizationId, tenantId, status: EMPLOYMENT_ACTIVE },
+      where: { organizationId, tenantId, endDate: null },
       orderBy: [{ id: 'asc' }],
       select: {
         id: true,
@@ -177,7 +176,7 @@ export class OrgChartRepository {
     tenantId: number,
   ): Promise<string | null> {
     const primary = await this.prisma.employment.findFirst({
-      where: { employeeId, tenantId, status: EMPLOYMENT_ACTIVE },
+      where: { employeeId, tenantId, endDate: null },
       orderBy: { id: 'asc' },
       select: { organization: { select: { organizationName: true } } },
     });

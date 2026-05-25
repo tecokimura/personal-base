@@ -116,9 +116,9 @@ export interface AddEmploymentInput {
   organizationId: number;
   employmentType: number;
   startDate: string;
+  endDate?: string;
   positionMasterId?: number;
   supervisorEmployeeId?: number;
-  status?: number;
 }
 
 export interface UpdateEmploymentInput {
@@ -126,6 +126,7 @@ export interface UpdateEmploymentInput {
   employmentType?: number;
   positionMasterId?: number | null;
   startDate?: string;
+  endDate?: string | null;
 }
 
 export interface EmployeeDetail extends EmployeeListItem {

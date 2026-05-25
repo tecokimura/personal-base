@@ -120,7 +120,7 @@ export class EmployeeController {
       positionMasterId: dto.positionMasterId,
       supervisorEmployeeId: dto.supervisorEmployeeId,
       startDate: new Date(dto.startDate),
-      status: dto.status,
+      endDate: dto.endDate ? new Date(dto.endDate) : undefined,
     });
   }
 
@@ -137,6 +137,7 @@ export class EmployeeController {
       positionMasterId: dto.positionMasterId,
       supervisorEmployeeId: dto.supervisorEmployeeId,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+      endDate: dto.endDate !== undefined ? (dto.endDate ? new Date(dto.endDate) : null) : undefined,
     });
   }
 

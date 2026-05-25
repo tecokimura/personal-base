@@ -534,7 +534,7 @@ describe('EmployeeDirectoryService', () => {
     it('throws ConflictException when already terminated', async () => {
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employmentRepo.findById.mockResolvedValue(
-        makeEmployment({ status: EMPLOYMENT_STATUS.RESIGNED }),
+        makeEmployment({ endDate: new Date('2026-06-01') }),
       );
 
       await expect(service.terminateEmployment(ctx, 1, 10, new Date('2026-12-31'))).rejects.toThrow(

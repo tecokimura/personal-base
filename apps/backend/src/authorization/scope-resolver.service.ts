@@ -15,7 +15,6 @@ export type OrgAccess =
   | { kind: 'ORG_TREE'; orgIds: ReadonlySet<number> }
   | { kind: 'PRIMARY_ORG'; orgId: number | null };
 
-const EMPLOYMENT_STATUS_ACTIVE = 1;
 
 @Injectable()
 export class ScopeResolverService {
@@ -199,7 +198,7 @@ export class ScopeResolverService {
 
   private async getEmployeeActiveOrgIds(employeeId: number, tenantId: number): Promise<number[]> {
     const employments = await this.prisma.employment.findMany({
-      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS_ACTIVE },
+      where: { employeeId, tenantId, endDate: null },
       select: { organizationId: true },
     });
     return employments.map(e => e.organizationId);
@@ -215,7 +214,7 @@ export class ScopeResolverService {
 
   private async getPrimaryOrgId(employeeId: number, tenantId: number): Promise<number | null> {
     const employment = await this.prisma.employment.findFirst({
-      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS_ACTIVE },
+      where: { employeeId, tenantId, endDate: null },
       select: { organizationId: true },
     });
     return employment?.organizationId ?? null;

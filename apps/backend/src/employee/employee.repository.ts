@@ -48,7 +48,7 @@ export class EmployeeRepository {
     const ids = [...orgIds];
     if (ids.length === 0) return [];
     const employments = await this.prisma.employment.findMany({
-      where: { tenantId, organizationId: { in: ids }, status: 1 },
+      where: { tenantId, organizationId: { in: ids }, endDate: null },
       select: { employeeId: true },
       distinct: ['employeeId'],
     });
@@ -67,7 +67,7 @@ export class EmployeeRepository {
     selfEmployeeId: number,
   ): Promise<Employee[]> {
     const employments = await this.prisma.employment.findMany({
-      where: { tenantId, organizationId: orgId, status: 1 },
+      where: { tenantId, organizationId: orgId, endDate: null },
       select: { employeeId: true },
       distinct: ['employeeId'],
     });
@@ -167,7 +167,7 @@ export class EmployeeRepository {
     const ids = [...orgIds];
     if (ids.length === 0) return false;
     const count = await this.prisma.employment.count({
-      where: { employeeId, tenantId, organizationId: { in: ids }, status: 1 },
+      where: { employeeId, tenantId, organizationId: { in: ids }, endDate: null },
     });
     return count > 0;
   }

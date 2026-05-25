@@ -32,4 +32,8 @@ export class UpdateEmploymentDto {
   @IsOptional()
   @IsDateString()
   startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string | null;
 }

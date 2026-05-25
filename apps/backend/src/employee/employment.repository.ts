@@ -18,6 +18,7 @@ interface CreateEmploymentData {
   employmentType: number;
   supervisorEmployeeId?: number | null;
   startDate: Date;
+  endDate?: Date | null;
   status: number;
   updatedBy?: number | null;
 }
@@ -60,9 +61,8 @@ export class EmploymentRepository {
         employeeId,
         organizationId,
         tenantId,
-        status: EMPLOYMENT_STATUS.ACTIVE,
+        endDate: null,
         startDate: { lte: startDate },
-        OR: [{ endDate: null }, { endDate: { gte: startDate } }],
         ...(excludeId !== undefined ? { NOT: { id: excludeId } } : {}),
       },
     });
@@ -71,7 +71,7 @@ export class EmploymentRepository {
 
   async hasActiveEmployments(employeeId: number, tenantId: number): Promise<boolean> {
     const count = await this.prisma.employment.count({
-      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS.ACTIVE },
+      where: { employeeId, tenantId, endDate: null },
     });
     return count > 0;
   }
@@ -87,7 +87,7 @@ export class EmploymentRepository {
   async terminate(id: number, tenantId: number, endDate: Date, updatedBy: number | null): Promise<void> {
     await this.prisma.employment.update({
       where: { id },
-      data: { status: EMPLOYMENT_STATUS.RESIGNED, endDate, updatedBy },
+      data: { endDate, updatedBy },
     });
   }
 
@@ -100,7 +100,7 @@ export class EmploymentRepository {
 
   async markAllActiveDeleted(employeeId: number, tenantId: number, updatedBy: number | null): Promise<void> {
     await this.prisma.employment.updateMany({
-      where: { employeeId, tenantId, status: EMPLOYMENT_STATUS.ACTIVE },
+      where: { employeeId, tenantId, endDate: null },
       data: { status: EMPLOYMENT_STATUS.DELETED, updatedBy },
     });
   }

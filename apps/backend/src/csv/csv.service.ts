@@ -182,7 +182,7 @@ export class CsvService {
       orderBy: { id: 'asc' },
       include: {
         employments: {
-          where: { status: EMPLOYMENT_STATUS.ACTIVE },
+          where: { endDate: null },
           orderBy: { id: 'asc' },
           take: 1,
         },

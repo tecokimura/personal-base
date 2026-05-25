@@ -290,9 +290,9 @@ export default function EmployeeDetailPage() {
         organizationId: Number(addEmpForm.organizationId),
         employmentType: Number(addEmpForm.employmentType),
         startDate: addEmpForm.startDate,
+        endDate: addEmpForm.endDate || undefined,
         positionMasterId: addEmpForm.positionMasterId ? Number(addEmpForm.positionMasterId) : undefined,
         supervisorEmployeeId: addEmpForm.supervisorEmployeeId ? Number(addEmpForm.supervisorEmployeeId) : undefined,
-        status: addEmpForm.status ? Number(addEmpForm.status) : undefined,
       };
       const emp = await api.employees.addEmployment(id, input);
       setEmployee((prev) => prev ? { ...prev, employments: [...prev.employments, emp] } : prev);
@@ -325,6 +325,7 @@ export default function EmployeeDetailPage() {
         employmentType: editEmpForm.employmentType ? Number(editEmpForm.employmentType) : undefined,
         positionMasterId: editEmpForm.positionMasterId !== '' ? Number(editEmpForm.positionMasterId) : null,
         startDate: editEmpForm.startDate || undefined,
+        endDate: editEmpForm.endDate !== undefined ? (editEmpForm.endDate || null) : undefined,
       };
       const updated = await api.employees.updateEmployment(id, editingEmpId, input);
       setEmployee((prev) => prev ? { ...prev, employments: prev.employments.map((emp) => emp.id === editingEmpId ? updated : emp) } : prev);
@@ -526,9 +527,11 @@ export default function EmployeeDetailPage() {
                       <td>{emp.startDate ? new Date(emp.startDate).toLocaleDateString('ja-JP') : '—'}</td>
                       <td>{emp.endDate ? new Date(emp.endDate).toLocaleDateString('ja-JP') : '—'}</td>
                       <td>
-                        <span className={emp.status === 1 ? 'badge badge-green' : 'badge badge-gray'}>
-                          {EMPLOYMENT_STATUS[emp.status] ?? emp.status}
-                        </span>
+                        {emp.status === 2 ? (
+                          <span className="badge badge-gray">{EMPLOYMENT_STATUS[2]}</span>
+                        ) : emp.endDate ? (
+                          <span className="badge badge-gray">過去</span>
+                        ) : null}
                       </td>
                       {canEditSelf && (
                         <td style={{ whiteSpace: 'nowrap' }}>
@@ -544,6 +547,7 @@ export default function EmployeeDetailPage() {
                                   organizationId: String(emp.organizationId),
                                   employmentType: emp.employmentType !== undefined ? String(emp.employmentType) : '1',
                                   startDate: emp.startDate ? emp.startDate.substring(0, 10) : '',
+                                  endDate: emp.endDate ? emp.endDate.substring(0, 10) : '',
                                   positionMasterId: '',
                                 });
                                 setEditEmpError('');
@@ -845,6 +849,7 @@ type EditEmploymentForm = {
   organizationId: string;
   employmentType: string;
   startDate: string;
+  endDate: string;
   positionMasterId: string;
 };
 
@@ -852,6 +857,7 @@ const EMPTY_EDIT_EMP_FORM: EditEmploymentForm = {
   organizationId: '',
   employmentType: '1',
   startDate: '',
+  endDate: '',
   positionMasterId: '',
 };
 
@@ -918,6 +924,10 @@ function EmploymentEditForm({
           <input type="date" style={inputStyle} value={form.startDate} onChange={field('startDate')} />
         </label>
         <label style={labelStyle}>
+          終了日（退職・異動日）
+          <input type="date" style={inputStyle} value={form.endDate} onChange={field('endDate')} />
+        </label>
+        <label style={labelStyle}>
           役職（任意）
           {positionMasters === null ? (
             <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
@@ -952,18 +962,18 @@ type AddEmploymentForm = {
   organizationId: string;
   employmentType: string;
   startDate: string;
+  endDate: string;
   positionMasterId: string;
   supervisorEmployeeId: string;
-  status: string;
 };
 
 const EMPTY_ADD_EMP_FORM: AddEmploymentForm = {
   organizationId: '',
   employmentType: '1',
   startDate: '',
+  endDate: '',
   positionMasterId: '',
   supervisorEmployeeId: '',
-  status: '1',
 };
 
 function EmploymentAddForm({
@@ -1044,11 +1054,13 @@ function EmploymentAddForm({
           />
         </label>
         <label style={labelStyle}>
-          状態
-          <select style={inputStyle} value={form.status} onChange={field('status')}>
-            <option value="1">在籍中</option>
-            <option value="2">休職中</option>
-          </select>
+          終了日（過去の所属の場合）
+          <input
+            type="date"
+            style={inputStyle}
+            value={form.endDate}
+            onChange={field('endDate')}
+          />
         </label>
         <label style={labelStyle}>
           役職（任意）

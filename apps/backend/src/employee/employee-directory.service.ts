@@ -43,7 +43,7 @@ export interface AddEmploymentInput {
   positionMasterId?: number;
   supervisorEmployeeId?: number;
   startDate: Date;
-  status?: number;
+  endDate?: Date | null;
 }
 
 export interface UpdateEmploymentInput {
@@ -52,6 +52,7 @@ export interface UpdateEmploymentInput {
   positionMasterId?: number;
   supervisorEmployeeId?: number;
   startDate?: Date;
+  endDate?: Date | null;
 }
 
 // Returned to EMPLOYEE scope callers viewing colleagues (no employeeNumber, birthDate, etc.)
@@ -163,7 +164,7 @@ export class EmployeeDirectoryService {
     await this.assertEmployeeInScope(access, id, ctx);
 
     const employments = await this.employmentRepo.findByEmployeeId(id, ctx.tenantId);
-    const primaryEmployment = employments.find((e) => e.status === EMPLOYMENT_STATUS.ACTIVE) ?? null;
+    const primaryEmployment = employments.find((e) => e.endDate === null) ?? null;
 
     const positionMap = await this.resolvePositionNames(employments);
 
@@ -337,7 +338,8 @@ export class EmployeeDirectoryService {
       employmentType: input.employmentType,
       supervisorEmployeeId: input.supervisorEmployeeId ?? null,
       startDate,
-      status: input.status ?? EMPLOYMENT_STATUS.ACTIVE,
+      endDate: input.endDate ?? null,
+      status: EMPLOYMENT_STATUS.ACTIVE,
       updatedBy: ctx.userAccountId,
     });
     void this.auditService.logEdit({
@@ -373,10 +375,10 @@ export class EmployeeDirectoryService {
       await this.assertEmployeeExistsInTenant(input.supervisorEmployeeId, ctx.tenantId);
     }
 
-    if (input.startDate !== undefined) {
-      if (employment.endDate && input.startDate > employment.endDate) {
-        throw new UnprocessableEntityException('startDate must be on or before endDate');
-      }
+    const resolvedEndDate = input.endDate !== undefined ? input.endDate : employment.endDate;
+    const resolvedStartDate = input.startDate !== undefined ? input.startDate : employment.startDate;
+    if (resolvedEndDate !== null && resolvedStartDate > resolvedEndDate) {
+      throw new UnprocessableEntityException('startDate must be on or before endDate');
     }
 
     const updatedEmp = await this.employmentRepo.update(employmentId, ctx.tenantId, {
@@ -387,6 +389,7 @@ export class EmployeeDirectoryService {
         supervisorEmployeeId: input.supervisorEmployeeId,
       }),
       ...(input.startDate !== undefined && { startDate: input.startDate }),
+      ...(input.endDate !== undefined && { endDate: input.endDate }),
       updatedBy: ctx.userAccountId,
     });
     void this.auditService.logEdit({
@@ -414,7 +417,7 @@ export class EmployeeDirectoryService {
       ctx.tenantId,
     );
 
-    if (employment.status === EMPLOYMENT_STATUS.RESIGNED) {
+    if (employment.endDate !== null) {
       throw new ConflictException('Employment is already terminated');
     }
 
@@ -642,7 +645,7 @@ export class EmployeeDirectoryService {
 
     const targetEmployments = await this.employmentRepo.findByEmployeeId(employeeId, ctx.tenantId);
     const inPrimaryOrg = targetEmployments.some(
-      (e) => e.status === EMPLOYMENT_STATUS.ACTIVE && e.organizationId === access.orgId,
+      (e) => e.endDate === null && e.organizationId === access.orgId,
     );
     if (!inPrimaryOrg) {
       throw new NotFoundException(`Employee ${employeeId} not found`);
