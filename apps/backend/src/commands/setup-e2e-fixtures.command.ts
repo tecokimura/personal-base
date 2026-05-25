@@ -44,22 +44,23 @@ const EXTRA_ORGS = [
 const EXTRA_EMPLOYEES: Array<{
   number: string;
   fullName: string;
+  displayName: string;
   orgCode: string;
   supervisorNumber: string | null;
 }> = [
-  { number: 'EMP-001', fullName: '山田 太郎', orgCode: 'EXEC', supervisorNumber: null },
-  { number: 'EMP-002', fullName: '鈴木 一郎', orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
-  { number: 'EMP-003', fullName: '田中 花子', orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
-  { number: 'EMP-004', fullName: '佐藤 次郎', orgCode: 'MGMT', supervisorNumber: 'EMP-002' },
-  { number: 'EMP-005', fullName: '高橋 美咲', orgCode: 'MGMT', supervisorNumber: 'EMP-004' },
-  { number: 'EMP-006', fullName: '伊藤 健太', orgCode: 'SYS',  supervisorNumber: 'EMP-003' },
-  { number: 'EMP-007', fullName: '渡辺 雅人', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
-  { number: 'EMP-008', fullName: '山本 聡',   orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
-  { number: 'EMP-009', fullName: '中村 友里', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
-  { number: 'EMP-010', fullName: '小林 拓也', orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
-  { number: 'EMP-011', fullName: '加藤 由美', orgCode: 'SVC',  supervisorNumber: 'EMP-003' },
-  { number: 'EMP-012', fullName: '吉田 晶',   orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
-  { number: 'EMP-013', fullName: '松本 直樹', orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
+  { number: 'EMP-001', fullName: '山田 太郎', displayName: 'Yamada Taro',       orgCode: 'EXEC', supervisorNumber: null },
+  { number: 'EMP-002', fullName: '鈴木 一郎', displayName: 'Suzuki Ichiro',     orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
+  { number: 'EMP-003', fullName: '田中 花子', displayName: 'Tanaka Hanako',     orgCode: 'EXEC', supervisorNumber: 'EMP-001' },
+  { number: 'EMP-004', fullName: '佐藤 次郎', displayName: 'Sato Jiro',         orgCode: 'MGMT', supervisorNumber: 'EMP-002' },
+  { number: 'EMP-005', fullName: '高橋 美咲', displayName: 'Takahashi Misaki',  orgCode: 'MGMT', supervisorNumber: 'EMP-004' },
+  { number: 'EMP-006', fullName: '伊藤 健太', displayName: 'Ito Kenta',         orgCode: 'SYS',  supervisorNumber: 'EMP-003' },
+  { number: 'EMP-007', fullName: '渡辺 雅人', displayName: 'Watanabe Masato',   orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-008', fullName: '山本 聡',   displayName: 'Yamamoto Satoshi',  orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-009', fullName: '中村 友里', displayName: 'Nakamura Yuri',     orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-010', fullName: '小林 拓也', displayName: 'Kobayashi Takuya',  orgCode: 'SYS',  supervisorNumber: 'EMP-006' },
+  { number: 'EMP-011', fullName: '加藤 由美', displayName: 'Kato Yumi',         orgCode: 'SVC',  supervisorNumber: 'EMP-003' },
+  { number: 'EMP-012', fullName: '吉田 晶',   displayName: 'Yoshida Akira',     orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
+  { number: 'EMP-013', fullName: '松本 直樹', displayName: 'Matsumoto Naoki',   orgCode: 'SVC',  supervisorNumber: 'EMP-011' },
 ];
 
 interface FixtureState {
@@ -268,13 +269,17 @@ async function main(): Promise<void> {
       });
       if (existing) {
         empIdByNumber.set(def.number, existing.id);
+        await prisma.employee.update({
+          where: { id: existing.id },
+          data: { fullName: def.fullName, displayName: def.displayName },
+        });
       } else {
         const created = await prisma.employee.create({
           data: {
             tenantId: tenant.id,
             employeeNumber: def.number,
             fullName: def.fullName,
-            displayName: def.fullName,
+            displayName: def.displayName,
           },
         });
         empIdByNumber.set(def.number, created.id);
@@ -288,7 +293,7 @@ async function main(): Promise<void> {
       const supervisorId = def.supervisorNumber ? (empIdByNumber.get(def.supervisorNumber) ?? null) : null;
 
       const existingEmp = await prisma.employment.findFirst({
-        where: { tenantId: tenant.id, employeeId: empId, status: 1 },
+        where: { tenantId: tenant.id, employeeId: empId, endDate: null },
         select: { id: true },
       });
       if (!existingEmp) {
