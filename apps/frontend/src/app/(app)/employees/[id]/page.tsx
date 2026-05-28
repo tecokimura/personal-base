@@ -471,7 +471,7 @@ export default function EmployeeDetailPage() {
       <div className="card" style={{ marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>所属情報</h2>
-          {canEditSelf && !addingEmployment && (
+          {canAssistEdit && !addingEmployment && (
             <button
               className="btn-secondary"
               style={{ fontSize: 12 }}
@@ -481,7 +481,7 @@ export default function EmployeeDetailPage() {
             </button>
           )}
         </div>
-        {canEditSelf && addingEmployment && (
+        {canAssistEdit && addingEmployment && (
           <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
             <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>所属を新規追加</p>
             <EmploymentAddForm
@@ -512,7 +512,7 @@ export default function EmployeeDetailPage() {
                   <th>開始日</th>
                   <th>終了日</th>
                   <th>状態</th>
-                  {canEditSelf && <th>操作</th>}
+                  {canAssistEdit && <th>操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -533,7 +533,7 @@ export default function EmployeeDetailPage() {
                           <span className="badge badge-gray">過去</span>
                         ) : null}
                       </td>
-                      {canEditSelf && (
+                      {canAssistEdit && (
                         <td style={{ whiteSpace: 'nowrap' }}>
                           <button
                             className="btn-secondary"
@@ -569,7 +569,7 @@ export default function EmployeeDetailPage() {
                         </td>
                       )}
                     </tr>
-                    {canEditSelf && editingEmpId === emp.id && (
+                    {canAssistEdit && editingEmpId === emp.id && (
                       <tr>
                         <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
                           <EmploymentEditForm
