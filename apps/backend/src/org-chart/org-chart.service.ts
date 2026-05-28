@@ -199,7 +199,7 @@ export class OrgChartService {
     const toCard = (e: EmploymentRow): EmployeeCard => ({
       employeeId: e.employeeId,
       employeeNumber: access.kind === 'PRIMARY_ORG' ? null : e.employeeNumber,
-      displayName: e.displayName ?? e.fullName,
+      displayName: e.fullName,
       photoStorageKey: e.photoStorageKey,
       assignmentLabel: '主所属',
       positionName: e.positionMasterId ? (positionNames.get(e.positionMasterId) ?? null) : null,
@@ -217,7 +217,7 @@ export class OrgChartService {
   private toLeaderCard(leader: LeaderRow): LeaderCard {
     return {
       employeeId: leader.employeeId,
-      displayName: leader.displayName ?? leader.fullName,
+      displayName: leader.fullName,
       leaderType: leader.leaderType,
     };
   }

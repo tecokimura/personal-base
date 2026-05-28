@@ -33,7 +33,7 @@ export default function EmployeesPage() {
               <th>ID</th>
               <th>社員番号</th>
               <th>氏名</th>
-              <th>表示名</th>
+              <th>よみ・英語名</th>
               <th>メール</th>
             </tr>
           </thead>
