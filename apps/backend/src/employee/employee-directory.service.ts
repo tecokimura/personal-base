@@ -27,6 +27,7 @@ export interface CreateEmployeeInput {
 
 export interface UpdateEmployeeInput {
   fullName?: string;
+  employeeNumber?: string;
   displayName?: string;
   email?: string;
   birthDate?: Date;
@@ -222,8 +223,16 @@ export class EmployeeDirectoryService {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_EMPLOYEE, ctx.tenantId);
     await this.assertEmployeeExists(id, ctx.tenantId);
 
+    if (input.employeeNumber !== undefined) {
+      const exists = await this.employeeRepo.employeeNumberExists(ctx.tenantId, input.employeeNumber, id);
+      if (exists) {
+        throw new ConflictException(`Employee number ${input.employeeNumber} is already in use`);
+      }
+    }
+
     const updated = await this.employeeRepo.update(id, ctx.tenantId, {
       ...(input.fullName !== undefined && { fullName: input.fullName }),
+      ...(input.employeeNumber !== undefined && { employeeNumber: input.employeeNumber }),
       ...(input.displayName !== undefined && { displayName: input.displayName }),
       ...(input.email !== undefined && { email: input.email }),
       ...(input.birthDate !== undefined && { birthDate: input.birthDate }),

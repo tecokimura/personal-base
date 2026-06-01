@@ -72,6 +72,7 @@ export class EmployeeController {
   ) {
     return this.service.update(this.ctx(req), id, {
       fullName: dto.fullName,
+      employeeNumber: dto.employeeNumber,
       displayName: dto.displayName,
       email: dto.email,
       birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,

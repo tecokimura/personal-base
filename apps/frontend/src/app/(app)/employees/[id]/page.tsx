@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, ApiError } from '@/lib/api';
+import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, ApiError } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -103,6 +103,14 @@ export default function EmployeeDetailPage() {
   const [editEmpError, setEditEmpError] = useState('');
   const [editEmpSaving, setEditEmpSaving] = useState(false);
 
+  // 基本情報編集（HR_ADMIN のみ）
+  const [editingBasicInfo, setEditingBasicInfo] = useState(false);
+  const [basicInfoFullName, setBasicInfoFullName] = useState('');
+  const [basicInfoEmployeeNumber, setBasicInfoEmployeeNumber] = useState('');
+  const [basicInfoDisplayName, setBasicInfoDisplayName] = useState('');
+  const [basicInfoSaving, setBasicInfoSaving] = useState(false);
+  const [basicInfoError, setBasicInfoError] = useState('');
+
   // 組織一覧（所属追加フォーム用）
   const [organizations, setOrganizations] = useState<OrganizationView[] | null>(null);
 
@@ -118,6 +126,8 @@ export default function EmployeeDetailPage() {
     setWorkHistories(null);
     setWhForbidden(false);
     setWhError('');
+    setEditingBasicInfo(false);
+    setBasicInfoError('');
     setAssistEditingId(null);
     setAssistCreating(false);
     setAssistCreateForm(EMPTY_FORM);
@@ -158,9 +168,32 @@ export default function EmployeeDetailPage() {
   }, [authLoading, id]);
 
   const isSelf = !!me && me.employeeId === id;
+  const isHrAdmin = me?.roleTypes.includes(1) ?? false;
   const canAssistEdit = !isSelf && !!me && me.roleTypes.some((r) => ASSIST_EDIT_ROLES.has(r));
   // isSelf でもプロフィール/写真/所属追加・編集は許可（上長設定は canAssistEdit のみ）
   const canEditSelf = canAssistEdit || isSelf;
+
+  async function handleSaveBasicInfo(e: React.FormEvent) {
+    e.preventDefault();
+    if (!basicInfoFullName.trim()) {
+      setBasicInfoError('氏名は必須です');
+      return;
+    }
+    setBasicInfoSaving(true);
+    setBasicInfoError('');
+    try {
+      const body: UpdateEmployeeBasicInput = { fullName: basicInfoFullName.trim() };
+      if (basicInfoEmployeeNumber.trim()) body.employeeNumber = basicInfoEmployeeNumber.trim();
+      if (basicInfoDisplayName.trim()) body.displayName = basicInfoDisplayName.trim();
+      const updated = await api.employees.updateBasicInfo(id, body);
+      setEmployee((prev) => prev ? { ...prev, fullName: updated.fullName, employeeNumber: updated.employeeNumber, displayName: updated.displayName } : prev);
+      setEditingBasicInfo(false);
+    } catch (err) {
+      setBasicInfoError(err instanceof ApiError && err.status === 409 ? '社員番号がすでに使用されています' : String(err));
+    } finally {
+      setBasicInfoSaving(false);
+    }
+  }
 
   async function handleAssistCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -361,7 +394,51 @@ export default function EmployeeDetailPage() {
       </h1>
 
       <div className="card">
-        <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#555' }}>基本情報</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>基本情報</h2>
+          {isHrAdmin && !editingBasicInfo && (
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 12 }}
+              onClick={() => {
+                setBasicInfoFullName(employee.fullName);
+                setBasicInfoEmployeeNumber(employee.employeeNumber ?? '');
+                setBasicInfoDisplayName(employee.displayName ?? '');
+                setBasicInfoError('');
+                setEditingBasicInfo(true);
+              }}
+            >
+              編集
+            </button>
+          )}
+        </div>
+        {isHrAdmin && editingBasicInfo && (
+          <form onSubmit={(e) => { void handleSaveBasicInfo(e); }} style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={labelStyle}>
+                氏名 <span style={{ color: 'red' }}>*</span>
+                <input style={inputStyle} value={basicInfoFullName} onChange={(e) => setBasicInfoFullName(e.target.value)} required disabled={basicInfoSaving} />
+              </label>
+              <label style={labelStyle}>
+                社員番号
+                <input style={inputStyle} value={basicInfoEmployeeNumber} onChange={(e) => setBasicInfoEmployeeNumber(e.target.value)} placeholder="例: EMP-001" disabled={basicInfoSaving} />
+              </label>
+              <label style={labelStyle}>
+                よみ・英語名
+                <input style={inputStyle} value={basicInfoDisplayName} onChange={(e) => setBasicInfoDisplayName(e.target.value)} placeholder="例: Yamada Taro" disabled={basicInfoSaving} />
+              </label>
+            </div>
+            {basicInfoError && <p className="error-msg" style={{ marginBottom: 8 }}>{basicInfoError}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="btn-primary" disabled={basicInfoSaving} style={{ fontSize: 12 }}>
+                {basicInfoSaving ? '保存中...' : '保存'}
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setEditingBasicInfo(false)} disabled={basicInfoSaving} style={{ fontSize: 12 }}>
+                キャンセル
+              </button>
+            </div>
+          </form>
+        )}
         <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
           <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>社員 ID</dt>
           <dd style={{ margin: 0 }}>{employee.id}</dd>
@@ -504,8 +581,7 @@ export default function EmployeeDetailPage() {
             <table>
               <thead>
                 <tr>
-                  <th>所属 ID</th>
-                  <th>組織 ID</th>
+                  <th>組織</th>
                   <th>種別</th>
                   <th>役職</th>
                   <th>上長</th>
@@ -519,8 +595,7 @@ export default function EmployeeDetailPage() {
                 {employee.employments.map((emp) => (
                   <Fragment key={emp.id}>
                     <tr>
-                      <td>{emp.id}</td>
-                      <td>{emp.organizationId}</td>
+                      <td>{organizations?.find((o) => o.id === emp.organizationId)?.organizationName ?? String(emp.organizationId)}</td>
                       <td>{emp.employmentType !== undefined ? (EMPLOYMENT_TYPE[emp.employmentType] ?? emp.employmentType) : '—'}</td>
                       <td>{emp.positionName ?? '—'}</td>
                       <td>{emp.supervisorEmployeeId != null ? `社員ID: ${emp.supervisorEmployeeId}` : '—'}</td>

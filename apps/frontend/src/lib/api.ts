@@ -151,6 +151,17 @@ export interface WorkHistory {
   updatedAt: string;
 }
 
+export interface CreateEmployeeInput {
+  fullName: string;
+  employeeNumber?: string;
+}
+
+export interface UpdateEmployeeBasicInput {
+  fullName?: string;
+  employeeNumber?: string;
+  displayName?: string;
+}
+
 export interface WorkHistoryInput {
   yearMonthFrom: string;
   yearMonthTo?: string;
@@ -209,6 +220,16 @@ export const api = {
   employees: {
     list: () => apiFetch<EmployeeListItem[]>('/employees'),
     get: (id: number) => apiFetch<EmployeeDetail>(`/employees/${id}`),
+    create: (body: CreateEmployeeInput) =>
+      apiFetch<EmployeeDetail>('/employees', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    updateBasicInfo: (id: number, body: UpdateEmployeeBasicInput) =>
+      apiFetch<EmployeeDetail>(`/employees/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
     assistUpdateProfile: (id: number, body: { profileFreeText?: string }) =>
       apiFetch<void>(`/employees/${id}/profile`, {
         method: 'PATCH',
