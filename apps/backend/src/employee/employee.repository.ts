@@ -121,6 +121,7 @@ export class EmployeeRepository {
       where: {
         tenantId,
         employeeNumber,
+        isDeleted: false,
         ...(excludeId !== undefined ? { NOT: { id: excludeId } } : {}),
       },
     });
