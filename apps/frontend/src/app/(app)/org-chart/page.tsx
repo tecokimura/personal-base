@@ -186,14 +186,20 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
 export default function OrgChartPage() {
   const { loading: authLoading } = useAuth();
   const [tree, setTree] = useState<OrgChartNode[]>([]);
+  const [unassigned, setUnassigned] = useState<EmployeeCard[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
-    api.orgChart
-      .tree()
-      .then(setTree)
+    Promise.all([
+      api.orgChart.tree(),
+      api.orgChart.unassigned(),
+    ])
+      .then(([treeData, unassignedData]) => {
+        setTree(treeData);
+        setUnassigned(unassignedData);
+      })
       .catch((err: unknown) => setError(String(err)))
       .finally(() => setLoading(false));
   }, [authLoading]);
@@ -220,6 +226,19 @@ export default function OrgChartPage() {
           </ul>
         )}
       </div>
+
+      {unassigned.length > 0 && (
+        <div className="card" style={{ marginTop: 12, borderLeft: '3px solid #f59e0b' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 10px', color: '#b45309' }}>
+            所属なし（{unassigned.length}名）
+          </h2>
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px' }}>
+            {unassigned.map((m) => (
+              <MemberRow key={m.employeeId} member={m} />
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

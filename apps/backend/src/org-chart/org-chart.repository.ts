@@ -182,4 +182,22 @@ export class OrgChartRepository {
     });
     return primary?.organization.organizationName ?? null;
   }
+
+  async findUnassignedEmployees(tenantId: number) {
+    return this.prisma.employee.findMany({
+      where: {
+        tenantId,
+        isDeleted: false,
+        employments: { none: { endDate: null } },
+      },
+      select: {
+        id: true,
+        employeeNumber: true,
+        fullName: true,
+        displayName: true,
+        photoStorageKey: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+  }
 }

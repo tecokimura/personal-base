@@ -134,6 +134,24 @@ export class OrgChartService {
     return this.buildMemberCards(employments, ctx.tenantId, access);
   }
 
+  async getUnassignedMembers(ctx: AuthContext): Promise<EmployeeCard[]> {
+    const [employees, access] = await Promise.all([
+      this.repo.findUnassignedEmployees(ctx.tenantId),
+      this.scopeResolver.resolveOrgAccess(ctx),
+    ]);
+
+    return employees.map((e) => ({
+      employeeId: e.id,
+      employeeNumber: access.kind === 'PRIMARY_ORG' ? null : e.employeeNumber,
+      displayName: e.fullName,
+      photoStorageKey: e.photoStorageKey,
+      assignmentLabel: '主所属' as const,
+      positionName: null,
+      supervisorDisplayName: null,
+      primaryOrganizationName: null,
+    }));
+  }
+
   // ── Private helpers ──────────────────────────────────────
 
   private buildTree(

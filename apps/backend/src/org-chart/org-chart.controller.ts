@@ -14,6 +14,11 @@ export class OrgChartController {
     return this.service.getTree(this.ctx(req));
   }
 
+  @Get('unassigned')
+  getUnassigned(@Req() req: AuthenticatedRequest) {
+    return this.service.getUnassignedMembers(this.ctx(req));
+  }
+
   @Get('organizations/:id')
   getDetail(
     @Param('id', ParseIntPipe) id: number,
