@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, ApiError } from '@/lib/api';
 
@@ -52,6 +52,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function EmployeeDetailPage() {
+  const router = useRouter();
   const { me, loading: authLoading } = useAuth();
   const params = useParams();
   const id = Number(params.id);
@@ -102,6 +103,11 @@ export default function EmployeeDetailPage() {
   const [editEmpForm, setEditEmpForm] = useState<EditEmploymentForm>(EMPTY_EDIT_EMP_FORM);
   const [editEmpError, setEditEmpError] = useState('');
   const [editEmpSaving, setEditEmpSaving] = useState(false);
+
+  // 論理削除（HR_ADMIN のみ）
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // 基本情報編集（HR_ADMIN のみ）
   const [editingBasicInfo, setEditingBasicInfo] = useState(false);
@@ -172,6 +178,18 @@ export default function EmployeeDetailPage() {
   const canAssistEdit = !isSelf && !!me && me.roleTypes.some((r) => ASSIST_EDIT_ROLES.has(r));
   // isSelf でもプロフィール/写真/所属追加・編集は許可（上長設定は canAssistEdit のみ）
   const canEditSelf = canAssistEdit || isSelf;
+
+  async function handleSoftDelete() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.employees.softDelete(id);
+      router.push('/employees');
+    } catch (err) {
+      setDeleteError(String(err));
+      setDeleting(false);
+    }
+  }
 
   async function handleSaveBasicInfo(e: React.FormEvent) {
     e.preventDefault();
@@ -764,6 +782,40 @@ export default function EmployeeDetailPage() {
                 />
               )
             )
+          )}
+        </div>
+      )}
+
+      {isHrAdmin && !isSelf && (
+        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #ef4444', background: '#fef2f2' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#b91c1c' }}>危険な操作</h2>
+          {!confirmingDelete ? (
+            <button
+              className="btn-danger"
+              style={{ fontSize: 12 }}
+              onClick={() => { setConfirmingDelete(true); setDeleteError(''); }}
+            >
+              この社員を削除
+            </button>
+          ) : (
+            <div>
+              <p style={{ fontSize: 13, margin: '0 0 8px' }}>
+                以下の社員を論理削除します。有効な所属も同時に終了されます。
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>
+                {employee.fullName}
+                {employee.employeeNumber ? `（${employee.employeeNumber}）` : ''}
+              </p>
+              {deleteError && <p className="error-msg" style={{ marginBottom: 8 }}>{deleteError}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-danger" style={{ fontSize: 12 }} onClick={() => { void handleSoftDelete(); }} disabled={deleting}>
+                  {deleting ? '削除中...' : '削除を実行'}
+                </button>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                  キャンセル
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

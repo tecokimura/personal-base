@@ -16,7 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/organizations">組織一覧</Link>
           <Link href="/org-chart">組織図</Link>
           <Link href="/employees">社員一覧</Link>
-          <Link href="/work-histories">職歴</Link>
+          {isHrAdmin && <Link href="/employees/deleted">削除済み社員</Link>}
           {isHrAdmin && <Link href="/audit">監査ログ</Link>}
         </nav>
       </aside>

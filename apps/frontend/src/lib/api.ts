@@ -99,6 +99,15 @@ export interface EmployeeListItem {
   birthDate?: string | null;
   photoStorageKey: string | null;
   profileFreeText: string | null;
+  deletedAt?: string | null;
+}
+
+export interface DeletedEmployeeItem extends EmployeeListItem {
+  employments?: Array<{
+    startDate: string;
+    endDate: string | null;
+    organization: { organizationName: string };
+  }>;
 }
 
 export interface EmploymentView {
@@ -241,6 +250,12 @@ export const api = {
       fd.append('photo', file);
       return apiFetchUpload<{ photoStorageKey: string }>(`/employees/${id}/photo`, fd);
     },
+    softDelete: (id: number) =>
+      apiFetch<void>(`/employees/${id}/soft-delete`, { method: 'POST' }),
+    listDeleted: () =>
+      apiFetch<DeletedEmployeeItem[]>('/employees/deleted'),
+    restore: (id: number) =>
+      apiFetch<void>(`/employees/${id}/restore`, { method: 'POST' }),
     deletePhoto: (id: number) =>
       apiFetch<void>(`/employees/${id}/photo`, { method: 'DELETE' }),
     setSupervisorEmployee: (id: number, empId: number, supervisorEmployeeId: number | null) =>

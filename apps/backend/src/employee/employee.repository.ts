@@ -79,15 +79,27 @@ export class EmployeeRepository {
     });
   }
 
-  async findDeleted(tenantId: number): Promise<Employee[]> {
+  async findDeleted(tenantId: number) {
     return this.prisma.employee.findMany({
       where: { tenantId, isDeleted: true },
       orderBy: { deletedAt: 'desc' },
+      include: {
+        employments: {
+          where: { status: 9 },
+          orderBy: { endDate: 'desc' },
+          take: 1,
+          select: {
+            startDate: true,
+            endDate: true,
+            organization: { select: { organizationName: true } },
+          },
+        },
+      },
     });
   }
 
   /** Returns deleted employees who had a DELETED (status=9) employment in any of the given orgs. */
-  async findDeletedByOrgIds(tenantId: number, orgIds: ReadonlySet<number>): Promise<Employee[]> {
+  async findDeletedByOrgIds(tenantId: number, orgIds: ReadonlySet<number>) {
     const ids = [...orgIds];
     if (ids.length === 0) return [];
     const employments = await this.prisma.employment.findMany({
@@ -100,6 +112,18 @@ export class EmployeeRepository {
     return this.prisma.employee.findMany({
       where: { id: { in: employeeIds }, tenantId, isDeleted: true },
       orderBy: { deletedAt: 'desc' },
+      include: {
+        employments: {
+          where: { status: 9 },
+          orderBy: { endDate: 'desc' },
+          take: 1,
+          select: {
+            startDate: true,
+            endDate: true,
+            organization: { select: { organizationName: true } },
+          },
+        },
+      },
     });
   }
 

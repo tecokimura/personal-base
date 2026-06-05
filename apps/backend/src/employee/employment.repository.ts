@@ -98,10 +98,10 @@ export class EmploymentRepository {
     });
   }
 
-  async markAllActiveDeleted(employeeId: number, tenantId: number, updatedBy: number | null): Promise<void> {
+  async markAllActiveDeleted(employeeId: number, tenantId: number, deletedAt: Date, updatedBy: number | null): Promise<void> {
     await this.prisma.employment.updateMany({
       where: { employeeId, tenantId, endDate: null },
-      data: { status: EMPLOYMENT_STATUS.DELETED, updatedBy },
+      data: { status: EMPLOYMENT_STATUS.DELETED, endDate: deletedAt, updatedBy },
     });
   }
 

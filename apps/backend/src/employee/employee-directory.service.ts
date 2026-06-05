@@ -149,7 +149,7 @@ export class EmployeeDirectoryService {
     return employees.map((e) => this.toPublicView(e));
   }
 
-  async findDeleted(ctx: AuthContext): Promise<Employee[]> {
+  async findDeleted(ctx: AuthContext) {
     await this.authorizationService.assertCan(ctx, Permission.MANAGE_SOFT_DELETED, ctx.tenantId);
     const access = await this.scopeResolver.resolveOrgAccess(ctx);
 
@@ -258,8 +258,9 @@ export class EmployeeDirectoryService {
     }
 
     // Mark all active employments as deleted before soft-deleting the employee
-    await this.employmentRepo.markAllActiveDeleted(id, ctx.tenantId, ctx.userAccountId);
-    await this.employeeRepo.softDelete(id, ctx.tenantId, new Date(), ctx.userAccountId);
+    const deletedAt = new Date();
+    await this.employmentRepo.markAllActiveDeleted(id, ctx.tenantId, deletedAt, ctx.userAccountId);
+    await this.employeeRepo.softDelete(id, ctx.tenantId, deletedAt, ctx.userAccountId);
     void this.auditService.logEdit({
       tenantId: ctx.tenantId,
       entityType: 'Employee',
