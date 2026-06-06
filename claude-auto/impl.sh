@@ -37,6 +37,15 @@ Backlog 課題キー: ${ISSUE_KEY}
    - 不明点をコメントに明記する
    - exit 2 で終了する（パイプラインが待機状態として扱う）
 
+### 最後に必ず出力すること
+作業完了後、必ず最後の行に以下の形式で結果を出力してください（他のテキストの後に単独行で）:
+
+実装完了の場合:
+RESULT: 実装完了 → レビュー待ちに更新（実装内容の一言メモ）
+
+仕様確認待ちの場合:
+RESULT: 仕様確認待ちに更新（不明点の一言メモ）
+
 ### 重要ルール
 - スコープを独断で広げない
 - 不明点は実装を止めてコメントに記録する
@@ -44,13 +53,18 @@ Backlog 課題キー: ${ISSUE_KEY}
 PROMPT
 )
 
+RESULT_FILE="${LOG_DIR}/last-result.txt"
+
 echo "[impl] 課題 ${ISSUE_KEY} の実装セッションを開始します"
 echo "[impl] ログ: ${LOG_FILE}"
 
-claude -p "${PROMPT}" \
-  --model "${CLAUDE_MODEL}" \
-  2>&1 | tee -a "${LOG_FILE}"
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>>"${LOG_FILE}")
+EXIT_CODE=$?
+echo "${OUTPUT}" | tee -a "${LOG_FILE}"
 
-EXIT_CODE=${PIPESTATUS[0]}
+# RESULT: 行を抽出して保存（pipeline.sh が読む）
+RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
+echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+
 echo "[impl] セッション終了 (exit=${EXIT_CODE})"
 exit "${EXIT_CODE}"

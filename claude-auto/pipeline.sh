@@ -20,6 +20,15 @@ log() { echo "[pipeline] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${PIPELINE_L
 
 notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
 
+read_result() {
+  local result_file="${LOG_DIR}/last-result.txt"
+  if [[ -f "${result_file}" ]]; then
+    sed 's/^RESULT: //' "${result_file}"
+  else
+    echo "（結果不明）"
+  fi
+}
+
 # Backlog REST API でカテゴリ別課題を取得（claude -p セッションに委譲）
 # pipeline 自体は Claude セッションを使って Backlog を読み、振り分けを行う
 
@@ -91,16 +100,15 @@ log "判定: next_action=${NEXT_ACTION} issue=${ISSUE_KEY} reason=${REASON}"
 case "${NEXT_ACTION}" in
   impl)
     log "実装セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
-    notify ":rocket: [claude-auto] 実装セッション開始: ${ISSUE_KEY} — ${ISSUE_SUMMARY}"
 
     RETRY=0
     while [[ "${RETRY}" -lt "${IMPL_RETRY_MAX}" ]]; do
       "${SCRIPT_DIR}/impl.sh" "${ISSUE_KEY}" && break
       EXIT_CODE=$?
       if [[ "${EXIT_CODE}" -eq 2 ]]; then
-        # 仕様確認待ちに移行済み
+        IMPL_RESULT=$(read_result)
         log "仕様確認待ちに移行: ${ISSUE_KEY}"
-        notify ":question: [claude-auto] 仕様確認待ち: ${ISSUE_KEY} — Backlog を確認してください"
+        notify ":question: [claude-auto] 仕様確認待ち: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${IMPL_RESULT}"
         break
       fi
       RETRY=$((RETRY + 1))
@@ -112,17 +120,24 @@ case "${NEXT_ACTION}" in
 
     if [[ "${RETRY}" -ge "${IMPL_RETRY_MAX}" ]]; then
       log "ERROR: リトライ上限到達 (${ISSUE_KEY})"
-      notify ":rotating_light: [claude-auto] 実装リトライ上限: ${ISSUE_KEY} — 手動確認が必要です"
+      notify ":rotating_light: [claude-auto] 実装リトライ上限: *${ISSUE_KEY}* — 手動確認が必要です"
+    else
+      IMPL_RESULT=$(read_result)
+      log "実装セッション完了: ${ISSUE_KEY} — ${IMPL_RESULT}"
+      notify ":white_check_mark: [claude-auto] 実装完了: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${IMPL_RESULT}"
     fi
     ;;
 
   review)
     log "レビューセッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
-    notify ":mag: [claude-auto] レビューセッション開始: ${ISSUE_KEY} — ${ISSUE_SUMMARY}"
 
-    "${SCRIPT_DIR}/review.sh" "${ISSUE_KEY}" || {
+    "${SCRIPT_DIR}/review.sh" "${ISSUE_KEY}" && {
+      REVIEW_RESULT=$(read_result)
+      log "レビューセッション完了: ${ISSUE_KEY} — ${REVIEW_RESULT}"
+      notify ":mag: [claude-auto] レビュー完了: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${REVIEW_RESULT}"
+    } || {
       log "WARN: review.sh 異常終了 (${ISSUE_KEY})"
-      notify ":warning: [claude-auto] レビュー異常終了: ${ISSUE_KEY} — ログを確認してください"
+      notify ":warning: [claude-auto] レビュー異常終了: *${ISSUE_KEY}* — ログを確認してください"
     }
     ;;
 

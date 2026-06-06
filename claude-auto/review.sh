@@ -39,19 +39,36 @@ Backlog 課題キー: ${ISSUE_KEY}
 8. ユーザーへのエスカレーションが必要な場合:
    - 課題に「仕様確認待ち」カテゴリを付けてコメントで理由を記載する
 
+### 最後に必ず出力すること
+作業完了後、必ず最後の行に以下の形式で結果を出力してください（他のテキストの後に単独行で）:
+
+レビュー OK の場合:
+RESULT: レビューOK → 動作確認待ちに更新（一言コメント）
+
+レビュー NG の場合:
+RESULT: レビューNG → 修正待ちに更新（主な指摘: 指摘内容の一言メモ）
+
+仕様確認が必要な場合:
+RESULT: 仕様確認待ちに更新（確認事項の一言メモ）
+
 ### 重要ルール
 - スコープ・優先順位の判断はユーザーへ確認する
 - Backlog 操作は PMO_PJPERSONALBASE プロジェクトのみ
 PROMPT
 )
 
+RESULT_FILE="${LOG_DIR}/last-result.txt"
+
 echo "[review] 課題 ${ISSUE_KEY} のレビューセッションを開始します"
 echo "[review] ログ: ${LOG_FILE}"
 
-claude -p "${PROMPT}" \
-  --model "${CLAUDE_MODEL}" \
-  2>&1 | tee -a "${LOG_FILE}"
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>>"${LOG_FILE}")
+EXIT_CODE=$?
+echo "${OUTPUT}" | tee -a "${LOG_FILE}"
 
-EXIT_CODE=${PIPESTATUS[0]}
+# RESULT: 行を抽出して保存（pipeline.sh が読む）
+RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
+echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+
 echo "[review] セッション終了 (exit=${EXIT_CODE})"
 exit "${EXIT_CODE}"
