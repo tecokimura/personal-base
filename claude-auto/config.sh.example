@@ -18,5 +18,8 @@ SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"  # 環境変数または config.sh �
 # Claude モデル（claude -p に渡す --model 引数）
 CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 
+# Claude 制限時のバックオフ時間（秒）— デフォルト1時間
+BACKOFF_DURATION="${BACKOFF_DURATION:-3600}"
+
 # cron ポーリング間隔の目安（分）— crontab 設定時の参考値
 # CRON_INTERVAL_MIN=15

@@ -12,13 +12,21 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
-
 mkdir -p "${LOG_DIR}"
+source "${SCRIPT_DIR}/lib.sh"
+
 PIPELINE_LOG="${LOG_DIR}/pipeline-$(date +%Y%m%d).log"
 
 log() { echo "[pipeline] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${PIPELINE_LOG}"; }
 
 notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
+
+# バックオフ中は即終了（cron は継続して動くが処理をスキップ）
+if in_backoff; then
+  REMAINING=$(backoff_remaining_min)
+  log "バックオフ中 — あと約${REMAINING}分でスキップ解除"
+  exit 0
+fi
 
 read_result() {
   local result_file="${LOG_DIR}/last-result.txt"
@@ -77,7 +85,21 @@ PROMPT
 log "オーケストレーター起動"
 
 # Claude に Backlog を確認させて JSON 結果を取得
-RAW_OUTPUT=$(claude -p "${ORCHESTRATOR_PROMPT}" --model "${CLAUDE_MODEL}" 2>>"${PIPELINE_LOG}")
+ORCH_STDERR="${LOG_DIR}/orch-stderr.tmp"
+RAW_OUTPUT=$(claude -p "${ORCHESTRATOR_PROMPT}" --model "${CLAUDE_MODEL}" 2>"${ORCH_STDERR}")
+ORCH_EXIT=$?
+ORCH_STDERR_OUTPUT=$(cat "${ORCH_STDERR}" 2>/dev/null || true)
+rm -f "${ORCH_STDERR}"
+[[ -n "${ORCH_STDERR_OUTPUT}" ]] && echo "${ORCH_STDERR_OUTPUT}" >> "${PIPELINE_LOG}"
+
+# オーケストレーター自体が制限を受けた場合
+if [[ "${ORCH_EXIT}" -ne 0 ]] && is_rate_limited "${RAW_OUTPUT}${ORCH_STDERR_OUTPUT}"; then
+  write_backoff "${BACKOFF_DURATION}"
+  REMAINING=$(backoff_remaining_min)
+  log "Claude制限検出（オーケストレーター）— ${REMAINING}分後に自動再開"
+  notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開します"
+  exit 0
+fi
 
 # JSON ブロックを抽出（```json ... ``` または 裸の {} を探す）
 DECISION=$(echo "${RAW_OUTPUT}" | grep -Pzo '```json\s*\K[\s\S]*?(?=```)' | tr -d '\0' || true)
@@ -105,9 +127,18 @@ case "${NEXT_ACTION}" in
     log "実装セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
     RETRY=0
+    RATE_LIMITED=false
     while [[ "${RETRY}" -lt "${IMPL_RETRY_MAX}" ]]; do
       "${SCRIPT_DIR}/impl.sh" "${ISSUE_KEY}" && break
       EXIT_CODE=$?
+      if [[ "${EXIT_CODE}" -eq 3 ]]; then
+        RATE_LIMITED=true
+        write_backoff "${BACKOFF_DURATION}"
+        REMAINING=$(backoff_remaining_min)
+        log "Claude制限検出 — ${REMAINING}分後に自動再開 (${ISSUE_KEY})"
+        notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開します\n> *${ISSUE_KEY}* ${ISSUE_SUMMARY}"
+        break
+      fi
       if [[ "${EXIT_CODE}" -eq 2 ]]; then
         IMPL_RESULT=$(read_result)
         log "仕様確認待ちに移行: ${ISSUE_KEY}"
@@ -121,7 +152,9 @@ case "${NEXT_ACTION}" in
       fi
     done
 
-    if [[ "${RETRY}" -ge "${IMPL_RETRY_MAX}" ]]; then
+    if [[ "${RATE_LIMITED}" == true ]]; then
+      : # バックオフ通知済み
+    elif [[ "${RETRY}" -ge "${IMPL_RETRY_MAX}" ]]; then
       log "ERROR: リトライ上限到達 (${ISSUE_KEY})"
       notify ":rotating_light: [claude-auto] 実装リトライ上限: *${ISSUE_KEY}* — 手動確認が必要です"
     else
@@ -134,27 +167,41 @@ case "${NEXT_ACTION}" in
   review)
     log "レビューセッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
-    "${SCRIPT_DIR}/review.sh" "${ISSUE_KEY}" && {
+    "${SCRIPT_DIR}/review.sh" "${ISSUE_KEY}"
+    REVIEW_EXIT=$?
+    if [[ "${REVIEW_EXIT}" -eq 3 ]]; then
+      write_backoff "${BACKOFF_DURATION}"
+      REMAINING=$(backoff_remaining_min)
+      log "Claude制限検出（レビュー）— ${REMAINING}分後に自動再開 (${ISSUE_KEY})"
+      notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開します\n> *${ISSUE_KEY}* ${ISSUE_SUMMARY}"
+    elif [[ "${REVIEW_EXIT}" -eq 0 ]]; then
       REVIEW_RESULT=$(read_result)
       log "レビューセッション完了: ${ISSUE_KEY} — ${REVIEW_RESULT}"
       notify ":mag: [claude-auto] レビュー完了: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${REVIEW_RESULT}"
-    } || {
+    else
       log "WARN: review.sh 異常終了 (${ISSUE_KEY})"
       notify ":warning: [claude-auto] レビュー異常終了: *${ISSUE_KEY}* — ログを確認してください"
-    }
+    fi
     ;;
 
   verify)
     log "動作確認セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
-    "${SCRIPT_DIR}/verify.sh" "${ISSUE_KEY}" && {
+    "${SCRIPT_DIR}/verify.sh" "${ISSUE_KEY}"
+    VERIFY_EXIT=$?
+    if [[ "${VERIFY_EXIT}" -eq 3 ]]; then
+      write_backoff "${BACKOFF_DURATION}"
+      REMAINING=$(backoff_remaining_min)
+      log "Claude制限検出（動作確認）— ${REMAINING}分後に自動再開 (${ISSUE_KEY})"
+      notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開します\n> *${ISSUE_KEY}* ${ISSUE_SUMMARY}"
+    elif [[ "${VERIFY_EXIT}" -eq 0 ]]; then
       VERIFY_RESULT=$(read_result)
       log "動作確認セッション完了: ${ISSUE_KEY} — ${VERIFY_RESULT}"
       notify ":ballot_box_with_check: [claude-auto] 動作確認処理: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${VERIFY_RESULT}"
-    } || {
+    else
       log "WARN: verify.sh 異常終了 (${ISSUE_KEY})"
       notify ":warning: [claude-auto] 動作確認処理異常終了: *${ISSUE_KEY}* — ログを確認してください"
-    }
+    fi
     ;;
 
   wait)

@@ -11,6 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
+source "${SCRIPT_DIR}/lib.sh"
 
 ISSUE_KEY="${1:-}"
 if [[ -z "${ISSUE_KEY}" ]]; then
@@ -67,9 +68,21 @@ PROMPT
 echo "[verify] 課題 ${ISSUE_KEY} の動作確認セッションを開始します"
 echo "[verify] ログ: ${LOG_FILE}"
 
-OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>>"${LOG_FILE}")
+STDERR_FILE="${LOG_DIR}/verify-${ISSUE_KEY}-stderr.tmp"
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
 EXIT_CODE=$?
+STDERR_OUTPUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
+rm -f "${STDERR_FILE}"
+
 echo "${OUTPUT}" | tee -a "${LOG_FILE}"
+[[ -n "${STDERR_OUTPUT}" ]] && echo "${STDERR_OUTPUT}" >> "${LOG_FILE}"
+
+COMBINED="${OUTPUT}${STDERR_OUTPUT}"
+if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}"; then
+  echo "RESULT: Claude制限により中断 — バックオフ後に自動再開します" > "${RESULT_FILE}"
+  echo "[verify] Claude制限を検出 (exit=3)"
+  exit 3
+fi
 
 RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
 echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"

@@ -7,6 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
+source "${SCRIPT_DIR}/lib.sh"
 
 ISSUE_KEY="${1:-}"
 if [[ -z "${ISSUE_KEY}" ]]; then
@@ -58,9 +59,22 @@ RESULT_FILE="${LOG_DIR}/last-result.txt"
 echo "[impl] 課題 ${ISSUE_KEY} の実装セッションを開始します"
 echo "[impl] ログ: ${LOG_FILE}"
 
-OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>>"${LOG_FILE}")
+STDERR_FILE="${LOG_DIR}/impl-${ISSUE_KEY}-stderr.tmp"
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
 EXIT_CODE=$?
+STDERR_OUTPUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
+rm -f "${STDERR_FILE}"
+
 echo "${OUTPUT}" | tee -a "${LOG_FILE}"
+[[ -n "${STDERR_OUTPUT}" ]] && echo "${STDERR_OUTPUT}" >> "${LOG_FILE}"
+
+# Claude 制限エラーの検出
+COMBINED="${OUTPUT}${STDERR_OUTPUT}"
+if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}"; then
+  echo "RESULT: Claude制限により中断 — バックオフ後に自動再開します" > "${RESULT_FILE}"
+  echo "[impl] Claude制限を検出 (exit=3)"
+  exit 3
+fi
 
 # RESULT: 行を抽出して保存（pipeline.sh が読む）
 RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
