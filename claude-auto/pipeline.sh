@@ -43,20 +43,22 @@ ORCHESTRATOR_PROMPT=$(cat <<'PROMPT'
 1. Backlog MCP の get_categories で PMO_PJPERSONALBASE のカテゴリ一覧を取得し、
    各カテゴリの ID を確認する。
 
-2. 以下の優先順で課題を取得する:
-   - 「実装待ち」カテゴリ (statusId=1: 未対応)
-   - 「修正待ち」カテゴリ (statusId=2: 処理中)
-   - 「レビュー待ち」カテゴリ (statusId=3: 処理済み)
+2. 以下の優先順で課題を確認する:
+   a. 「実装待ち」カテゴリ (statusId=1: 未対応)
+   b. 「修正待ち」カテゴリ (statusId=2: 処理中)
+   c. 「レビュー待ち」カテゴリ (statusId=3: 処理済み)
+   d. 「動作確認待ち」カテゴリの課題を取得し、get_issue_comments で各課題のコメントを確認する
+      → コメントが 1 件以上あれば verify 対象とする
 
-3. 取得した課題リストから最初の 1 件を選ぶ。
+3. 上記 a〜d のうち最初に該当した課題を 1 件選ぶ。
 
-4. 「仕様確認待ち」「動作確認待ち」の課題があれば件数を数える。
+4. 「仕様確認待ち」の課題件数、「動作確認待ち」でコメントなしの件数を数える（waiting_count）。
 
 5. 以下の JSON を出力する（他のテキストは不要）:
 
 ```json
 {
-  "next_action": "impl" | "review" | "wait" | "idle",
+  "next_action": "impl" | "review" | "verify" | "wait" | "idle",
   "issue_key": "PMO_PJPERSONALBASE-XX" | null,
   "issue_summary": "課題タイトル" | null,
   "waiting_count": 数字,
@@ -66,7 +68,8 @@ ORCHESTRATOR_PROMPT=$(cat <<'PROMPT'
 
 - next_action="impl"  : 実装待ち/修正待ち課題あり → impl.sh を起動すべき
 - next_action="review": レビュー待ち課題あり → review.sh を起動すべき
-- next_action="wait"  : 処理可能な課題なし・ユーザー待機中
+- next_action="verify": 動作確認待ちでコメントあり → verify.sh を起動すべき
+- next_action="wait"  : 処理可能な課題なし・ユーザー待機中（仕様確認待ち or 動作確認待ちコメントなし）
 - next_action="idle"  : 何もすることがない
 PROMPT
 )
@@ -141,8 +144,21 @@ case "${NEXT_ACTION}" in
     }
     ;;
 
+  verify)
+    log "動作確認セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
+
+    "${SCRIPT_DIR}/verify.sh" "${ISSUE_KEY}" && {
+      VERIFY_RESULT=$(read_result)
+      log "動作確認セッション完了: ${ISSUE_KEY} — ${VERIFY_RESULT}"
+      notify ":ballot_box_with_check: [claude-auto] 動作確認処理: *${ISSUE_KEY}*\n> ${ISSUE_SUMMARY}\n> ${VERIFY_RESULT}"
+    } || {
+      log "WARN: verify.sh 異常終了 (${ISSUE_KEY})"
+      notify ":warning: [claude-auto] 動作確認処理異常終了: *${ISSUE_KEY}* — ログを確認してください"
+    }
+    ;;
+
   wait)
-    log "ユーザー待機中 (仕様確認待ち/動作確認待ち: ${WAITING_COUNT}件)"
+    log "ユーザー待機中 (確認待ち: ${WAITING_COUNT}件)"
     if [[ "${WAITING_COUNT}" -gt 0 ]]; then
       notify ":pause_button: [claude-auto] ユーザー待機中 — Backlog に確認待ち課題が ${WAITING_COUNT} 件あります"
     fi
