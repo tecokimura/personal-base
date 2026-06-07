@@ -21,6 +21,14 @@ log() { echo "[pipeline] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${PIPELINE_L
 
 notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
 
+# 二重起動防止（flock でロック取得できなければ即終了）
+LOCK_FILE="${LOG_DIR}/pipeline.lock"
+exec 9>"${LOCK_FILE}"
+if ! flock -n 9; then
+  log "別のパイプラインが実行中 — スキップ"
+  exit 0
+fi
+
 # バックオフ中は即終了（cron は継続して動くが処理をスキップ）
 if in_backoff; then
   REMAINING=$(backoff_remaining_min)
