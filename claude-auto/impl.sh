@@ -26,14 +26,31 @@ PROMPT=$(cat <<PROMPT
 ### 担当課題
 Backlog 課題キー: ${ISSUE_KEY}
 
-### 手順
-1. Backlog MCP の get_issue で課題詳細を取得する
-2. 課題の説明・完了条件を把握し、docs/ の関連設計を参照する
-3. 実装を行う（スコープを独断で広げない）
-4. 実装完了したら:
+### ブランチ管理（最初に必ず実施）
+1. 現在のブランチを確認する（git branch --show-current）
+2. `feat/phase3` ブランチが存在しない場合は `develop` から作成する:
+   ```
+   git fetch origin
+   git checkout develop && git pull origin develop
+   git checkout -b feat/phase3
+   git push -u origin feat/phase3
+   ```
+3. すでに存在する場合は checkout して最新を pull する:
+   ```
+   git checkout feat/phase3
+   git pull origin feat/phase3
+   ```
+4. 以降の実装はすべて `feat/phase3` ブランチ上で行う
+
+### 実装手順
+5. Backlog MCP の get_issue で課題詳細を取得する
+6. 課題の説明・完了条件を把握し、docs/ の関連設計を参照する
+7. 実装を行う（スコープを独断で広げない）
+8. 実装完了したら:
+   - 変更を `feat/phase3` にコミット・push する
    - Backlog 課題を「処理済み」ステータス + カテゴリ「レビュー待ち」に更新する
-   - 実装内容のサマリを Backlog コメントに残す
-5. 仕様が不明確で進められない場合:
+   - 実装内容のサマリを Backlog コメントに残す（push した commit hash も記載）
+9. 仕様が不明確で進められない場合:
    - Backlog 課題を「処理済み」+ カテゴリ「仕様確認待ち」に更新する
    - 不明点をコメントに明記する
    - exit 2 で終了する（パイプラインが待機状態として扱う）
