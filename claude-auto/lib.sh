@@ -2,6 +2,7 @@
 # claude-auto 共通ライブラリ
 
 BACKOFF_FILE="${LOG_DIR}/backoff.txt"
+IDLE_BACKOFF_FILE="${LOG_DIR}/idle-backoff.txt"
 
 # Claude の出力にレート制限・使用量制限のキーワードが含まれるか判定
 # 引数: 出力テキスト（stdout + stderr を結合して渡す）
@@ -12,6 +13,32 @@ is_rate_limited() {
     "rate.?limit|usage.?limit|too many requests|quota exceeded|overloaded|529|Claude is unable|please try again later|capacity"
 }
 
+# アイドルバックオフ（処理対象なしのとき Claude 起動を抑制）
+in_idle_backoff() {
+  if [[ ! -f "${IDLE_BACKOFF_FILE}" ]]; then return 1; fi
+  local until now
+  until=$(cat "${IDLE_BACKOFF_FILE}")
+  now=$(date +%s)
+  if [[ "${now}" -lt "${until}" ]]; then return 0; else rm -f "${IDLE_BACKOFF_FILE}"; return 1; fi
+}
+
+write_idle_backoff() {
+  local duration="${1:-7200}"  # デフォルト2時間
+  echo "$(( $(date +%s) + duration ))" > "${IDLE_BACKOFF_FILE}"
+}
+
+clear_idle_backoff() { rm -f "${IDLE_BACKOFF_FILE}"; }
+
+idle_backoff_remaining_min() {
+  if [[ ! -f "${IDLE_BACKOFF_FILE}" ]]; then echo 0; return; fi
+  local until now
+  until=$(cat "${IDLE_BACKOFF_FILE}")
+  now=$(date +%s)
+  local r=$(( (until - now) / 60 ))
+  echo $(( r > 0 ? r : 0 ))
+}
+
+# Claude レート制限バックオフ（エラー時）
 # バックオフ状態を書き込む（pipeline.sh から呼ぶ）
 # 引数: バックオフ秒数
 write_backoff() {

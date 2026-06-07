@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # claude-auto パイプライン エントリポイント
-# cron から定期実行する: */15 * * * * /path/to/pipeline.sh >> /path/to/logs/cron.log 2>&1
+# cron から定期実行する: */30 * * * * /path/to/pipeline.sh >> /path/to/logs/cron.log 2>&1
 #
 # 状態機械:
 #   実装待ち  → impl.sh  → 完了で「レビュー待ち」
@@ -29,10 +29,17 @@ if ! flock -n 9; then
   exit 0
 fi
 
-# バックオフ中は即終了（cron は継続して動くが処理をスキップ）
+# Claude レート制限バックオフ中は即終了
 if in_backoff; then
   REMAINING=$(backoff_remaining_min)
   log "バックオフ中 — あと約${REMAINING}分でスキップ解除"
+  exit 0
+fi
+
+# アイドルバックオフ中は即終了（処理対象なし時に Claude 起動を抑制）
+if in_idle_backoff; then
+  REMAINING=$(idle_backoff_remaining_min)
+  log "アイドルバックオフ中 — あと約${REMAINING}分でチェック再開（手動解除: rm claude-auto/logs/idle-backoff.txt）"
   exit 0
 fi
 
@@ -132,6 +139,7 @@ log "判定: next_action=${NEXT_ACTION} issue=${ISSUE_KEY} reason=${REASON}"
 
 case "${NEXT_ACTION}" in
   impl)
+    clear_idle_backoff
     log "実装セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
     RETRY=0
@@ -173,6 +181,7 @@ case "${NEXT_ACTION}" in
     ;;
 
   review)
+    clear_idle_backoff
     log "レビューセッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
     "${SCRIPT_DIR}/review.sh" "${ISSUE_KEY}"
@@ -193,6 +202,7 @@ case "${NEXT_ACTION}" in
     ;;
 
   verify)
+    clear_idle_backoff
     log "動作確認セッション起動: ${ISSUE_KEY} (${ISSUE_SUMMARY})"
 
     "${SCRIPT_DIR}/verify.sh" "${ISSUE_KEY}"
@@ -214,13 +224,15 @@ case "${NEXT_ACTION}" in
 
   wait)
     log "ユーザー待機中 (確認待ち: ${WAITING_COUNT}件)"
+    write_idle_backoff 7200  # 2時間後に再チェック
     if [[ "${WAITING_COUNT}" -gt 0 ]]; then
       notify ":pause_button: [claude-auto] ユーザー待機中 — Backlog に確認待ち課題が ${WAITING_COUNT} 件あります"
     fi
     ;;
 
   idle)
-    log "処理対象なし（idle）"
+    write_idle_backoff 7200  # 2時間後に再チェック
+    log "処理対象なし（idle）— 2時間後に再チェック"
     ;;
 
   *)
