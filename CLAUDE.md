@@ -105,6 +105,18 @@ PM セッション: docs 更新 → Backlog タスク登録
 | `docs/project-status.md` | プロジェクト全体の状態 |
 | `docs/implementation-plan.md` | 実装計画 |
 | `docs/roadmap.md` | ロードマップ |
-| `docs/prompts/collaboration-rules.md` | 役割分担・意思決定ルール |
-| `docs/prompts/backlog-operation-rules.md` | Backlog 詳細運用ルール（カテゴリ定義の正本） |
-| `docs/prompts/resume-instructions.md` | セッション再開手順 |
+| `claude-auto/collaboration-rules.md` | 役割分担・意思決定ルール |
+| `claude-auto/backlog-operation-rules.md` | Backlog 詳細運用ルール（カテゴリ定義の正本） |
+| `claude-auto/resume-instructions.md` | セッション再開手順 |
+
+## claude-auto パイプライン
+
+`claude-auto/` に自動化パイプラインのスクリプトと設定を置く。
+
+| ファイル | 内容 |
+|---|---|
+| `claude-auto/config.sh` | リトライ回数・間隔・Slack webhook などの設定 |
+| `claude-auto/pipeline.sh` | cron から呼ぶエントリポイント |
+| `claude-auto/impl.sh` | 実装セッション起動スクリプト |
+| `claude-auto/review.sh` | レビュー（PM）セッション起動スクリプト |
+| `claude-auto/notify.sh` | Slack 通知スクリプト |
