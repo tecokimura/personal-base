@@ -21,5 +21,8 @@ CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 # Claude 制限時のバックオフ時間（秒）— デフォルト1時間
 BACKOFF_DURATION="${BACKOFF_DURATION:-3600}"
 
+# 実装ブランチ（フェーズが変わるときはここだけ変更する）
+IMPL_BRANCH="feat/phase3"
+
 # cron ポーリング間隔の目安（分）— crontab 設定時の参考値
 # CRON_INTERVAL_MIN=15

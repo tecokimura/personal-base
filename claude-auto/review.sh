@@ -29,7 +29,7 @@ Backlog 課題キー: ${ISSUE_KEY}
 ### 手順
 1. Backlog MCP の get_issue でレビュー対象課題を取得する
 2. 課題の完了条件と実装コメントを確認する
-3. `git diff develop...feat/phase3` で実装差分を確認する
+3. `git diff develop...${IMPL_BRANCH}` で実装差分を確認する
 4. コードレビューを実施する（バグ・設計・テスト・完了条件の充足）
 5. レビュー結果を Backlog コメントに記録する（OK/NG・指摘内容）
 6. レビュー OK の場合:
