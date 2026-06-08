@@ -335,7 +335,7 @@ export default function EmployeeDetailPage() {
       const updated = await api.qualifications.update(qualEditingId, {
         name: qualEditForm.name,
         acquiredDate: qualEditForm.acquiredDate,
-        note: qualEditForm.note || undefined,
+        note: qualEditForm.note || null,
       });
       setQualifications((prev) => prev?.map((q) => (q.id === qualEditingId ? updated : q)) ?? prev);
       setQualEditingId(null);

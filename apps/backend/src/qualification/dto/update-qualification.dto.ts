@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsDateString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
 export class UpdateQualificationDto {
   @IsOptional()
@@ -12,7 +12,8 @@ export class UpdateQualificationDto {
   acquiredDate?: string;
 
   @IsOptional()
+  @ValidateIf((o) => o.note !== null)
   @IsString()
   @MaxLength(500)
-  note?: string;
+  note?: string | null;
 }

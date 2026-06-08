@@ -206,7 +206,7 @@ export interface Qualification {
 export interface QualificationInput {
   name: string;
   acquiredDate: string;
-  note?: string;
+  note?: string | null;
 }
 
 export interface AdminSection {
