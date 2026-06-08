@@ -38,6 +38,23 @@ a:hover { text-decoration: underline; }
 }
 .sidebar nav a:hover { background: #16213e; color: #fff; text-decoration: none; }
 
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 20px;
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.nav-group-header:hover { background: #16213e; color: #fff; }
+.nav-group-arrow { font-size: 10px; }
+.nav-group-children a { padding-left: 36px; }
+
 .main { flex: 1; padding: 32px; overflow: auto; }
 
 /* ── Page ────────────────────────────────────────── */
