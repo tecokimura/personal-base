@@ -7,8 +7,8 @@ export class AdminSectionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmployee(employeeId: number, tenantId: number): Promise<EmployeeAdminSection | null> {
-    return this.prisma.employeeAdminSection.findFirst({
-      where: { employeeId, tenantId },
+    return this.prisma.employeeAdminSection.findUnique({
+      where: { employeeId },
     });
   }
 

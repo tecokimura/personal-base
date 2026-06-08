@@ -203,7 +203,7 @@ export default function EmployeeDetailPage() {
       .then((s) => setAdminSection(s))
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 403) {
-          setAdminSection(undefined);
+          setAdminSection(null);
         } else {
           setAdminSectionError('管理者専用セクションの読み込みに失敗しました');
         }
