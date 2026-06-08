@@ -109,6 +109,18 @@ PM セッション: docs 更新 → Backlog タスク登録
 | `claude-auto/backlog-operation-rules.md` | Backlog 詳細運用ルール（カテゴリ定義の正本） |
 | `claude-auto/resume-instructions.md` | セッション再開手順 |
 
+## フェーズ移行チェックリスト
+
+新しいフェーズに移行するときは以下を必ず実施する。PM セッションがフェーズ移行を提案する際はこのリストをユーザーに確認すること。
+
+- [ ] `claude-auto/config.sh` の `IMPL_BRANCH` を新フェーズのブランチ名に変更する（例: `feat/phase4`）
+- [ ] 新ブランチを `develop` から作成して push する
+- [ ] サーバーを新ブランチで起動し直す
+- [ ] 前フェーズのブランチを `develop` にマージする（PR 推奨）
+- [ ] Backlog の前フェーズ課題がすべて完了または整理されていることを確認する
+
+---
+
 ## claude-auto パイプライン
 
 `claude-auto/` に自動化パイプラインのスクリプトと設定を置く。
