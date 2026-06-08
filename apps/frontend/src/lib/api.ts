@@ -367,4 +367,10 @@ export const api = {
   audit: {
     listEvents: () => apiFetch<AuditEvent[]>('/admin/audit/events'),
   },
+
+  debug: {
+    status: () => apiFetch<{ enabled: boolean }>('/debug/status'),
+    login: (roleType: number) =>
+      apiFetch<MeResponse>(`/debug/login/${roleType}`, { method: 'POST' }),
+  },
 };
