@@ -54,6 +54,8 @@ export interface MeResponse {
   status: number;
   lastLoggedInAt: string | null;
   roleTypes: number[];
+  twoFactorPending: boolean;
+  twoFactorSetupRequired: boolean;
 }
 
 export interface OrganizationView {
@@ -256,6 +258,24 @@ export const api = {
       }),
     me: () => apiFetch<MeResponse>('/auth/me'),
     logout: () => apiFetch<{ message: string }>('/auth/logout', { method: 'POST' }),
+    twoFactor: {
+      initSetup: () => apiFetch<{ qrCodeUrl: string }>('/auth/2fa/setup/init'),
+      confirmSetup: (code: string) =>
+        apiFetch<{ backupCodes: string[] }>('/auth/2fa/setup/confirm', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        }),
+      verify: (code: string) =>
+        apiFetch<{ success: boolean }>('/auth/2fa/verify', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        }),
+      backupVerify: (code: string) =>
+        apiFetch<{ success: boolean }>('/auth/2fa/backup-verify', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        }),
+    },
   },
 
   organizations: {
@@ -366,6 +386,17 @@ export const api = {
 
   audit: {
     listEvents: () => apiFetch<AuditEvent[]>('/admin/audit/events'),
+  },
+
+  twoFactorAdmin: {
+    getPolicy: () => apiFetch<{ twoFactorPolicy: number }>('/admin/tenant/2fa-policy'),
+    setPolicy: (twoFactorPolicy: number) =>
+      apiFetch<void>('/admin/tenant/2fa-policy', {
+        method: 'PATCH',
+        body: JSON.stringify({ twoFactorPolicy }),
+      }),
+    resetUserTwoFactor: (employeeId: number) =>
+      apiFetch<void>(`/admin/employees/${employeeId}/2fa`, { method: 'DELETE' }),
   },
 
   debug: {

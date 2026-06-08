@@ -58,6 +58,7 @@ model UserAccount {
   employee        Employee         @relation(fields: [employeeId], references: [id])
   sessions        Session[]
   roleAssignments RoleAssignment[]
+  twoFactorAuth   TwoFactorAuth?
 
   @@unique([tenantId, employeeId])
   @@unique([tenantId, loginIdentifier])
@@ -65,15 +66,16 @@ model UserAccount {
 }
 
 model Session {
-  id               Int         @id @default(autoincrement())
-  tenantId         Int
-  userAccountId    Int
-  sessionTokenHash String      @db.VarChar(255)
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  userAccount      UserAccount @relation(fields: [userAccountId], references: [id])
+  id                Int         @id @default(autoincrement())
+  tenantId          Int
+  userAccountId     Int
+  sessionTokenHash  String      @db.VarChar(255)
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  twoFactorVerified Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  userAccount       UserAccount @relation(fields: [userAccountId], references: [id])
 
   @@unique([sessionTokenHash])
   @@index([tenantId])
@@ -278,4 +280,27 @@ model RoleAssignment {
   @@index([userAccountId])
   @@index([roleType])
   @@index([scopeType, scopeId])
+}
+
+// twoFactorPolicy: 1=任意, 2=必須
+model TenantSetting {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int      @unique
+  twoFactorPolicy Int      @default(1) @db.SmallInt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TwoFactorAuth {
+  id               Int         @id @default(autoincrement())
+  tenantId         Int
+  userAccountId    Int         @unique
+  totpSecret       String      @db.VarChar(255)
+  backupCodeHashes String[]
+  twoFactorEnabled Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  userAccount      UserAccount @relation(fields: [userAccountId], references: [id])
+
+  @@index([tenantId])
 }

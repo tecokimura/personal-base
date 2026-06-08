@@ -138,6 +138,11 @@ export default function EmployeeDetailPage() {
   const [adminSectionSaving, setAdminSectionSaving] = useState(false);
   const [adminSectionSaveError, setAdminSectionSaveError] = useState('');
 
+  // 2FA リセット（HR_ADMIN のみ）
+  const [twoFactorResetting, setTwoFactorResetting] = useState(false);
+  const [twoFactorResetError, setTwoFactorResetError] = useState('');
+  const [twoFactorResetDone, setTwoFactorResetDone] = useState(false);
+
   // 組織一覧（所属追加フォーム用）
   const [organizations, setOrganizations] = useState<OrganizationView[] | null>(null);
 
@@ -245,6 +250,20 @@ export default function EmployeeDetailPage() {
     } catch (err) {
       setDeleteError(String(err));
       setDeleting(false);
+    }
+  }
+
+  async function handleTwoFactorReset() {
+    setTwoFactorResetting(true);
+    setTwoFactorResetError('');
+    setTwoFactorResetDone(false);
+    try {
+      await api.twoFactorAdmin.resetUserTwoFactor(id);
+      setTwoFactorResetDone(true);
+    } catch (err) {
+      setTwoFactorResetError(err instanceof ApiError ? err.message : '2FAのリセットに失敗しました');
+    } finally {
+      setTwoFactorResetting(false);
     }
   }
 
@@ -1055,6 +1074,27 @@ export default function EmployeeDetailPage() {
               <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
             </dl>
           )}
+        </div>
+      )}
+
+      {isHrAdmin && !isSelf && (
+        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #f59e0b', background: '#fffbeb' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#b45309' }}>二段階認証（2FA）管理</h2>
+          <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px' }}>
+            このユーザーの2FA設定をリセットします。次回ログイン時に2FAの再設定が必要になります。
+          </p>
+          {twoFactorResetError && <p className="error-msg" style={{ marginBottom: 8 }}>{twoFactorResetError}</p>}
+          {twoFactorResetDone && (
+            <p style={{ color: '#16a34a', fontSize: 13, marginBottom: 8 }}>2FAをリセットしました</p>
+          )}
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 12 }}
+            onClick={() => { void handleTwoFactorReset(); }}
+            disabled={twoFactorResetting}
+          >
+            {twoFactorResetting ? 'リセット中...' : '2FAをリセット'}
+          </button>
         </div>
       )}
 

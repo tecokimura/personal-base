@@ -17,12 +17,20 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await api.auth.login({
+      const result = await api.auth.login({
         tenantId: Number(tenantId),
         loginIdentifier,
         password,
       });
-      router.replace('/dashboard');
+      if (result.twoFactorPending) {
+        if (result.twoFactorSetupRequired) {
+          router.replace('/2fa/setup');
+        } else {
+          router.replace('/2fa/verify');
+        }
+      } else {
+        router.replace('/dashboard');
+      }
     } catch (err) {
       setError(err instanceof ApiError ? `ログイン失敗: ${err.message}` : 'ログインに失敗しました');
     } finally {

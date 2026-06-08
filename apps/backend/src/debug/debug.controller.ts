@@ -29,6 +29,8 @@ interface MeResponse {
   status: number;
   lastLoggedInAt: Date | null;
   roleTypes: number[];
+  twoFactorPending: boolean;
+  twoFactorSetupRequired: boolean;
 }
 
 @Controller('debug')
@@ -99,6 +101,8 @@ export class DebugController {
       status: userAccount.status,
       lastLoggedInAt: userAccount.lastLoggedInAt,
       roleTypes: roles.map((r) => r.roleType),
+      twoFactorPending: false,
+      twoFactorSetupRequired: false,
     };
   }
 

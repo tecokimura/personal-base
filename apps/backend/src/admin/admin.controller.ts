@@ -126,4 +126,63 @@ export class AdminController {
     );
     await this.adminService.softDeleteEmployee(Number(id), ctx);
   }
+
+  @Get('tenant/2fa-policy')
+  @UseGuards(SessionGuard)
+  async getTwoFactorPolicy(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ twoFactorPolicy: number }> {
+    const ctx: AuthContext = {
+      userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
+      tenantId: req.userAccount.tenantId,
+    };
+    await this.authorizationService.assertCan(
+      ctx,
+      Permission.MANAGE_TENANT_SETTINGS,
+      ctx.tenantId,
+    );
+    const policy = await this.adminService.getTwoFactorPolicy(ctx.tenantId);
+    return { twoFactorPolicy: policy };
+  }
+
+  @Patch('tenant/2fa-policy')
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setTwoFactorPolicy(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { twoFactorPolicy: number },
+  ): Promise<void> {
+    const ctx: AuthContext = {
+      userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
+      tenantId: req.userAccount.tenantId,
+    };
+    await this.authorizationService.assertCan(
+      ctx,
+      Permission.MANAGE_TENANT_SETTINGS,
+      ctx.tenantId,
+    );
+    await this.adminService.setTwoFactorPolicy(ctx.tenantId, body.twoFactorPolicy);
+  }
+
+  @Delete('employees/:employeeId/2fa')
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetTwoFactor(
+    @Req() req: AuthenticatedRequest,
+    @Param('employeeId') employeeId: string,
+  ): Promise<void> {
+    const ctx: AuthContext = {
+      userAccountId: req.userAccount.id,
+      employeeId: req.userAccount.employeeId,
+      tenantId: req.userAccount.tenantId,
+    };
+    await this.authorizationService.assertCan(
+      ctx,
+      Permission.MANAGE_TENANT_SETTINGS,
+      ctx.tenantId,
+    );
+    await this.adminService.resetTwoFactorByEmployeeId(Number(employeeId), ctx.tenantId);
+  }
 }

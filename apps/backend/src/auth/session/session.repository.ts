@@ -7,6 +7,7 @@ export interface CreateSessionInput {
   userAccountId: number;
   sessionTokenHash: string;
   expiresAt: Date;
+  twoFactorVerified?: boolean;
 }
 
 @Injectable()
@@ -50,6 +51,13 @@ export class SessionRepository {
         revokedAt: null,
         expiresAt: { gt: now },
       },
+    });
+  }
+
+  async markTwoFactorVerified(tokenHash: string): Promise<void> {
+    await this.prisma.session.updateMany({
+      where: { sessionTokenHash: tokenHash },
+      data: { twoFactorVerified: true },
     });
   }
 }

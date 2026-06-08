@@ -5,6 +5,8 @@ import { SessionRepository } from './session/session.repository';
 import { SessionService } from './session/session.service';
 import { RoleAssignmentRepository } from './role-assignment/role-assignment.repository';
 import { RoleAssignmentService } from './role-assignment/role-assignment.service';
+import { TwoFactorRepository } from './two-factor/two-factor.repository';
+import { TwoFactorService } from './two-factor/two-factor.service';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { SessionGuard } from './guards/session.guard';
@@ -20,6 +22,8 @@ import { AuditModule } from '../audit/audit.module';
     SessionService,
     RoleAssignmentRepository,
     RoleAssignmentService,
+    TwoFactorRepository,
+    TwoFactorService,
     AuthService,
     SessionGuard,
   ],
@@ -27,6 +31,7 @@ import { AuditModule } from '../audit/audit.module';
     UserAccountService,
     SessionService,
     RoleAssignmentService,
+    TwoFactorService,
     AuthService,
     SessionGuard,
   ],

@@ -31,4 +31,8 @@ export class SessionService {
   async findValidByTokenHash(tokenHash: string): Promise<Session | null> {
     return this.sessionRepository.findValidByTokenHash(tokenHash);
   }
+
+  async markTwoFactorVerified(tokenHash: string): Promise<void> {
+    await this.sessionRepository.markTwoFactorVerified(tokenHash);
+  }
 }
