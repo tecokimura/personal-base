@@ -251,7 +251,8 @@ export interface AuditEvent {
 
 export const api = {
   auth: {
-    login: (body: { tenantId: number; loginIdentifier: string; password: string }) =>
+    getTenant: () => apiFetch<{ id: number; name: string; code: string }>('/auth/tenant'),
+    login: (body: { loginIdentifier: string; password: string }) =>
       apiFetch<MeResponse>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(body),

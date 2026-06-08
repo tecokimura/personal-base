@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService, COOKIE_NAME } from './auth.service';
@@ -19,6 +20,7 @@ import { AuditService } from '../audit/audit.service';
 import { RoleAssignmentService } from './role-assignment/role-assignment.service';
 import { TwoFactorService } from './two-factor/two-factor.service';
 import { SessionService } from './session/session.service';
+import { TenantResolverService } from './tenant-resolver/tenant-resolver.service';
 import { hashToken } from './utils/token.util';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -46,8 +48,16 @@ export class AuthController {
     private readonly roleAssignmentService: RoleAssignmentService,
     private readonly twoFactorService: TwoFactorService,
     private readonly sessionService: SessionService,
+    private readonly tenantResolver: TenantResolverService,
     private readonly prisma: PrismaService,
   ) {}
+
+  @Get('tenant')
+  async getTenant(@Req() req: Request): Promise<{ id: number; name: string; code: string }> {
+    const tenant = await this.tenantResolver.resolveFromRequest(req);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return { id: tenant.id, name: tenant.name, code: tenant.tenantCode };
+  }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -56,8 +66,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MeResponse> {
+    const tenant = await this.tenantResolver.resolveFromRequest(req);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
     const { rawToken, expiresAt, userAccount, twoFactorPending, twoFactorSetupRequired } =
-      await this.authService.login(body);
+      await this.authService.login(tenant.id, body);
 
     res.cookie(COOKIE_NAME, rawToken, {
       httpOnly: true,

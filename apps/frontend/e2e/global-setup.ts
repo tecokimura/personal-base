@@ -4,6 +4,7 @@
  * 2. ブラウザで UI ログインし、認証済みストレージ状態を保存する
  *
  * 前提: frontend (port 3000) と backend (port 3001) が起動済みであること
+ * テナント識別: バックエンドを TENANT_SLUG=E2ETEST で起動すること
  */
 import { chromium } from '@playwright/test';
 import { execSync } from 'child_process';
@@ -52,7 +53,6 @@ export default async function globalSetup(): Promise<void> {
   const page = await context.newPage();
 
   await page.goto(`${BASE_URL}/login`);
-  await page.fill('#tenantId', String(fixture.tenantId));
   await page.fill('#loginIdentifier', fixture.loginIdentifier);
   await page.fill('#password', fixture.password);
   await page.click('button[type="submit"]');
@@ -68,7 +68,6 @@ export default async function globalSetup(): Promise<void> {
   const memberPage = await memberContext.newPage();
 
   await memberPage.goto(`${BASE_URL}/login`);
-  await memberPage.fill('#tenantId', String(fixture.tenantId));
   await memberPage.fill('#loginIdentifier', fixture.memberLoginIdentifier);
   await memberPage.fill('#password', fixture.memberPassword);
   await memberPage.click('button[type="submit"]');

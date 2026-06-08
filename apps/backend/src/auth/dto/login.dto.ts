@@ -1,10 +1,6 @@
-import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class LoginDto {
-  @IsInt()
-  @Min(1)
-  tenantId!: number;
-
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)

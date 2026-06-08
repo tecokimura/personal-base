@@ -33,9 +33,9 @@ export class AuthService {
     private readonly twoFactorService: TwoFactorService,
   ) {}
 
-  async login(dto: LoginDto): Promise<LoginResult> {
+  async login(tenantId: number, dto: LoginDto): Promise<LoginResult> {
     const userAccount = await this.userAccountService.findByLoginIdentifier(
-      dto.tenantId,
+      tenantId,
       dto.loginIdentifier,
     );
 
@@ -48,7 +48,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const policy = await this.twoFactorService.getTenantPolicy(dto.tenantId);
+    const policy = await this.twoFactorService.getTenantPolicy(tenantId);
     const twoFactorRequired = policy === 2;
 
     let twoFactorVerified = true;
@@ -66,7 +66,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MS);
 
     await this.sessionService.createSession({
-      tenantId: dto.tenantId,
+      tenantId,
       userAccountId: userAccount.id,
       sessionTokenHash: hashToken(rawToken),
       expiresAt,

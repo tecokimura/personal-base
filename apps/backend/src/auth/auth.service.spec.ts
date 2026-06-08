@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import type { UserAccountService } from './user-account/user-account.service';
 import type { SessionService } from './session/session.service';
+import type { TwoFactorService } from './two-factor/two-factor.service';
 
 const makeUserAccount = (overrides: Record<string, unknown> = {}) => ({
   id: 1,
@@ -37,6 +38,7 @@ describe('AuthService', () => {
   let mockCreateSession: ReturnType<typeof vi.fn>;
   let mockRevokeByTokenHash: ReturnType<typeof vi.fn>;
   let mockFindValidByTokenHash: ReturnType<typeof vi.fn>;
+  let mockGetTenantPolicy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockFindByLoginIdentifier = vi.fn();
@@ -45,6 +47,7 @@ describe('AuthService', () => {
     mockCreateSession = vi.fn().mockResolvedValue(makeSession());
     mockRevokeByTokenHash = vi.fn().mockResolvedValue(null);
     mockFindValidByTokenHash = vi.fn();
+    mockGetTenantPolicy = vi.fn().mockResolvedValue(1);
 
     const userAccountService = {
       findByLoginIdentifier: mockFindByLoginIdentifier,
@@ -58,7 +61,11 @@ describe('AuthService', () => {
       findValidByTokenHash: mockFindValidByTokenHash,
     } as unknown as SessionService;
 
-    service = new AuthService(userAccountService, sessionService);
+    const twoFactorService = {
+      getTenantPolicy: mockGetTenantPolicy,
+    } as unknown as TwoFactorService;
+
+    service = new AuthService(userAccountService, sessionService, twoFactorService);
   });
 
   describe('login', () => {
@@ -68,8 +75,7 @@ describe('AuthService', () => {
         makeUserAccount({ passwordHash }),
       );
 
-      const result = await service.login({
-        tenantId: 1,
+      const result = await service.login(1, {
         loginIdentifier: 'admin@example.com',
         password: 'correct-password',
       });
@@ -88,8 +94,7 @@ describe('AuthService', () => {
       );
 
       await expect(
-        service.login({
-          tenantId: 1,
+        service.login(1, {
           loginIdentifier: 'admin@example.com',
           password: 'wrong-password',
         }),
@@ -102,8 +107,7 @@ describe('AuthService', () => {
       );
 
       await expect(
-        service.login({
-          tenantId: 1,
+        service.login(1, {
           loginIdentifier: 'admin@example.com',
           password: 'any-password',
         }),
@@ -114,8 +118,7 @@ describe('AuthService', () => {
       mockFindByLoginIdentifier.mockResolvedValue(null);
 
       await expect(
-        service.login({
-          tenantId: 1,
+        service.login(1, {
           loginIdentifier: 'notfound@example.com',
           password: 'any-password',
         }),
