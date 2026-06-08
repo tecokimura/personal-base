@@ -32,6 +32,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           {isHrAdmin && <Link href="/employees/deleted">削除済み社員</Link>}
           {isHrAdmin && <Link href="/audit">監査ログ</Link>}
+          <div className="nav-divider" />
+          {me?.employeeId && (
+            <Link href={`/employees/${me.employeeId}`}>マイプロフィール</Link>
+          )}
         </nav>
       </aside>
       <main className="main">{children}</main>

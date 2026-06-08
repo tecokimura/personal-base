@@ -54,6 +54,7 @@ a:hover { text-decoration: underline; }
 .nav-group-header:hover { background: #16213e; color: #fff; }
 .nav-group-arrow { font-size: 10px; }
 .nav-group-children a { padding-left: 36px; }
+.nav-divider { border-top: 1px solid #333; margin: 8px 0; }
 
 .main { flex: 1; padding: 32px; overflow: auto; }
 
