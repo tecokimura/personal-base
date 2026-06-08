@@ -191,6 +191,24 @@ export interface PositionMasterView {
   createdAt: string;
 }
 
+export interface Qualification {
+  id: number;
+  tenantId: number;
+  employeeId: number;
+  name: string;
+  acquiredDate: string;
+  note: string | null;
+  updatedBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QualificationInput {
+  name: string;
+  acquiredDate: string;
+  note?: string;
+}
+
 export interface AuditEvent {
   eventType: 'LOGIN' | 'EDIT';
   occurredAt: string;
@@ -290,6 +308,23 @@ export const api = {
       }),
     remove: (id: number) =>
       apiFetch<void>(`/work-histories/${id}`, { method: 'DELETE' }),
+  },
+
+  qualifications: {
+    list: (employeeId: number) =>
+      apiFetch<Qualification[]>(`/employees/${employeeId}/qualifications`),
+    create: (employeeId: number, body: QualificationInput) =>
+      apiFetch<Qualification>(`/employees/${employeeId}/qualifications`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    update: (id: number, body: Partial<QualificationInput>) =>
+      apiFetch<Qualification>(`/qualifications/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    remove: (id: number) =>
+      apiFetch<void>(`/qualifications/${id}`, { method: 'DELETE' }),
   },
 
   audit: {

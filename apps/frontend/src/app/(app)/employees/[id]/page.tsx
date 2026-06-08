@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, ApiError } from '@/lib/api';
+import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, type Qualification, type QualificationInput, ApiError } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -62,6 +62,18 @@ export default function EmployeeDetailPage() {
   const [workHistories, setWorkHistories] = useState<WorkHistory[] | null>(null);
   const [whForbidden, setWhForbidden] = useState(false);
   const [whError, setWhError] = useState('');
+
+  // 資格情報
+  const [qualifications, setQualifications] = useState<Qualification[] | null>(null);
+  const [qualError, setQualError] = useState('');
+  const [qualCreating, setQualCreating] = useState(false);
+  const [qualCreateForm, setQualCreateForm] = useState<QualificationInput>({ name: '', acquiredDate: '' });
+  const [qualCreateError, setQualCreateError] = useState('');
+  const [qualCreateSaving, setQualCreateSaving] = useState(false);
+  const [qualEditingId, setQualEditingId] = useState<number | null>(null);
+  const [qualEditForm, setQualEditForm] = useState<QualificationInput>({ name: '', acquiredDate: '' });
+  const [qualEditError, setQualEditError] = useState('');
+  const [qualEditSaving, setQualEditSaving] = useState(false);
 
   // WorkHistory 補助編集
   const [assistEditingId, setAssistEditingId] = useState<number | null>(null);
@@ -132,6 +144,12 @@ export default function EmployeeDetailPage() {
     setWorkHistories(null);
     setWhForbidden(false);
     setWhError('');
+    setQualifications(null);
+    setQualError('');
+    setQualCreating(false);
+    setQualCreateForm({ name: '', acquiredDate: '' });
+    setQualCreateError('');
+    setQualEditingId(null);
     setEditingBasicInfo(false);
     setBasicInfoError('');
     setAssistEditingId(null);
@@ -168,6 +186,7 @@ export default function EmployeeDetailPage() {
           setWhError('職歴の読み込みに失敗しました');
         }
       });
+    api.qualifications.list(id).then(setQualifications).catch(() => setQualError('資格情報の読み込みに失敗しました'));
     api.organizations.list().then(setOrganizations).catch(() => setOrganizations([]));
     api.positionMasters.list().then(setPositionMasters).catch(() => setPositionMasters([]));
     api.employees.list().then(setAllEmployees).catch(() => setAllEmployees([]));
@@ -246,6 +265,56 @@ export default function EmployeeDetailPage() {
         : String(err));
     } finally {
       setAssistEditSaving(false);
+    }
+  }
+
+  async function handleQualCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setQualCreateSaving(true);
+    setQualCreateError('');
+    try {
+      const created = await api.qualifications.create(id, {
+        name: qualCreateForm.name,
+        acquiredDate: qualCreateForm.acquiredDate,
+        note: qualCreateForm.note || undefined,
+      });
+      setQualifications((prev) => [...(prev ?? []), created]);
+      setQualCreating(false);
+      setQualCreateForm({ name: '', acquiredDate: '' });
+    } catch (err) {
+      setQualCreateError(err instanceof ApiError && err.status === 403 ? '作成権限がありません' : String(err));
+    } finally {
+      setQualCreateSaving(false);
+    }
+  }
+
+  async function handleQualEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (qualEditingId == null) return;
+    setQualEditSaving(true);
+    setQualEditError('');
+    try {
+      const updated = await api.qualifications.update(qualEditingId, {
+        name: qualEditForm.name,
+        acquiredDate: qualEditForm.acquiredDate,
+        note: qualEditForm.note || undefined,
+      });
+      setQualifications((prev) => prev?.map((q) => (q.id === qualEditingId ? updated : q)) ?? prev);
+      setQualEditingId(null);
+    } catch (err) {
+      setQualEditError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+    } finally {
+      setQualEditSaving(false);
+    }
+  }
+
+  async function handleQualDelete(qualId: number) {
+    if (!window.confirm('この資格情報を削除しますか？')) return;
+    try {
+      await api.qualifications.remove(qualId);
+      setQualifications((prev) => prev?.filter((q) => q.id !== qualId) ?? prev);
+    } catch (err) {
+      alert(err instanceof ApiError && err.status === 403 ? '削除権限がありません' : String(err));
     }
   }
 
@@ -786,6 +855,84 @@ export default function EmployeeDetailPage() {
         </div>
       )}
 
+      <div className="card" style={{ marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>資格情報</h2>
+          {canEditSelf && !qualCreating && (
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 12 }}
+              onClick={() => { setQualCreating(true); setQualCreateForm({ name: '', acquiredDate: '' }); setQualCreateError(''); }}
+            >
+              新規追加
+            </button>
+          )}
+        </div>
+        {canEditSelf && qualCreating && (
+          <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を新規追加</p>
+            <QualificationForm
+              form={qualCreateForm}
+              onChange={setQualCreateForm}
+              onSubmit={handleQualCreate}
+              onCancel={() => { setQualCreating(false); setQualCreateError(''); }}
+              error={qualCreateError}
+              saving={qualCreateSaving}
+              submitLabel="追加"
+            />
+          </div>
+        )}
+        {qualError ? (
+          <p className="error-msg" style={{ margin: 0 }}>{qualError}</p>
+        ) : qualifications === null ? (
+          <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
+        ) : qualifications.length === 0 ? (
+          <p style={{ color: '#aaa', margin: 0 }}>資格情報がありません</p>
+        ) : (
+          qualifications.map((q) =>
+            canEditSelf && qualEditingId === q.id ? (
+              <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 16, marginBottom: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を編集</p>
+                <QualificationForm
+                  form={qualEditForm}
+                  onChange={setQualEditForm}
+                  onSubmit={handleQualEdit}
+                  onCancel={() => setQualEditingId(null)}
+                  error={qualEditError}
+                  saving={qualEditSaving}
+                />
+              </div>
+            ) : (
+              <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>{q.name}</div>
+                    <div style={{ fontSize: 13, color: '#555', marginBottom: 2 }}>
+                      取得日: {new Date(q.acquiredDate).toLocaleDateString('ja-JP')}
+                    </div>
+                    {q.note && <div style={{ fontSize: 12, color: '#888' }}>{q.note}</div>}
+                  </div>
+                  {canEditSelf && (
+                    <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
+                      <button
+                        className="btn-secondary"
+                        style={{ fontSize: 12 }}
+                        onClick={() => { setQualEditingId(q.id); setQualEditForm({ name: q.name, acquiredDate: q.acquiredDate.substring(0, 10), note: q.note ?? '' }); setQualEditError(''); }}
+                      >
+                        編集
+                      </button>
+                      <button className="btn-danger" style={{ fontSize: 12 }} onClick={() => { void handleQualDelete(q.id); }}>
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          )
+        )}
+      </div>
+
       {isHrAdmin && !isSelf && (
         <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #ef4444', background: '#fef2f2' }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#b91c1c' }}>危険な操作</h2>
@@ -969,6 +1116,73 @@ const inputStyle: React.CSSProperties = {
   padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4,
   fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 };
+
+// ─── 資格情報フォーム ──────────────────────────────────────────
+
+function QualificationForm({
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  error,
+  saving,
+  submitLabel = '保存',
+}: {
+  form: QualificationInput;
+  onChange: (f: QualificationInput) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+  error: string;
+  saving: boolean;
+  submitLabel?: string;
+}) {
+  return (
+    <form onSubmit={onSubmit}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <label style={labelStyle}>
+          資格名 <span style={{ color: 'red' }}>*</span>
+          <input
+            style={inputStyle}
+            value={form.name}
+            onChange={(e) => onChange({ ...form, name: e.target.value })}
+            required
+            maxLength={255}
+            placeholder="例: 基本情報技術者試験"
+          />
+        </label>
+        <label style={labelStyle}>
+          取得日 <span style={{ color: 'red' }}>*</span>
+          <input
+            type="date"
+            style={inputStyle}
+            value={form.acquiredDate}
+            onChange={(e) => onChange({ ...form, acquiredDate: e.target.value })}
+            required
+          />
+        </label>
+      </div>
+      <label style={{ ...labelStyle, marginBottom: 12 }}>
+        備考（任意）
+        <input
+          style={inputStyle}
+          value={form.note ?? ''}
+          onChange={(e) => onChange({ ...form, note: e.target.value })}
+          maxLength={500}
+          placeholder="認定機関・資格番号・有効期限など"
+        />
+      </label>
+      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+          {saving ? `${submitLabel}中...` : submitLabel}
+        </button>
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+          キャンセル
+        </button>
+      </div>
+    </form>
+  );
+}
 
 // ─── 所属編集フォーム ──────────────────────────────────────────
 

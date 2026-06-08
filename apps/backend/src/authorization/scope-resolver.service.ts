@@ -123,6 +123,29 @@ export class ScopeResolverService {
   }
 
   /**
+   * 資格情報閲覧権限判定。テナント内全員が閲覧可能。
+   */
+  async canAccessQualification(ctx: AuthContext, targetEmployeeId: number): Promise<boolean> {
+    const target = await this.prisma.employee.findFirst({
+      where: { id: targetEmployeeId, tenantId: ctx.tenantId },
+      select: { id: true },
+    });
+    return target !== null;
+  }
+
+  /**
+   * 資格情報編集権限判定（作成・更新・削除）。
+   *
+   * 許可条件:
+   *   - 本人
+   *   - HR_ADMIN
+   *   - MANAGER (ORGANIZATION_TREE 配下の通常社員のみ)
+   */
+  async canEditQualification(ctx: AuthContext, targetEmployeeId: number): Promise<boolean> {
+    return this.canAssistEditEmployeeWorkHistory(ctx, targetEmployeeId);
+  }
+
+  /**
    * WorkHistory 補助編集権限判定。
    *
    * 許可条件:
