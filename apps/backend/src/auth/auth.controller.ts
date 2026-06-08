@@ -16,13 +16,17 @@ import { SessionGuard } from './guards/session.guard';
 import { AuthenticatedRequest } from './types/authenticated-request';
 import { AuditService } from '../audit/audit.service';
 import { RoleAssignmentService } from './role-assignment/role-assignment.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 interface MeResponse {
   id: number;
   tenantId: number;
+  tenantName: string;
   employeeId: number;
+  employeeName: string;
+  employeeNumber: string | null;
   status: number;
   lastLoggedInAt: Date | null;
   roleTypes: number[];
@@ -34,6 +38,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly auditService: AuditService,
     private readonly roleAssignmentService: RoleAssignmentService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('login')
@@ -61,11 +66,18 @@ export class AuthController {
       userAgent: req.headers['user-agent'] ?? undefined,
     });
 
-    const roles = await this.roleAssignmentService.getActiveRoles(userAccount.id);
+    const [roles, tenant, employee] = await Promise.all([
+      this.roleAssignmentService.getActiveRoles(userAccount.id),
+      this.prisma.tenant.findUniqueOrThrow({ where: { id: userAccount.tenantId } }),
+      this.prisma.employee.findUniqueOrThrow({ where: { id: userAccount.employeeId } }),
+    ]);
     return {
       id: userAccount.id,
       tenantId: userAccount.tenantId,
+      tenantName: tenant.name,
       employeeId: userAccount.employeeId,
+      employeeName: employee.displayName ?? employee.fullName,
+      employeeNumber: employee.employeeNumber,
       status: userAccount.status,
       lastLoggedInAt: userAccount.lastLoggedInAt,
       roleTypes: roles.map((r) => r.roleType),
@@ -88,11 +100,18 @@ export class AuthController {
   @UseGuards(SessionGuard)
   async me(@Req() req: AuthenticatedRequest): Promise<MeResponse> {
     const { userAccount } = req;
-    const roles = await this.roleAssignmentService.getActiveRoles(userAccount.id);
+    const [roles, tenant, employee] = await Promise.all([
+      this.roleAssignmentService.getActiveRoles(userAccount.id),
+      this.prisma.tenant.findUniqueOrThrow({ where: { id: userAccount.tenantId } }),
+      this.prisma.employee.findUniqueOrThrow({ where: { id: userAccount.employeeId } }),
+    ]);
     return {
       id: userAccount.id,
       tenantId: userAccount.tenantId,
+      tenantName: tenant.name,
       employeeId: userAccount.employeeId,
+      employeeName: employee.displayName ?? employee.fullName,
+      employeeNumber: employee.employeeNumber,
       status: userAccount.status,
       lastLoggedInAt: userAccount.lastLoggedInAt,
       roleTypes: roles.map((r) => r.roleType),

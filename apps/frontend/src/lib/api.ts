@@ -47,7 +47,10 @@ async function apiFetchUpload<T>(path: string, formData: FormData): Promise<T> {
 export interface MeResponse {
   id: number;
   tenantId: number;
+  tenantName: string;
   employeeId: number;
+  employeeName: string;
+  employeeNumber: string | null;
   status: number;
   lastLoggedInAt: string | null;
   roleTypes: number[];

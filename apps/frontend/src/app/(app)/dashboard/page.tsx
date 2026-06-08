@@ -29,12 +29,25 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      <div className="card" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 11, color: '#0369a1', fontWeight: 600, marginBottom: 2 }}>テナント</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{me.tenantName} <span style={{ fontSize: 13, color: '#555', fontWeight: 400 }}>[{me.tenantId}]</span></div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: '#0369a1', fontWeight: 600, marginBottom: 2 }}>ログイン中の社員</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{me.employeeName} <span style={{ fontSize: 13, color: '#555', fontWeight: 400 }}>[{me.employeeNumber ?? '—'}]</span></div>
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#555' }}>ログイン中のアカウント情報</h2>
         <dl className="kv" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '6px 24px' }}>
           <dt>UserAccount ID</dt><dd>{me.id}</dd>
-          <dt>テナント ID</dt><dd>{me.tenantId}</dd>
-          <dt>社員 ID</dt><dd>{me.employeeId}</dd>
+          <dt>テナント</dt><dd>{me.tenantName} [{me.tenantId}]</dd>
+          <dt>社員</dt><dd>{me.employeeName} [{me.employeeNumber ?? '—'}]</dd>
           <dt>アカウント状態</dt><dd>
             <span className={me.status === 1 ? 'badge badge-green' : 'badge badge-gray'}>
               {me.status === 1 ? '有効' : '無効'}
