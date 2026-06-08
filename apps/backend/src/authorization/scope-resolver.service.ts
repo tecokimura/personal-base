@@ -146,6 +146,51 @@ export class ScopeResolverService {
   }
 
   /**
+   * 管理者専用セクション閲覧権限判定。
+   *
+   * 許可条件:
+   *   - HR_ADMIN（本人を除く・論理削除社員も可）
+   *   - MANAGER（ORGANIZATION_TREE 配下・本人を除く・通常社員のみ）
+   * 本人は自分のセクションを閲覧不可。
+   */
+  async canAccessAdminSection(ctx: AuthContext, targetEmployeeId: number): Promise<boolean> {
+    // Self cannot access own admin section
+    if (ctx.employeeId === targetEmployeeId) return false;
+
+    const target = await this.prisma.employee.findFirst({
+      where: { id: targetEmployeeId, tenantId: ctx.tenantId },
+      select: { isDeleted: true },
+    });
+    if (!target) return false;
+
+    const roles = await this.roleAssignmentService.getActiveRoles(ctx.userAccountId);
+    const roleTypes = new Set(roles.map((r) => r.roleType));
+
+    if (roleTypes.has(RoleType.HR_ADMIN)) return true;
+
+    if (target.isDeleted) return false;
+
+    const managerRoles = roles.filter(
+      (r) => r.roleType === RoleType.MANAGER && r.scopeType === ScopeType.ORGANIZATION_TREE,
+    );
+    if (managerRoles.length > 0) {
+      const rootIds = managerRoles.map((r) => r.scopeId);
+      const treeIds = await this.collectDescendantIds(rootIds, ctx.tenantId);
+      const targetOrgIds = await this.getEmployeeActiveOrgIds(targetEmployeeId, ctx.tenantId);
+      if (targetOrgIds.some((id) => treeIds.has(id))) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 管理者専用セクション編集権限判定。閲覧権限と同一条件。
+   */
+  async canEditAdminSection(ctx: AuthContext, targetEmployeeId: number): Promise<boolean> {
+    return this.canAccessAdminSection(ctx, targetEmployeeId);
+  }
+
+  /**
    * WorkHistory 補助編集権限判定。
    *
    * 許可条件:

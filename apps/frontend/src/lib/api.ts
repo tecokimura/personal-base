@@ -209,6 +209,30 @@ export interface QualificationInput {
   note?: string;
 }
 
+export interface AdminSection {
+  id: number;
+  tenantId: number;
+  employeeId: number;
+  evaluation: string | null;
+  grade: string | null;
+  joiningReason: string | null;
+  employmentCategory: string | null;
+  salaryBand: string | null;
+  specialNotes: string | null;
+  updatedBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSectionInput {
+  evaluation?: string | null;
+  grade?: string | null;
+  joiningReason?: string | null;
+  employmentCategory?: string | null;
+  salaryBand?: string | null;
+  specialNotes?: string | null;
+}
+
 export interface AuditEvent {
   eventType: 'LOGIN' | 'EDIT';
   occurredAt: string;
@@ -325,6 +349,16 @@ export const api = {
       }),
     remove: (id: number) =>
       apiFetch<void>(`/qualifications/${id}`, { method: 'DELETE' }),
+  },
+
+  adminSection: {
+    get: (employeeId: number) =>
+      apiFetch<AdminSection | null>(`/employees/${employeeId}/admin-section`),
+    upsert: (employeeId: number, body: AdminSectionInput) =>
+      apiFetch<AdminSection>(`/employees/${employeeId}/admin-section`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
   },
 
   audit: {

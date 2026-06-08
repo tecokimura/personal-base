@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, type Qualification, type QualificationInput, ApiError } from '@/lib/api';
+import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, type Qualification, type QualificationInput, type AdminSection, type AdminSectionInput, ApiError } from '@/lib/api';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -17,6 +17,7 @@ const EMPLOYMENT_TYPE: Record<number, string> = {
 
 // roleType: 1=HR_ADMIN, 2=MANAGER
 const ASSIST_EDIT_ROLES = new Set([1, 2]);
+const ADMIN_SECTION_ROLES = new Set([1, 2]);
 
 type FormState = WorkHistoryInput & { teamSizeStr: string };
 
@@ -129,6 +130,14 @@ export default function EmployeeDetailPage() {
   const [basicInfoSaving, setBasicInfoSaving] = useState(false);
   const [basicInfoError, setBasicInfoError] = useState('');
 
+  // 管理者専用セクション
+  const [adminSection, setAdminSection] = useState<AdminSection | null | undefined>(undefined);
+  const [adminSectionError, setAdminSectionError] = useState('');
+  const [adminSectionEditing, setAdminSectionEditing] = useState(false);
+  const [adminSectionForm, setAdminSectionForm] = useState<AdminSectionInput>({});
+  const [adminSectionSaving, setAdminSectionSaving] = useState(false);
+  const [adminSectionSaveError, setAdminSectionSaveError] = useState('');
+
   // 組織一覧（所属追加フォーム用）
   const [organizations, setOrganizations] = useState<OrganizationView[] | null>(null);
 
@@ -167,6 +176,9 @@ export default function EmployeeDetailPage() {
     setOrganizations(null);
     setPositionMasters(null);
     setAllEmployees(null);
+    setAdminSection(undefined);
+    setAdminSectionError('');
+    setAdminSectionEditing(false);
 
     api.employees
       .get(id)
@@ -187,6 +199,15 @@ export default function EmployeeDetailPage() {
         }
       });
     api.qualifications.list(id).then(setQualifications).catch(() => setQualError('資格情報の読み込みに失敗しました'));
+    api.adminSection.get(id)
+      .then((s) => setAdminSection(s))
+      .catch((err: unknown) => {
+        if (err instanceof ApiError && err.status === 403) {
+          setAdminSection(undefined);
+        } else {
+          setAdminSectionError('管理者専用セクションの読み込みに失敗しました');
+        }
+      });
     api.organizations.list().then(setOrganizations).catch(() => setOrganizations([]));
     api.positionMasters.list().then(setPositionMasters).catch(() => setPositionMasters([]));
     api.employees.list().then(setAllEmployees).catch(() => setAllEmployees([]));
@@ -197,6 +218,23 @@ export default function EmployeeDetailPage() {
   const canAssistEdit = !isSelf && !!me && me.roleTypes.some((r) => ASSIST_EDIT_ROLES.has(r));
   // isSelf でもプロフィール/写真/所属追加・編集は許可（上長設定は canAssistEdit のみ）
   const canEditSelf = canAssistEdit || isSelf;
+  // 管理者専用セクション: HR_ADMIN + Manager のみ、本人は不可
+  const canSeeAdminSection = !isSelf && !!me && me.roleTypes.some((r) => ADMIN_SECTION_ROLES.has(r));
+
+  async function handleAdminSectionSave(e: React.FormEvent) {
+    e.preventDefault();
+    setAdminSectionSaving(true);
+    setAdminSectionSaveError('');
+    try {
+      const saved = await api.adminSection.upsert(id, adminSectionForm);
+      setAdminSection(saved);
+      setAdminSectionEditing(false);
+    } catch (err) {
+      setAdminSectionSaveError(err instanceof ApiError && err.status === 403 ? '編集権限がありません' : String(err));
+    } finally {
+      setAdminSectionSaving(false);
+    }
+  }
 
   async function handleSoftDelete() {
     setDeleting(true);
@@ -932,6 +970,93 @@ export default function EmployeeDetailPage() {
           )
         )}
       </div>
+
+      {canSeeAdminSection && (
+        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #7c3aed', background: '#faf5ff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#7c3aed' }}>管理者専用セクション</h2>
+            {!adminSectionEditing && adminSection !== undefined && (
+              <button
+                className="btn-secondary"
+                style={{ fontSize: 12 }}
+                onClick={() => {
+                  setAdminSectionForm({
+                    evaluation: adminSection?.evaluation ?? '',
+                    grade: adminSection?.grade ?? '',
+                    joiningReason: adminSection?.joiningReason ?? '',
+                    employmentCategory: adminSection?.employmentCategory ?? '',
+                    salaryBand: adminSection?.salaryBand ?? '',
+                    specialNotes: adminSection?.specialNotes ?? '',
+                  });
+                  setAdminSectionSaveError('');
+                  setAdminSectionEditing(true);
+                }}
+              >
+                編集
+              </button>
+            )}
+          </div>
+          {adminSectionError && <p className="error-msg" style={{ margin: 0 }}>{adminSectionError}</p>}
+          {adminSectionEditing ? (
+            <form onSubmit={(e) => { void handleAdminSectionSave(e); }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <label style={labelStyle}>
+                  評価
+                  <input style={inputStyle} value={adminSectionForm.evaluation ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, evaluation: e.target.value || null }))} maxLength={500} />
+                </label>
+                <label style={labelStyle}>
+                  等級
+                  <input style={inputStyle} value={adminSectionForm.grade ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, grade: e.target.value || null }))} maxLength={255} />
+                </label>
+                <label style={labelStyle}>
+                  雇用形態
+                  <input style={inputStyle} value={adminSectionForm.employmentCategory ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, employmentCategory: e.target.value || null }))} maxLength={255} />
+                </label>
+                <label style={labelStyle}>
+                  給与帯
+                  <input style={inputStyle} value={adminSectionForm.salaryBand ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, salaryBand: e.target.value || null }))} maxLength={255} />
+                </label>
+              </div>
+              <label style={{ ...labelStyle, marginBottom: 12 }}>
+                入社経緯
+                <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={adminSectionForm.joiningReason ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, joiningReason: e.target.value || null }))} />
+              </label>
+              <label style={{ ...labelStyle, marginBottom: 12 }}>
+                特記事項
+                <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={adminSectionForm.specialNotes ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, specialNotes: e.target.value || null }))} />
+              </label>
+              {adminSectionSaveError && <p className="error-msg" style={{ marginBottom: 8 }}>{adminSectionSaveError}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="submit" className="btn-primary" disabled={adminSectionSaving} style={{ fontSize: 12 }}>
+                  {adminSectionSaving ? '保存中...' : '保存'}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setAdminSectionEditing(false)} disabled={adminSectionSaving} style={{ fontSize: 12 }}>
+                  キャンセル
+                </button>
+              </div>
+            </form>
+          ) : adminSection === undefined ? (
+            <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
+          ) : adminSection === null ? (
+            <p style={{ color: '#aaa', margin: 0 }}>未登録</p>
+          ) : (
+            <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>評価</dt>
+              <dd style={{ margin: 0 }}>{adminSection.evaluation ?? '—'}</dd>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>等級</dt>
+              <dd style={{ margin: 0 }}>{adminSection.grade ?? '—'}</dd>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>雇用形態</dt>
+              <dd style={{ margin: 0 }}>{adminSection.employmentCategory ?? '—'}</dd>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>給与帯</dt>
+              <dd style={{ margin: 0 }}>{adminSection.salaryBand ?? '—'}</dd>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>入社経緯</dt>
+              <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.joiningReason ?? '—'}</dd>
+              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>特記事項</dt>
+              <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
+            </dl>
+          )}
+        </div>
+      )}
 
       {isHrAdmin && !isSelf && (
         <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #ef4444', background: '#fef2f2' }}>
