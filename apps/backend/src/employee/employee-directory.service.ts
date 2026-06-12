@@ -613,6 +613,8 @@ export class EmployeeDirectoryService {
   }
 
   private async assertCanEditProfile(ctx: AuthContext, employeeId: number): Promise<void> {
+    if (ctx.employeeId === employeeId) return;
+
     const canManage = await this.authorizationService.can(ctx, Permission.MANAGE_EMPLOYEE, ctx.tenantId);
     if (canManage) return;
 

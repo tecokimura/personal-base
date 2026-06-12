@@ -4,7 +4,7 @@ import { CsvService } from './csv.service';
 import type { AuthorizationService } from '../authorization/authorization.service';
 import type { PrismaService } from '../prisma/prisma.service';
 
-const ctx = { userAccountId: 99, tenantId: 1 };
+const ctx = { userAccountId: 99, employeeId: 99, tenantId: 1 };
 
 const HEADER = 'employee_number,full_name,display_name,email,birth_date,profile_free_text,organization_id,employment_type,start_date,position_master_id,manager_employee_number';
 

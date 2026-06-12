@@ -625,37 +625,37 @@ describe('EmployeeDirectoryService', () => {
     });
   });
 
-  // --- setManagerEmployee ---
+  // --- setSupervisorEmployee ---
 
-  describe('setManagerEmployee', () => {
-    it('sets managerEmployeeId on an employment', async () => {
-      const employment = makeEmployment({ managerEmployeeId: null });
+  describe('setSupervisorEmployee', () => {
+    it('sets supervisorEmployeeId on an employment', async () => {
+      const employment = makeEmployment({ supervisorEmployeeId: null });
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employmentRepo.findById.mockResolvedValue(employment);
-      employmentRepo.update.mockResolvedValue({ ...employment, managerEmployeeId: 2 });
+      employmentRepo.update.mockResolvedValue({ ...employment, supervisorEmployeeId: 2 });
 
-      const result = await service.setManagerEmployee(ctx, 1, 10, 2);
+      const result = await service.setSupervisorEmployee(ctx, 1, 10, 2);
 
       expect(employmentRepo.update).toHaveBeenCalledWith(
         10,
         1,
-        expect.objectContaining({ managerEmployeeId: 2 }),
+        expect.objectContaining({ supervisorEmployeeId: 2 }),
       );
-      expect(result.managerEmployeeId).toBe(2);
+      expect(result.supervisorEmployeeId).toBe(2);
     });
 
-    it('allows setting managerEmployeeId to null (remove manager)', async () => {
-      const employment = makeEmployment({ managerEmployeeId: 5 });
+    it('allows setting supervisorEmployeeId to null (remove manager)', async () => {
+      const employment = makeEmployment({ supervisorEmployeeId: 5 });
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employmentRepo.findById.mockResolvedValue(employment);
-      employmentRepo.update.mockResolvedValue({ ...employment, managerEmployeeId: null });
+      employmentRepo.update.mockResolvedValue({ ...employment, supervisorEmployeeId: null });
 
-      await service.setManagerEmployee(ctx, 1, 10, null);
+      await service.setSupervisorEmployee(ctx, 1, 10, null);
 
       expect(employmentRepo.update).toHaveBeenCalledWith(
         10,
         1,
-        expect.objectContaining({ managerEmployeeId: null }),
+        expect.objectContaining({ supervisorEmployeeId: null }),
       );
     });
 
@@ -667,9 +667,9 @@ describe('EmployeeDirectoryService', () => {
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       employeeRepo.hasActiveEmploymentInOrgs.mockResolvedValue(true);
       employmentRepo.findById.mockResolvedValue(makeEmployment());
-      employmentRepo.update.mockResolvedValue(makeEmployment({ managerEmployeeId: 3 }));
+      employmentRepo.update.mockResolvedValue(makeEmployment({ supervisorEmployeeId: 3 }));
 
-      await service.setManagerEmployee(ctx, 1, 10, 3);
+      await service.setSupervisorEmployee(ctx, 1, 10, 3);
 
       expect(employmentRepo.update).toHaveBeenCalled();
     });
@@ -679,14 +679,14 @@ describe('EmployeeDirectoryService', () => {
       employmentRepo.findById.mockResolvedValue(makeEmployment());
       employeeRepo.existsInTenant.mockResolvedValue(false);
 
-      await expect(service.setManagerEmployee(ctx, 1, 10, 999)).rejects.toThrow(NotFoundException);
+      await expect(service.setSupervisorEmployee(ctx, 1, 10, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException when caller has no permission', async () => {
       employeeRepo.findById.mockResolvedValue(makeEmployee());
       authzService.can.mockResolvedValue(false);
 
-      await expect(service.setManagerEmployee(ctx, 1, 10, 2)).rejects.toThrow(ForbiddenException);
+      await expect(service.setSupervisorEmployee(ctx, 1, 10, 2)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -805,7 +805,7 @@ describe('EmployeeDirectoryService', () => {
     it('does not return employees from another tenant', async () => {
       employeeRepo.findById.mockResolvedValue(null);
 
-      await expect(service.findById({ userAccountId: 99, tenantId: 2 }, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.findById({ userAccountId: 99, employeeId: 99, tenantId: 2 }, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('addEmployment rejects cross-tenant organization', async () => {
@@ -823,7 +823,7 @@ describe('EmployeeDirectoryService', () => {
 
     it('他テナントの論理削除社員を復元できない', async () => {
       // Repository scopes findById by tenantId — cross-tenant employee is not found
-      const crossTenantCtx = { userAccountId: 99, tenantId: 2 };
+      const crossTenantCtx = { userAccountId: 99, employeeId: 99, tenantId: 2 };
       employeeRepo.findById.mockResolvedValue(null);
 
       await expect(service.restore(crossTenantCtx, 1)).rejects.toThrow(NotFoundException);
@@ -833,7 +833,7 @@ describe('EmployeeDirectoryService', () => {
       // AuthorizationService.assertCan は tenantId 不一致の場合に ForbiddenException を投げる。
       // RoleAssignment の cross-tenant isolation は authorization.service.spec.ts で直接確認済み。
       authzService.assertCan.mockRejectedValue(new ForbiddenException());
-      const crossTenantCtx = { userAccountId: 99, tenantId: 2 };
+      const crossTenantCtx = { userAccountId: 99, employeeId: 99, tenantId: 2 };
 
       await expect(service.create(crossTenantCtx, { fullName: '山田' })).rejects.toThrow(ForbiddenException);
     });

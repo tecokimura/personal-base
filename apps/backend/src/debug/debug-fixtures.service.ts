@@ -96,6 +96,23 @@ export class DebugFixturesService {
       employeeId = employee.id;
     }
 
+    // 在籍レコードがなければ作成（MANAGER が EMPLOYEE を管理できるよう全員を deptOrg に配属）
+    const existingEmployment = await this.prisma.employment.findFirst({
+      where: { tenantId: tenant.id, employeeId, status: 1 },
+    });
+    if (!existingEmployment) {
+      await this.prisma.employment.create({
+        data: {
+          tenantId: tenant.id,
+          employeeId,
+          organizationId: deptOrg.id,
+          employmentType: 1,
+          startDate: new Date('2020-01-01'),
+          status: 1,
+        },
+      });
+    }
+
     const scopeId =
       def.scopeType === 4 ? 0
       : def.scopeType === 3 || def.scopeType === 2 ? deptOrg.id

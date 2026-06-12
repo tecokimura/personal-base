@@ -9,6 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 source "${SCRIPT_DIR}/lib.sh"
 
+cd "${PROJECT_DIR}"
+
 ISSUE_KEY="${1:-}"
 if [[ -z "${ISSUE_KEY}" ]]; then
   echo "[review] 課題キーが指定されていません" >&2
@@ -18,6 +20,29 @@ fi
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/review-${ISSUE_KEY}-$(date +%Y%m%d-%H%M%S).log"
 
+# ── コンパイルチェック ──────────────────────────────────────────────
+echo "[review] TypeScript コンパイルチェック実行中..."
+
+BACKEND_TSC=$(cd "${PROJECT_DIR}/apps/backend" && npx --no-install tsc --noEmit 2>&1 || true)
+FRONTEND_TSC=$(cd "${PROJECT_DIR}/apps/frontend" && npx --no-install tsc --noEmit 2>&1 || true)
+
+if [[ -z "${BACKEND_TSC}" ]]; then
+  BACKEND_RESULT="エラーなし（クリーン）"
+else
+  BACKEND_RESULT="エラーあり:
+${BACKEND_TSC}"
+fi
+
+if [[ -z "${FRONTEND_TSC}" ]]; then
+  FRONTEND_RESULT="エラーなし（クリーン）"
+else
+  FRONTEND_RESULT="エラーあり:
+${FRONTEND_TSC}"
+fi
+
+echo "[review] バックエンド TSC: $([ -z "${BACKEND_TSC}" ] && echo 'クリーン' || echo 'エラーあり')"
+echo "[review] フロントエンド TSC: $([ -z "${FRONTEND_TSC}" ] && echo 'クリーン' || echo 'エラーあり')"
+
 PROMPT=$(cat <<PROMPT
 ## セッション引き継ぎ: PM セッション（コードレビュー）
 
@@ -26,11 +51,21 @@ PROMPT=$(cat <<PROMPT
 ### 担当課題
 Backlog 課題キー: ${ISSUE_KEY}
 
+### コンパイルチェック結果（レビュー前自動実行済み）
+
+**バックエンド (npx tsc --noEmit):**
+${BACKEND_RESULT}
+
+**フロントエンド (npx tsc --noEmit):**
+${FRONTEND_RESULT}
+
+コンパイルエラーがある場合は、内容を Backlog コメントに記載した上でレビュー NG としてください。
+
 ### 手順
 1. Backlog MCP の get_issue でレビュー対象課題を取得する
 2. 課題の完了条件と実装コメントを確認する
-3. `git diff develop...${IMPL_BRANCH}` で実装差分を確認する
-4. コードレビューを実施する（バグ・設計・テスト・完了条件の充足）
+3. git diff develop...${IMPL_BRANCH} で実装差分を確認する
+4. コードレビューを実施する（バグ・設計・テスト・完了条件の充足・上記コンパイルエラーの有無）
 5. レビュー結果を Backlog コメントに記録する（OK/NG・指摘内容）
 6. レビュー OK の場合:
    - 課題を「処理済み」+ カテゴリ「動作確認待ち」に更新する

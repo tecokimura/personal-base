@@ -134,7 +134,7 @@ describe('AuthService', () => {
       const result = await service.verifySession('raw-token');
 
       expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
+      expect(result?.userAccount.id).toBe(1);
     });
 
     it('セッションが見つからない場合 null を返す', async () => {

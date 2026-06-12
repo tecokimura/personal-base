@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 
 const ROLES = [
+  { roleType: 4, label: 'EXECUTIVE_VIEWER', description: '役員閲覧者（全テナント閲覧）' },
+  { roleType: 3, label: 'ORG_ADMIN', description: '組織管理者（組織単位）' },
   { roleType: 1, label: 'HR_ADMIN', description: 'HR管理者（テナント全権限）' },
   { roleType: 2, label: 'MANAGER', description: 'マネージャー（組織ツリー）' },
-  { roleType: 3, label: 'ORG_ADMIN', description: '組織管理者（組織単位）' },
-  { roleType: 4, label: 'EXECUTIVE_VIEWER', description: '役員閲覧者（全テナント閲覧）' },
   { roleType: 5, label: 'EMPLOYEE', description: '一般社員（本人のみ）' },
 ];
 

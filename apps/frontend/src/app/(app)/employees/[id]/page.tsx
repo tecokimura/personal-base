@@ -132,7 +132,9 @@ export default function EmployeeDetailPage() {
 
   // 管理者専用セクション
   const [adminSection, setAdminSection] = useState<AdminSection | null | undefined>(undefined);
+  const [adminSectionForbidden, setAdminSectionForbidden] = useState(false);
   const [adminSectionError, setAdminSectionError] = useState('');
+  const [adminSectionExpanded, setAdminSectionExpanded] = useState(false);
   const [adminSectionEditing, setAdminSectionEditing] = useState(false);
   const [adminSectionForm, setAdminSectionForm] = useState<AdminSectionInput>({});
   const [adminSectionSaving, setAdminSectionSaving] = useState(false);
@@ -182,7 +184,9 @@ export default function EmployeeDetailPage() {
     setPositionMasters(null);
     setAllEmployees(null);
     setAdminSection(undefined);
+    setAdminSectionForbidden(false);
     setAdminSectionError('');
+    setAdminSectionExpanded(false);
     setAdminSectionEditing(false);
 
     api.employees
@@ -203,12 +207,18 @@ export default function EmployeeDetailPage() {
           setWhError('職歴の読み込みに失敗しました');
         }
       });
-    api.qualifications.list(id).then(setQualifications).catch(() => setQualError('資格情報の読み込みに失敗しました'));
+    api.qualifications.list(id).then(setQualifications).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 403) {
+        setQualifications([]);
+      } else {
+        setQualError('資格情報の読み込みに失敗しました');
+      }
+    });
     api.adminSection.get(id)
       .then((s) => setAdminSection(s))
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 403) {
-          setAdminSection(null);
+          setAdminSectionForbidden(true);
         } else {
           setAdminSectionError('管理者専用セクションの読み込みに失敗しました');
         }
@@ -537,6 +547,106 @@ export default function EmployeeDetailPage() {
         {isSelf && <span style={{ fontSize: 13, fontWeight: 400, color: '#888', marginLeft: 8 }}>（自分）</span>}
       </h1>
 
+      {canSeeAdminSection && !adminSectionForbidden && (
+        <div className="card" style={{ marginBottom: 8, borderLeft: '3px solid #7c3aed', background: '#faf5ff' }}>
+          <button
+            onClick={() => {
+              setAdminSectionExpanded((v) => !v);
+              if (!adminSectionExpanded) setAdminSectionEditing(false);
+            }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, margin: 0 }}
+          >
+            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#7c3aed' }}>管理者専用セクション</h2>
+            <span style={{ color: '#7c3aed', fontSize: 13 }}>{adminSectionExpanded ? '▼ 折りたたむ' : '▶ 展開する'}</span>
+          </button>
+          {adminSectionExpanded && (
+            <div style={{ marginTop: 12 }}>
+              {!adminSectionEditing && adminSection !== undefined && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: 12 }}
+                    onClick={() => {
+                      setAdminSectionForm({
+                        evaluation: adminSection?.evaluation ?? '',
+                        grade: adminSection?.grade ?? '',
+                        joiningReason: adminSection?.joiningReason ?? '',
+                        employmentCategory: adminSection?.employmentCategory ?? '',
+                        salaryBand: adminSection?.salaryBand ?? '',
+                        specialNotes: adminSection?.specialNotes ?? '',
+                      });
+                      setAdminSectionSaveError('');
+                      setAdminSectionEditing(true);
+                    }}
+                  >
+                    編集
+                  </button>
+                </div>
+              )}
+              {adminSectionError && <p className="error-msg" style={{ margin: 0 }}>{adminSectionError}</p>}
+              {adminSectionEditing ? (
+                <form onSubmit={(e) => { void handleAdminSectionSave(e); }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <label style={labelStyle}>
+                      評価
+                      <input style={inputStyle} value={adminSectionForm.evaluation ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, evaluation: e.target.value || null }))} maxLength={500} />
+                    </label>
+                    <label style={labelStyle}>
+                      等級
+                      <input style={inputStyle} value={adminSectionForm.grade ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, grade: e.target.value || null }))} maxLength={255} />
+                    </label>
+                    <label style={labelStyle}>
+                      雇用形態
+                      <input style={inputStyle} value={adminSectionForm.employmentCategory ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, employmentCategory: e.target.value || null }))} maxLength={255} />
+                    </label>
+                    <label style={labelStyle}>
+                      給与帯
+                      <input style={inputStyle} value={adminSectionForm.salaryBand ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, salaryBand: e.target.value || null }))} maxLength={255} />
+                    </label>
+                  </div>
+                  <label style={{ ...labelStyle, marginBottom: 12 }}>
+                    入社経緯
+                    <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={adminSectionForm.joiningReason ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, joiningReason: e.target.value || null }))} />
+                  </label>
+                  <label style={{ ...labelStyle, marginBottom: 12 }}>
+                    特記事項
+                    <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={adminSectionForm.specialNotes ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, specialNotes: e.target.value || null }))} />
+                  </label>
+                  {adminSectionSaveError && <p className="error-msg" style={{ marginBottom: 8 }}>{adminSectionSaveError}</p>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="submit" className="btn-primary" disabled={adminSectionSaving} style={{ fontSize: 12 }}>
+                      {adminSectionSaving ? '保存中...' : '保存'}
+                    </button>
+                    <button type="button" className="btn-secondary" onClick={() => setAdminSectionEditing(false)} disabled={adminSectionSaving} style={{ fontSize: 12 }}>
+                      キャンセル
+                    </button>
+                  </div>
+                </form>
+              ) : adminSection === undefined ? (
+                <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
+              ) : adminSection === null ? (
+                <p style={{ color: '#aaa', margin: 0 }}>未登録</p>
+              ) : (
+                <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>評価</dt>
+                  <dd style={{ margin: 0 }}>{adminSection.evaluation ?? '—'}</dd>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>等級</dt>
+                  <dd style={{ margin: 0 }}>{adminSection.grade ?? '—'}</dd>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>雇用形態</dt>
+                  <dd style={{ margin: 0 }}>{adminSection.employmentCategory ?? '—'}</dd>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>給与帯</dt>
+                  <dd style={{ margin: 0 }}>{adminSection.salaryBand ?? '—'}</dd>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>入社経緯</dt>
+                  <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.joiningReason ?? '—'}</dd>
+                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>特記事項</dt>
+                  <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
+                </dl>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>基本情報</h2>
@@ -608,7 +718,7 @@ export default function EmployeeDetailPage() {
           <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>メール</dt>
           <dd style={{ margin: 0 }}>{employee.email ?? '—'}</dd>
 
-          {employee.birthDate !== undefined && (
+          {employee.birthDate !== undefined && isHrAdmin && (
             <>
               <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>生年月日</dt>
               <dd style={{ margin: 0 }}>{employee.birthDate ?? '—'}</dd>
@@ -626,7 +736,7 @@ export default function EmployeeDetailPage() {
 
       {canEditSelf && (
         <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #4f83cc' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: '#4f83cc' }}>補助編集</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: '#4f83cc' }}>{isSelf ? 'プロフィール編集' : '補助編集'}</h2>
 
           {/* プロフィールテキスト */}
           <form onSubmit={(e) => { void handleSaveProfile(e); }} style={{ marginBottom: 20 }}>
@@ -989,93 +1099,6 @@ export default function EmployeeDetailPage() {
           )
         )}
       </div>
-
-      {canSeeAdminSection && (
-        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #7c3aed', background: '#faf5ff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#7c3aed' }}>管理者専用セクション</h2>
-            {!adminSectionEditing && adminSection !== undefined && (
-              <button
-                className="btn-secondary"
-                style={{ fontSize: 12 }}
-                onClick={() => {
-                  setAdminSectionForm({
-                    evaluation: adminSection?.evaluation ?? '',
-                    grade: adminSection?.grade ?? '',
-                    joiningReason: adminSection?.joiningReason ?? '',
-                    employmentCategory: adminSection?.employmentCategory ?? '',
-                    salaryBand: adminSection?.salaryBand ?? '',
-                    specialNotes: adminSection?.specialNotes ?? '',
-                  });
-                  setAdminSectionSaveError('');
-                  setAdminSectionEditing(true);
-                }}
-              >
-                編集
-              </button>
-            )}
-          </div>
-          {adminSectionError && <p className="error-msg" style={{ margin: 0 }}>{adminSectionError}</p>}
-          {adminSectionEditing ? (
-            <form onSubmit={(e) => { void handleAdminSectionSave(e); }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <label style={labelStyle}>
-                  評価
-                  <input style={inputStyle} value={adminSectionForm.evaluation ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, evaluation: e.target.value || null }))} maxLength={500} />
-                </label>
-                <label style={labelStyle}>
-                  等級
-                  <input style={inputStyle} value={adminSectionForm.grade ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, grade: e.target.value || null }))} maxLength={255} />
-                </label>
-                <label style={labelStyle}>
-                  雇用形態
-                  <input style={inputStyle} value={adminSectionForm.employmentCategory ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, employmentCategory: e.target.value || null }))} maxLength={255} />
-                </label>
-                <label style={labelStyle}>
-                  給与帯
-                  <input style={inputStyle} value={adminSectionForm.salaryBand ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, salaryBand: e.target.value || null }))} maxLength={255} />
-                </label>
-              </div>
-              <label style={{ ...labelStyle, marginBottom: 12 }}>
-                入社経緯
-                <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={adminSectionForm.joiningReason ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, joiningReason: e.target.value || null }))} />
-              </label>
-              <label style={{ ...labelStyle, marginBottom: 12 }}>
-                特記事項
-                <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={adminSectionForm.specialNotes ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, specialNotes: e.target.value || null }))} />
-              </label>
-              {adminSectionSaveError && <p className="error-msg" style={{ marginBottom: 8 }}>{adminSectionSaveError}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" className="btn-primary" disabled={adminSectionSaving} style={{ fontSize: 12 }}>
-                  {adminSectionSaving ? '保存中...' : '保存'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => setAdminSectionEditing(false)} disabled={adminSectionSaving} style={{ fontSize: 12 }}>
-                  キャンセル
-                </button>
-              </div>
-            </form>
-          ) : adminSection === undefined ? (
-            <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
-          ) : adminSection === null ? (
-            <p style={{ color: '#aaa', margin: 0 }}>未登録</p>
-          ) : (
-            <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>評価</dt>
-              <dd style={{ margin: 0 }}>{adminSection.evaluation ?? '—'}</dd>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>等級</dt>
-              <dd style={{ margin: 0 }}>{adminSection.grade ?? '—'}</dd>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>雇用形態</dt>
-              <dd style={{ margin: 0 }}>{adminSection.employmentCategory ?? '—'}</dd>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>給与帯</dt>
-              <dd style={{ margin: 0 }}>{adminSection.salaryBand ?? '—'}</dd>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>入社経緯</dt>
-              <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.joiningReason ?? '—'}</dd>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>特記事項</dt>
-              <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
-            </dl>
-          )}
-        </div>
-      )}
 
       {isHrAdmin && !isSelf && (
         <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #f59e0b', background: '#fffbeb' }}>

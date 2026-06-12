@@ -21,7 +21,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new ApiError(res.status, message);
   }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text) return null as T;
+  return JSON.parse(text) as T;
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {

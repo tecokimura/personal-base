@@ -21,6 +21,6 @@ fi
 
 curl -s -X POST "${SLACK_WEBHOOK_URL}" \
   -H 'Content-Type: application/json' \
-  --data "$(jq -nc --arg text "${MESSAGE}" '{"text": $text}')"
+  --data "$(echo "${MESSAGE}" | sed 's/\\n/\n/g' | jq -Rs '{"text": .}')"
 
 echo "[notify] Slack 送信完了"

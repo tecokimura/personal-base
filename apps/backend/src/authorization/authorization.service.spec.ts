@@ -34,7 +34,7 @@ describe('AuthorizationService', () => {
       mockGetActiveRoles.mockResolvedValue([mockAssignment(RoleType.HR_ADMIN)]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_EMPLOYEE,
         1,
       );
@@ -46,7 +46,7 @@ describe('AuthorizationService', () => {
       mockGetActiveRoles.mockResolvedValue([mockAssignment(RoleType.EMPLOYEE)]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_EMPLOYEE,
         1,
       );
@@ -56,7 +56,7 @@ describe('AuthorizationService', () => {
 
     it('他テナントへのアクセスを拒否し DB を参照しない', async () => {
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_EMPLOYEE,
         2,
       );
@@ -72,7 +72,7 @@ describe('AuthorizationService', () => {
       ]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_EMPLOYEE,
         1,
       );
@@ -86,7 +86,7 @@ describe('AuthorizationService', () => {
       ]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_SOFT_DELETED,
         1,
       );
@@ -100,7 +100,7 @@ describe('AuthorizationService', () => {
       ]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.VIEW_ALL_EMPLOYEES,
         1,
       );
@@ -114,7 +114,7 @@ describe('AuthorizationService', () => {
       ]);
 
       const result = await service.can(
-        { userAccountId: 1, tenantId: 1 },
+        { userAccountId: 1, tenantId: 1, employeeId: 1 },
         Permission.MANAGE_EMPLOYEE,
         1,
       );
@@ -129,7 +129,7 @@ describe('AuthorizationService', () => {
 
       await expect(
         service.assertCan(
-          { userAccountId: 1, tenantId: 1 },
+          { userAccountId: 1, tenantId: 1, employeeId: 1 },
           Permission.MANAGE_EMPLOYEE,
           1,
         ),
@@ -141,7 +141,7 @@ describe('AuthorizationService', () => {
 
       await expect(
         service.assertCan(
-          { userAccountId: 1, tenantId: 1 },
+          { userAccountId: 1, tenantId: 1, employeeId: 1 },
           Permission.MANAGE_EMPLOYEE,
           1,
         ),
@@ -151,7 +151,7 @@ describe('AuthorizationService', () => {
     it('他テナントなら ForbiddenException をスローする', async () => {
       await expect(
         service.assertCan(
-          { userAccountId: 1, tenantId: 1 },
+          { userAccountId: 1, tenantId: 1, employeeId: 1 },
           Permission.MANAGE_EMPLOYEE,
           2,
         ),

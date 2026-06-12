@@ -6,7 +6,7 @@ import type { RoleAssignmentService } from '../auth/role-assignment/role-assignm
 
 const ctx = { userAccountId: 99, employeeId: 10, tenantId: 1 };
 
-const makeRole = (scopeType: number, scopeId: number | null = null, roleType = RoleType.HR_ADMIN) => ({
+const makeRole = (scopeType: number, scopeId: number | null = null, roleType: number = RoleType.HR_ADMIN) => ({
   id: 1,
   userAccountId: 99,
   tenantId: 1,

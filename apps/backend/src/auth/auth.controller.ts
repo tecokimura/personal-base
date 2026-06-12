@@ -66,11 +66,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MeResponse> {
-    const tenant = await this.tenantResolver.resolveFromRequest(req);
-    if (!tenant) throw new NotFoundException('Tenant not found');
+    const resolvedTenant = await this.tenantResolver.resolveFromRequest(req);
+    if (!resolvedTenant) throw new NotFoundException('Tenant not found');
 
     const { rawToken, expiresAt, userAccount, twoFactorPending, twoFactorSetupRequired } =
-      await this.authService.login(tenant.id, body);
+      await this.authService.login(resolvedTenant.id, body);
 
     res.cookie(COOKIE_NAME, rawToken, {
       httpOnly: true,

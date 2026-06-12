@@ -16,7 +16,7 @@ const makePosition = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const ctx = { userAccountId: 99, tenantId: 1 };
+const ctx = { userAccountId: 99, employeeId: 99, tenantId: 1 };
 
 describe('PositionMasterService', () => {
   let service: PositionMasterService;

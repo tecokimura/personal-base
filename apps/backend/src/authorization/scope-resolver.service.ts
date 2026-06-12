@@ -151,6 +151,7 @@ export class ScopeResolverService {
    * 許可条件:
    *   - HR_ADMIN（本人を除く・論理削除社員も可）
    *   - MANAGER（ORGANIZATION_TREE 配下・本人を除く・通常社員のみ）
+   *     ただし対象社員が HR_ADMIN / ORG_ADMIN / EXECUTIVE_VIEWER ロールを持つ場合は拒否。
    * 本人は自分のセクションを閲覧不可。
    */
   async canAccessAdminSection(ctx: AuthContext, targetEmployeeId: number): Promise<boolean> {
@@ -177,7 +178,23 @@ export class ScopeResolverService {
       const rootIds = managerRoles.map((r) => r.scopeId);
       const treeIds = await this.collectDescendantIds(rootIds, ctx.tenantId);
       const targetOrgIds = await this.getEmployeeActiveOrgIds(targetEmployeeId, ctx.tenantId);
-      if (targetOrgIds.some((id) => treeIds.has(id))) return true;
+      if (targetOrgIds.some((id) => treeIds.has(id))) {
+        // 対象社員が上位権限ロールを持つ場合は MANAGER からは閲覧不可
+        const targetAccount = await this.prisma.userAccount.findFirst({
+          where: { tenantId: ctx.tenantId, employeeId: targetEmployeeId },
+          select: { id: true },
+        });
+        if (targetAccount) {
+          const targetRoles = await this.roleAssignmentService.getActiveRoles(targetAccount.id);
+          const targetRoleTypes = new Set(targetRoles.map((r) => r.roleType));
+          if (
+            targetRoleTypes.has(RoleType.HR_ADMIN) ||
+            targetRoleTypes.has(RoleType.ORG_ADMIN) ||
+            targetRoleTypes.has(RoleType.EXECUTIVE_VIEWER)
+          ) return false;
+        }
+        return true;
+      }
     }
 
     return false;
