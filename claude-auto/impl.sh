@@ -17,9 +17,9 @@ if [[ -z "${ISSUE_KEY}" ]]; then
   exit 1
 fi
 
-# 課題番号を抽出して課題専用ブランチ名を生成（例: PMO_PJPERSONALBASE-103 → feat/pmo-103）
+# 課題番号を抽出（ブランチ名のプレフィックスに使用）
 ISSUE_NUMBER=$(echo "${ISSUE_KEY}" | grep -oE '[0-9]+$')
-FEATURE_BRANCH="feat/pmo-${ISSUE_NUMBER}"
+BRANCH_FILE="${LOG_DIR}/branch-${ISSUE_KEY}.txt"
 
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/impl-${ISSUE_KEY}-$(date +%Y%m%d-%H%M%S).log"
@@ -33,25 +33,32 @@ PROMPT=$(cat <<PROMPT
 Backlog 課題キー: ${ISSUE_KEY}
 
 ### ブランチ管理（最初に必ず実施）
-1. git fetch origin でリモートを最新化する
-2. ベースブランチ ${IMPL_BRANCH} を最新化する:
+1. Backlog MCP の get_issue で課題タイトルを取得する
+2. 課題タイトルから英語スラグを生成する:
+   - 小文字英数字とハイフンのみ（スペース・記号はハイフンに変換）
+   - 最大30文字
+   - 例: "dev テナント seed スクリプト作成" → "setup-dev-fixtures"
+   - ブランチ名: feat/pmo-${ISSUE_NUMBER}-{スラグ}（例: feat/pmo-103-setup-dev-fixtures）
+3. git fetch origin でリモートを最新化する
+4. ベースブランチ ${IMPL_BRANCH} を最新化する:
    git checkout ${IMPL_BRANCH} && git pull origin ${IMPL_BRANCH}
-3. この課題専用ブランチ ${FEATURE_BRANCH} を用意する:
+5. 決定したブランチ名で課題専用ブランチを用意する:
    - リモートに既に存在する場合:
-     git checkout ${FEATURE_BRANCH} && git pull origin ${FEATURE_BRANCH}
+     git checkout {ブランチ名} && git pull origin {ブランチ名}
    - 存在しない場合（新規作成）:
-     git checkout -b ${FEATURE_BRANCH} && git push -u origin ${FEATURE_BRANCH}
-4. 以降の実装はすべて ${FEATURE_BRANCH} ブランチ上で行う
+     git checkout -b {ブランチ名} && git push -u origin {ブランチ名}
+6. 以降の実装はすべて {ブランチ名} ブランチ上で行う
+7. 使用したブランチ名を以下のファイルに書き込む（review.sh が参照する）:
+   echo "{ブランチ名}" > ${BRANCH_FILE}
 
 ### 実装手順
-5. Backlog MCP の get_issue で課題詳細を取得する
-6. 課題の説明・完了条件を把握し、docs/ の関連設計を参照する
-7. 実装を行う（スコープを独断で広げない）
-8. 実装完了したら:
-   - 変更を ${FEATURE_BRANCH} にコミット・push する
+8. 課題の説明・完了条件を把握し、docs/ の関連設計を参照する
+9. 実装を行う（スコープを独断で広げない）
+10. 実装完了したら:
+   - 変更を {ブランチ名} にコミット・push する
    - Backlog 課題を「処理済み」ステータス + カテゴリ「レビュー待ち」に更新する
    - 実装内容のサマリを Backlog コメントに残す（push した commit hash も記載）
-9. 仕様が不明確で進められない場合:
+11. 仕様が不明確で進められない場合:
    - Backlog 課題を「処理済み」+ カテゴリ「仕様確認待ち」に更新する
    - 不明点をコメントに明記する
    - exit 2 で終了する（パイプラインが待機状態として扱う）

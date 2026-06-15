@@ -17,12 +17,21 @@ if [[ -z "${ISSUE_KEY}" ]]; then
   exit 1
 fi
 
-# 課題番号を抽出して課題専用ブランチ名を生成
+# 課題番号を抽出
 ISSUE_NUMBER=$(echo "${ISSUE_KEY}" | grep -oE '[0-9]+$')
-FEATURE_BRANCH="feat/pmo-${ISSUE_NUMBER}"
 
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/review-${ISSUE_KEY}-$(date +%Y%m%d-%H%M%S).log"
+
+# impl.sh が書き込んだブランチ名ファイルを読む（なければ旧形式にフォールバック）
+BRANCH_FILE="${LOG_DIR}/branch-${ISSUE_KEY}.txt"
+if [[ -f "${BRANCH_FILE}" ]]; then
+  FEATURE_BRANCH=$(cat "${BRANCH_FILE}" | tr -d '[:space:]')
+  echo "[review] ブランチ名をファイルから読み込み: ${FEATURE_BRANCH}"
+else
+  FEATURE_BRANCH="feat/pmo-${ISSUE_NUMBER}"
+  echo "[review] ブランチ名ファイルなし — フォールバック: ${FEATURE_BRANCH}"
+fi
 
 # ── feature ブランチに切り替えてからコンパイルチェック ─────────────
 echo "[review] feature ブランチ ${FEATURE_BRANCH} に切り替え中..."
