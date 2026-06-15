@@ -60,7 +60,12 @@ export default function OrganizationsPage() {
                   <TableCell>{o.parentOrganizationId ?? '—'}</TableCell>
                   <TableCell>{o.displayOrder}</TableCell>
                   <TableCell>
-                    <Badge variant={o.isActive ? 'default' : 'secondary'}>
+                    <Badge
+                      variant="outline"
+                      className={o.isActive
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-gray-100 text-gray-500 border-gray-200'}
+                    >
                       {o.isActive ? '有効' : '無効'}
                     </Badge>
                   </TableCell>
