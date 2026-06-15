@@ -116,6 +116,20 @@ ORCHESTRATOR_PROMPT=$(cat <<'PROMPT'
 PROMPT
 )
 
+# ── 診断フェーズ ─────────────────────────────────────────────────
+log "診断フェーズ起動"
+run_with_heartbeat "診断" "${SCRIPT_DIR}/diagnose.sh" && DIAG_EXIT=0 || DIAG_EXIT=$?
+if [[ "${DIAG_EXIT}" -eq 3 ]]; then
+  write_backoff "${BACKOFF_DURATION}"
+  REMAINING=$(backoff_remaining_min)
+  log "Claude制限検出（diagnose）— ${REMAINING}分後に自動再開"
+  notify ":hourglass: [claude-auto] Claude制限中（診断フェーズ）— 約${REMAINING}分後に自動再開"
+  exit 0
+fi
+# 診断自体が失敗してもメイン処理は続行する
+log "診断フェーズ完了 (exit=${DIAG_EXIT}) — 課題処理フェーズへ"
+
+# ── 課題処理フェーズ ─────────────────────────────────────────────
 log "オーケストレーター起動"
 log "Backlog を確認中（Claude 応答待ち）..."
 
@@ -205,7 +219,7 @@ case "${NEXT_ACTION}" in
       : # 仕様確認待ち通知済み
     elif [[ "${RETRY}" -ge "${IMPL_RETRY_MAX}" ]]; then
       log "ERROR: リトライ上限到達 (${SHORT})"
-      notify ":rotating_light: [claude-auto] *【要対応】リトライ上限到達* — 手動確認が必要です\n*${LINK}* ${ISSUE_SUMMARY}"
+      notify ":warning: [claude-auto] *リトライ上限到達* — 次回 diagnose フェーズで自動調査します\n*${LINK}* ${ISSUE_SUMMARY}"
     else
       IMPL_RESULT=$(read_result)
       if echo "${IMPL_RESULT}" | grep -q "仕様確認待ち"; then
