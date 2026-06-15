@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type EmployeeDetail, type EmployeeListItem, type EmploymentView, type WorkHistory, type WorkHistoryInput, type AddEmploymentInput, type UpdateEmploymentInput, type OrganizationView, type PositionMasterView, type UpdateEmployeeBasicInput, type Qualification, type QualificationInput, type AdminSection, type AdminSectionInput, ApiError } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const EMPLOYMENT_STATUS: Record<number, string> = { 1: '在籍中', 2: '休職中', 3: '退職' };
 const EMPLOYMENT_TYPE: Record<number, string> = {
@@ -541,626 +545,661 @@ export default function EmployeeDetailPage() {
   }
 
   if (authLoading || loading) return <p>読み込み中...</p>;
-  if (error) return <p className="error-msg">{error}</p>;
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (!employee) return null;
 
   return (
     <>
       <div style={{ marginBottom: 16 }}>
-        <Link href="/employees">← 社員一覧へ戻る</Link>
+        <Link href="/employees" className="text-sm text-muted-foreground hover:text-foreground">← 社員一覧へ戻る</Link>
       </div>
-      <h1 className="page-title">
+      <h1 className="text-xl font-semibold">
         {employee.fullName}
         {isSelf && <span style={{ fontSize: 13, fontWeight: 400, color: '#888', marginLeft: 8 }}>（自分）</span>}
       </h1>
 
       {canSeeAdminSection && !adminSectionForbidden && (
-        <div className="card" style={{ marginBottom: 8, borderLeft: '3px solid #7c3aed', background: '#faf5ff' }}>
-          <button
-            onClick={() => {
-              setAdminSectionExpanded((v) => !v);
-              if (!adminSectionExpanded) setAdminSectionEditing(false);
-            }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, margin: 0 }}
-          >
-            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#7c3aed' }}>管理者専用セクション</h2>
-            <span style={{ color: '#7c3aed', fontSize: 13 }}>{adminSectionExpanded ? '▼ 折りたたむ' : '▶ 展開する'}</span>
-          </button>
-          {adminSectionExpanded && (
-            <div style={{ marginTop: 12 }}>
-              {!adminSectionEditing && adminSection !== undefined && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                  <button
-                    className="btn-secondary"
-                    style={{ fontSize: 12 }}
-                    onClick={() => {
-                      setAdminSectionForm({
-                        evaluation: adminSection?.evaluation ?? '',
-                        grade: adminSection?.grade ?? '',
-                        joiningReason: adminSection?.joiningReason ?? '',
-                        employmentCategory: adminSection?.employmentCategory ?? '',
-                        salaryBand: adminSection?.salaryBand ?? '',
-                        specialNotes: adminSection?.specialNotes ?? '',
-                      });
-                      setAdminSectionSaveError('');
-                      setAdminSectionEditing(true);
-                    }}
-                  >
-                    編集
-                  </button>
-                </div>
-              )}
-              {adminSectionError && <p className="error-msg" style={{ margin: 0 }}>{adminSectionError}</p>}
-              {adminSectionEditing ? (
-                <form onSubmit={(e) => { void handleAdminSectionSave(e); }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                    <label style={labelStyle}>
-                      評価
-                      <input style={inputStyle} value={adminSectionForm.evaluation ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, evaluation: e.target.value || null }))} maxLength={500} />
-                    </label>
-                    <label style={labelStyle}>
-                      等級
-                      <input style={inputStyle} value={adminSectionForm.grade ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, grade: e.target.value || null }))} maxLength={255} />
-                    </label>
-                    <label style={labelStyle}>
-                      雇用形態
-                      <input style={inputStyle} value={adminSectionForm.employmentCategory ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, employmentCategory: e.target.value || null }))} maxLength={255} />
-                    </label>
-                    <label style={labelStyle}>
-                      給与帯
-                      <input style={inputStyle} value={adminSectionForm.salaryBand ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, salaryBand: e.target.value || null }))} maxLength={255} />
-                    </label>
+        <Card style={{ marginBottom: 8, borderLeft: '3px solid #7c3aed', background: '#faf5ff' }}>
+          <CardContent className="pt-4">
+            <button
+              onClick={() => {
+                setAdminSectionExpanded((v) => !v);
+                if (!adminSectionExpanded) setAdminSectionEditing(false);
+              }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, margin: 0 }}
+            >
+              <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#7c3aed' }}>管理者専用セクション</h2>
+              <span style={{ color: '#7c3aed', fontSize: 13 }}>{adminSectionExpanded ? '▼ 折りたたむ' : '▶ 展開する'}</span>
+            </button>
+            {adminSectionExpanded && (
+              <div style={{ marginTop: 12 }}>
+                {!adminSectionEditing && adminSection !== undefined && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAdminSectionForm({
+                          evaluation: adminSection?.evaluation ?? '',
+                          grade: adminSection?.grade ?? '',
+                          joiningReason: adminSection?.joiningReason ?? '',
+                          employmentCategory: adminSection?.employmentCategory ?? '',
+                          salaryBand: adminSection?.salaryBand ?? '',
+                          specialNotes: adminSection?.specialNotes ?? '',
+                        });
+                        setAdminSectionSaveError('');
+                        setAdminSectionEditing(true);
+                      }}
+                    >
+                      編集
+                    </Button>
                   </div>
-                  <label style={{ ...labelStyle, marginBottom: 12 }}>
-                    入社経緯
-                    <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={adminSectionForm.joiningReason ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, joiningReason: e.target.value || null }))} />
-                  </label>
-                  <label style={{ ...labelStyle, marginBottom: 12 }}>
-                    特記事項
-                    <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={adminSectionForm.specialNotes ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, specialNotes: e.target.value || null }))} />
-                  </label>
-                  {adminSectionSaveError && <p className="error-msg" style={{ marginBottom: 8 }}>{adminSectionSaveError}</p>}
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="submit" className="btn-primary" disabled={adminSectionSaving} style={{ fontSize: 12 }}>
-                      {adminSectionSaving ? '保存中...' : '保存'}
-                    </button>
-                    <button type="button" className="btn-secondary" onClick={() => setAdminSectionEditing(false)} disabled={adminSectionSaving} style={{ fontSize: 12 }}>
-                      キャンセル
-                    </button>
-                  </div>
-                </form>
-              ) : adminSection === undefined ? (
-                <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
-              ) : adminSection === null ? (
-                <p style={{ color: '#aaa', margin: 0 }}>未登録</p>
-              ) : (
-                <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>評価</dt>
-                  <dd style={{ margin: 0 }}>{adminSection.evaluation ?? '—'}</dd>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>等級</dt>
-                  <dd style={{ margin: 0 }}>{adminSection.grade ?? '—'}</dd>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>雇用形態</dt>
-                  <dd style={{ margin: 0 }}>{adminSection.employmentCategory ?? '—'}</dd>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>給与帯</dt>
-                  <dd style={{ margin: 0 }}>{adminSection.salaryBand ?? '—'}</dd>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>入社経緯</dt>
-                  <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.joiningReason ?? '—'}</dd>
-                  <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>特記事項</dt>
-                  <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
-                </dl>
-              )}
-            </div>
-          )}
-        </div>
+                )}
+                {adminSectionError && <p className="text-sm text-destructive">{adminSectionError}</p>}
+                {adminSectionEditing ? (
+                  <form onSubmit={(e) => { void handleAdminSectionSave(e); }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <label className={labelCls}>
+                        評価
+                        <input className={inputCls} value={adminSectionForm.evaluation ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, evaluation: e.target.value || null }))} maxLength={500} />
+                      </label>
+                      <label className={labelCls}>
+                        等級
+                        <input className={inputCls} value={adminSectionForm.grade ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, grade: e.target.value || null }))} maxLength={255} />
+                      </label>
+                      <label className={labelCls}>
+                        雇用形態
+                        <input className={inputCls} value={adminSectionForm.employmentCategory ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, employmentCategory: e.target.value || null }))} maxLength={255} />
+                      </label>
+                      <label className={labelCls}>
+                        給与帯
+                        <input className={inputCls} value={adminSectionForm.salaryBand ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, salaryBand: e.target.value || null }))} maxLength={255} />
+                      </label>
+                    </div>
+                    <label className={`${labelCls} mb-3`}>
+                      入社経緯
+                      <textarea className={inputCls} style={{ minHeight: 60, resize: 'vertical' }} value={adminSectionForm.joiningReason ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, joiningReason: e.target.value || null }))} />
+                    </label>
+                    <label className={`${labelCls} mb-3`}>
+                      特記事項
+                      <textarea className={inputCls} style={{ minHeight: 80, resize: 'vertical' }} value={adminSectionForm.specialNotes ?? ''} onChange={(e) => setAdminSectionForm((f) => ({ ...f, specialNotes: e.target.value || null }))} />
+                    </label>
+                    {adminSectionSaveError && <p className="text-sm text-destructive mb-2">{adminSectionSaveError}</p>}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Button type="submit" size="sm" disabled={adminSectionSaving}>
+                        {adminSectionSaving ? '保存中...' : '保存'}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setAdminSectionEditing(false)} disabled={adminSectionSaving}>
+                        キャンセル
+                      </Button>
+                    </div>
+                  </form>
+                ) : adminSection === undefined ? (
+                  <p className="text-muted-foreground">読み込み中...</p>
+                ) : adminSection === null ? (
+                  <p className="text-muted-foreground">未登録</p>
+                ) : (
+                  <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>評価</dt>
+                    <dd style={{ margin: 0 }}>{adminSection.evaluation ?? '—'}</dd>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>等級</dt>
+                    <dd style={{ margin: 0 }}>{adminSection.grade ?? '—'}</dd>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>雇用形態</dt>
+                    <dd style={{ margin: 0 }}>{adminSection.employmentCategory ?? '—'}</dd>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>給与帯</dt>
+                    <dd style={{ margin: 0 }}>{adminSection.salaryBand ?? '—'}</dd>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>入社経緯</dt>
+                    <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.joiningReason ?? '—'}</dd>
+                    <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>特記事項</dt>
+                    <dd style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{adminSection.specialNotes ?? '—'}</dd>
+                  </dl>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>基本情報</h2>
-          {isHrAdmin && !editingBasicInfo && (
-            <button
-              className="btn-secondary"
-              style={{ fontSize: 12 }}
-              onClick={() => {
-                setBasicInfoFullName(employee.fullName);
-                setBasicInfoEmployeeNumber(employee.employeeNumber ?? '');
-                setBasicInfoDisplayName(employee.displayName ?? '');
-                setBasicInfoError('');
-                setEditingBasicInfo(true);
-              }}
-            >
-              編集
-            </button>
+      <Card>
+        <CardHeader className="pb-3">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">基本情報</CardTitle>
+            {isHrAdmin && !editingBasicInfo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setBasicInfoFullName(employee.fullName);
+                  setBasicInfoEmployeeNumber(employee.employeeNumber ?? '');
+                  setBasicInfoDisplayName(employee.displayName ?? '');
+                  setBasicInfoError('');
+                  setEditingBasicInfo(true);
+                }}
+              >
+                編集
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isHrAdmin && editingBasicInfo && (
+            <form onSubmit={(e) => { void handleSaveBasicInfo(e); }} style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <label className={labelCls}>
+                  氏名 <span style={{ color: 'red' }}>*</span>
+                  <input className={inputCls} value={basicInfoFullName} onChange={(e) => setBasicInfoFullName(e.target.value)} required disabled={basicInfoSaving} />
+                </label>
+                <label className={labelCls}>
+                  社員番号
+                  <input className={inputCls} value={basicInfoEmployeeNumber} onChange={(e) => setBasicInfoEmployeeNumber(e.target.value)} placeholder="例: EMP-001" disabled={basicInfoSaving} />
+                </label>
+                <label className={labelCls}>
+                  よみ・英語名
+                  <input className={inputCls} value={basicInfoDisplayName} onChange={(e) => setBasicInfoDisplayName(e.target.value)} placeholder="例: Yamada Taro" disabled={basicInfoSaving} />
+                </label>
+              </div>
+              {basicInfoError && <p className="text-sm text-destructive mb-2">{basicInfoError}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button type="submit" size="sm" disabled={basicInfoSaving}>
+                  {basicInfoSaving ? '保存中...' : '保存'}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditingBasicInfo(false)} disabled={basicInfoSaving}>
+                  キャンセル
+                </Button>
+              </div>
+            </form>
           )}
-        </div>
-        {isHrAdmin && editingBasicInfo && (
-          <form onSubmit={(e) => { void handleSaveBasicInfo(e); }} style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <label style={labelStyle}>
-                氏名 <span style={{ color: 'red' }}>*</span>
-                <input style={inputStyle} value={basicInfoFullName} onChange={(e) => setBasicInfoFullName(e.target.value)} required disabled={basicInfoSaving} />
-              </label>
-              <label style={labelStyle}>
-                社員番号
-                <input style={inputStyle} value={basicInfoEmployeeNumber} onChange={(e) => setBasicInfoEmployeeNumber(e.target.value)} placeholder="例: EMP-001" disabled={basicInfoSaving} />
-              </label>
-              <label style={labelStyle}>
-                よみ・英語名
-                <input style={inputStyle} value={basicInfoDisplayName} onChange={(e) => setBasicInfoDisplayName(e.target.value)} placeholder="例: Yamada Taro" disabled={basicInfoSaving} />
-              </label>
-            </div>
-            {basicInfoError && <p className="error-msg" style={{ marginBottom: 8 }}>{basicInfoError}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="btn-primary" disabled={basicInfoSaving} style={{ fontSize: 12 }}>
-                {basicInfoSaving ? '保存中...' : '保存'}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setEditingBasicInfo(false)} disabled={basicInfoSaving} style={{ fontSize: 12 }}>
-                キャンセル
-              </button>
-            </div>
-          </form>
-        )}
-        <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
-          <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>社員 ID</dt>
-          <dd style={{ margin: 0 }}>{employee.id}</dd>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '8px 24px', margin: 0 }}>
+            <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>社員 ID</dt>
+            <dd style={{ margin: 0 }}>{employee.id}</dd>
 
-          {employee.employeeNumber !== undefined && (
-            <>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>社員番号</dt>
-              <dd style={{ margin: 0 }}>{employee.employeeNumber ?? '—'}</dd>
-            </>
-          )}
+            {employee.employeeNumber !== undefined && (
+              <>
+                <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>社員番号</dt>
+                <dd style={{ margin: 0 }}>{employee.employeeNumber ?? '—'}</dd>
+              </>
+            )}
 
-          <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>氏名</dt>
-          <dd style={{ margin: 0 }}>{employee.fullName}</dd>
+            <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>氏名</dt>
+            <dd style={{ margin: 0 }}>{employee.fullName}</dd>
 
-          <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>
-            よみ・英語名
-            <span style={{ fontWeight: 400, fontSize: 11, color: '#aaa', marginLeft: 6 }}>
-              例: Yamada Taro
-            </span>
-          </dt>
-          <dd style={{ margin: 0 }}>{employee.displayName ?? '—'}</dd>
+            <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>
+              よみ・英語名
+              <span style={{ fontWeight: 400, fontSize: 11, color: '#aaa', marginLeft: 6 }}>
+                例: Yamada Taro
+              </span>
+            </dt>
+            <dd style={{ margin: 0 }}>{employee.displayName ?? '—'}</dd>
 
-          <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>メール</dt>
-          <dd style={{ margin: 0 }}>{employee.email ?? '—'}</dd>
+            <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>メール</dt>
+            <dd style={{ margin: 0 }}>{employee.email ?? '—'}</dd>
 
-          {employee.birthDate !== undefined && isHrAdmin && (
-            <>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>生年月日</dt>
-              <dd style={{ margin: 0 }}>{employee.birthDate ?? '—'}</dd>
-            </>
-          )}
+            {employee.birthDate !== undefined && isHrAdmin && (
+              <>
+                <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>生年月日</dt>
+                <dd style={{ margin: 0 }}>{employee.birthDate ?? '—'}</dd>
+              </>
+            )}
 
-          {employee.profileFreeText && (
-            <>
-              <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>プロフィール</dt>
-              <dd style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{employee.profileFreeText}</dd>
-            </>
-          )}
-        </dl>
-      </div>
+            {employee.profileFreeText && (
+              <>
+                <dt style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>プロフィール</dt>
+                <dd style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{employee.profileFreeText}</dd>
+              </>
+            )}
+          </dl>
+        </CardContent>
+      </Card>
 
       {canEditSelf && (
-        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #4f83cc' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: '#4f83cc' }}>{isSelf ? 'プロフィール編集' : '補助編集'}</h2>
-
-          {/* プロフィールテキスト */}
-          <form onSubmit={(e) => { void handleSaveProfile(e); }} style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>
-              プロフィールテキスト
-              <textarea
-                style={{ ...inputStyle, minHeight: 120, resize: 'vertical', marginTop: 4 }}
-                value={profileText}
-                onChange={(e) => { setProfileText(e.target.value); setProfileSaved(false); }}
-                maxLength={10000}
-                placeholder={'スキルや経歴を自由に記入できます。Markdown 記法（# 見出し、**太字**、- リストなど）が使えます。'}
-              />
-            </label>
-            <p style={{ fontSize: 11, color: '#aaa', margin: '2px 0 0', textAlign: 'right' }}>
-              {profileText.length} / 10000
-            </p>
-            {profileError && <p className="error-msg" style={{ marginTop: 4, marginBottom: 4 }}>{profileError}</p>}
-            {profileSaved && <p style={{ color: '#4caf50', fontSize: 12, marginTop: 4, marginBottom: 4 }}>保存しました</p>}
-            <button type="submit" className="btn-primary" disabled={profileSaving} style={{ fontSize: 12, marginTop: 6 }}>
-              {profileSaving ? '保存中...' : 'プロフィールを保存'}
-            </button>
-          </form>
-
-          {/* 写真 */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#555', margin: '0 0 6px' }}>プロフィール写真</p>
-            {employee.photoStorageKey && (
-              <p style={{ fontSize: 12, color: '#888', margin: '0 0 6px' }}>
-                現在の写真キー: {employee.photoStorageKey}
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <label style={{ fontSize: 12, cursor: 'pointer' }}>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  style={{ display: 'none' }}
-                  onChange={(e) => { void handlePhotoUpload(e); }}
-                  disabled={photoUploading}
+        <Card style={{ marginTop: 8, borderLeft: '3px solid #4f83cc' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold" style={{ color: '#4f83cc' }}>{isSelf ? 'プロフィール編集' : '補助編集'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* プロフィールテキスト */}
+            <form onSubmit={(e) => { void handleSaveProfile(e); }} style={{ marginBottom: 20 }}>
+              <label className={labelCls}>
+                プロフィールテキスト
+                <textarea
+                  className={inputCls}
+                  style={{ minHeight: 120, resize: 'vertical', marginTop: 4 }}
+                  value={profileText}
+                  onChange={(e) => { setProfileText(e.target.value); setProfileSaved(false); }}
+                  maxLength={10000}
+                  placeholder={'スキルや経歴を自由に記入できます。Markdown 記法（# 見出し、**太字**、- リストなど）が使えます。'}
                 />
-                <span className="btn-secondary" style={{ fontSize: 12, display: 'inline-block', cursor: 'pointer' }}>
-                  {photoUploading ? 'アップロード中...' : '写真をアップロード'}
-                </span>
               </label>
+              <p style={{ fontSize: 11, color: '#aaa', margin: '2px 0 0', textAlign: 'right' }}>
+                {profileText.length} / 10000
+              </p>
+              {profileError && <p className="text-sm text-destructive mt-1 mb-1">{profileError}</p>}
+              {profileSaved && <p style={{ color: '#4caf50', fontSize: 12, marginTop: 4, marginBottom: 4 }}>保存しました</p>}
+              <Button type="submit" size="sm" disabled={profileSaving} style={{ marginTop: 6 }}>
+                {profileSaving ? '保存中...' : 'プロフィールを保存'}
+              </Button>
+            </form>
+
+            {/* 写真 */}
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#555', margin: '0 0 6px' }}>プロフィール写真</p>
               {employee.photoStorageKey && (
-                <button
-                  type="button"
-                  className="btn-danger"
-                  style={{ fontSize: 12 }}
-                  onClick={() => { void handlePhotoDelete(); }}
-                  disabled={photoUploading}
-                >
-                  写真を削除
-                </button>
+                <p style={{ fontSize: 12, color: '#888', margin: '0 0 6px' }}>
+                  現在の写真キー: {employee.photoStorageKey}
+                </p>
               )}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ fontSize: 12, cursor: 'pointer' }}>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    style={{ display: 'none' }}
+                    onChange={(e) => { void handlePhotoUpload(e); }}
+                    disabled={photoUploading}
+                  />
+                  <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                    {photoUploading ? 'アップロード中...' : '写真をアップロード'}
+                  </span>
+                </label>
+                {employee.photoStorageKey && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => { void handlePhotoDelete(); }}
+                    disabled={photoUploading}
+                  >
+                    写真を削除
+                  </Button>
+                )}
+              </div>
+              {photoError && <p className="text-sm text-destructive mt-1">{photoError}</p>}
             </div>
-            {photoError && <p className="error-msg" style={{ marginTop: 4 }}>{photoError}</p>}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="card" style={{ marginTop: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>所属情報</h2>
-          {canAssistEdit && !addingEmployment && (
-            <button
-              className="btn-secondary"
-              style={{ fontSize: 12 }}
-              onClick={() => { setAddingEmployment(true); setAddEmpForm(EMPTY_ADD_EMP_FORM); setAddEmpError(''); }}
-            >
-              所属を追加
-            </button>
+      <Card style={{ marginTop: 8 }}>
+        <CardHeader className="pb-3">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">所属情報</CardTitle>
+            {canAssistEdit && !addingEmployment && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setAddingEmployment(true); setAddEmpForm(EMPTY_ADD_EMP_FORM); setAddEmpError(''); }}
+              >
+                所属を追加
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {canAssistEdit && addingEmployment && (
+            <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>所属を新規追加</p>
+              <EmploymentAddForm
+                form={addEmpForm}
+                onChange={setAddEmpForm}
+                onSubmit={handleAddEmployment}
+                onCancel={() => { setAddingEmployment(false); setAddEmpError(''); }}
+                error={addEmpError}
+                saving={addEmpSaving}
+                organizations={organizations}
+                positionMasters={positionMasters}
+                allEmployees={allEmployees !== null ? allEmployees.filter((e) => e.id !== id) : null}
+              />
+            </div>
           )}
-        </div>
-        {canAssistEdit && addingEmployment && (
-          <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>所属を新規追加</p>
-            <EmploymentAddForm
-              form={addEmpForm}
-              onChange={setAddEmpForm}
-              onSubmit={handleAddEmployment}
-              onCancel={() => { setAddingEmployment(false); setAddEmpError(''); }}
-              error={addEmpError}
-              saving={addEmpSaving}
-              organizations={organizations}
-              positionMasters={positionMasters}
-              allEmployees={allEmployees !== null ? allEmployees.filter((e) => e.id !== id) : null}
-            />
-          </div>
-        )}
-        {employee.employments.length === 0 ? (
-          <p style={{ color: '#aaa', margin: 0 }}>所属なし</p>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>組織</th>
-                  <th>種別</th>
-                  <th>役職</th>
-                  <th>上長</th>
-                  <th>開始日</th>
-                  <th>終了日</th>
-                  <th>状態</th>
-                  {canAssistEdit && <th>操作</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {employee.employments.map((emp) => (
-                  <Fragment key={emp.id}>
-                    <tr>
-                      <td>{organizations?.find((o) => o.id === emp.organizationId)?.organizationName ?? String(emp.organizationId)}</td>
-                      <td>{emp.employmentType !== undefined ? (EMPLOYMENT_TYPE[emp.employmentType] ?? emp.employmentType) : '—'}</td>
-                      <td>{emp.positionName ?? '—'}</td>
-                      <td>{emp.supervisorEmployeeId != null ? `社員ID: ${emp.supervisorEmployeeId}` : '—'}</td>
-                      <td>{emp.startDate ? new Date(emp.startDate).toLocaleDateString('ja-JP') : '—'}</td>
-                      <td>{emp.endDate ? new Date(emp.endDate).toLocaleDateString('ja-JP') : '—'}</td>
-                      <td>
-                        {emp.status === 2 ? (
-                          <span className="badge badge-gray">{EMPLOYMENT_STATUS[2]}</span>
-                        ) : emp.endDate ? (
-                          <span className="badge badge-gray">過去</span>
-                        ) : null}
-                      </td>
-                      {canAssistEdit && (
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <button
-                            className="btn-secondary"
-                            style={{ fontSize: 11, marginRight: 4 }}
-                            onClick={() => {
-                              if (editingEmpId === emp.id) {
-                                setEditingEmpId(null);
-                              } else {
-                                setEditingEmpId(emp.id);
-                                setEditEmpForm({
-                                  organizationId: String(emp.organizationId),
-                                  employmentType: emp.employmentType !== undefined ? String(emp.employmentType) : '1',
-                                  startDate: emp.startDate ? emp.startDate.substring(0, 10) : '',
-                                  endDate: emp.endDate ? emp.endDate.substring(0, 10) : '',
-                                  positionMasterId: '',
-                                });
-                                setEditEmpError('');
-                                setSupervisorEditingEmpId(null);
-                              }
-                            }}
-                          >
-                            {editingEmpId === emp.id ? 'キャンセル' : '編集'}
-                          </button>
-                          {canAssistEdit && (
-                            <button
-                              className="btn-secondary"
-                              style={{ fontSize: 11 }}
-                              onClick={() => { supervisorEditingEmpId === emp.id ? setSupervisorEditingEmpId(null) : startSupervisorEdit(emp); setEditingEmpId(null); }}
+          {employee.employments.length === 0 ? (
+            <p className="text-muted-foreground">所属なし</p>
+          ) : (
+            <div className="rounded-md border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>組織</TableHead>
+                    <TableHead>種別</TableHead>
+                    <TableHead>役職</TableHead>
+                    <TableHead>上長</TableHead>
+                    <TableHead>開始日</TableHead>
+                    <TableHead>終了日</TableHead>
+                    <TableHead>状態</TableHead>
+                    {canAssistEdit && <TableHead>操作</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employee.employments.map((emp) => (
+                    <Fragment key={emp.id}>
+                      <TableRow>
+                        <TableCell>{organizations?.find((o) => o.id === emp.organizationId)?.organizationName ?? String(emp.organizationId)}</TableCell>
+                        <TableCell>{emp.employmentType !== undefined ? (EMPLOYMENT_TYPE[emp.employmentType] ?? emp.employmentType) : '—'}</TableCell>
+                        <TableCell>{emp.positionName ?? '—'}</TableCell>
+                        <TableCell>{emp.supervisorEmployeeId != null ? `社員ID: ${emp.supervisorEmployeeId}` : '—'}</TableCell>
+                        <TableCell>{emp.startDate ? new Date(emp.startDate).toLocaleDateString('ja-JP') : '—'}</TableCell>
+                        <TableCell>{emp.endDate ? new Date(emp.endDate).toLocaleDateString('ja-JP') : '—'}</TableCell>
+                        <TableCell>
+                          {emp.status === 2 ? (
+                            <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">{EMPLOYMENT_STATUS[2]}</Badge>
+                          ) : emp.endDate ? (
+                            <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">過去</Badge>
+                          ) : null}
+                        </TableCell>
+                        {canAssistEdit && (
+                          <TableCell style={{ whiteSpace: 'nowrap' }}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-xs px-2 mr-1"
+                              onClick={() => {
+                                if (editingEmpId === emp.id) {
+                                  setEditingEmpId(null);
+                                } else {
+                                  setEditingEmpId(emp.id);
+                                  setEditEmpForm({
+                                    organizationId: String(emp.organizationId),
+                                    employmentType: emp.employmentType !== undefined ? String(emp.employmentType) : '1',
+                                    startDate: emp.startDate ? emp.startDate.substring(0, 10) : '',
+                                    endDate: emp.endDate ? emp.endDate.substring(0, 10) : '',
+                                    positionMasterId: '',
+                                  });
+                                  setEditEmpError('');
+                                  setSupervisorEditingEmpId(null);
+                                }
+                              }}
                             >
-                              {supervisorEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
-                            </button>
-                          )}
-                        </td>
+                              {editingEmpId === emp.id ? 'キャンセル' : '編集'}
+                            </Button>
+                            {canAssistEdit && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => { supervisorEditingEmpId === emp.id ? setSupervisorEditingEmpId(null) : startSupervisorEdit(emp); setEditingEmpId(null); }}
+                              >
+                                {supervisorEditingEmpId === emp.id ? 'キャンセル' : '上長設定'}
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                      {canAssistEdit && editingEmpId === emp.id && (
+                        <TableRow>
+                          <TableCell colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
+                            <EmploymentEditForm
+                              form={editEmpForm}
+                              onChange={setEditEmpForm}
+                              onSubmit={handleEditEmployment}
+                              onCancel={() => { setEditingEmpId(null); setEditEmpError(''); }}
+                              error={editEmpError}
+                              saving={editEmpSaving}
+                              organizations={organizations}
+                              positionMasters={positionMasters}
+                            />
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </tr>
-                    {canAssistEdit && editingEmpId === emp.id && (
-                      <tr>
-                        <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
-                          <EmploymentEditForm
-                            form={editEmpForm}
-                            onChange={setEditEmpForm}
-                            onSubmit={handleEditEmployment}
-                            onCancel={() => { setEditingEmpId(null); setEditEmpError(''); }}
-                            error={editEmpError}
-                            saving={editEmpSaving}
-                            organizations={organizations}
-                            positionMasters={positionMasters}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                    {canAssistEdit && supervisorEditingEmpId === emp.id && (
-                      <tr>
-                        <td colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
-                          <form onSubmit={(e) => { void handleSaveSupervisor(e, emp.id); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                            <label style={{ ...labelStyle, flex: '0 0 auto' }}>
-                              上長（空欄で解除）
-                              {allEmployees === null ? (
-                                <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
-                              ) : (
-                                <select
-                                  style={{ ...inputStyle, width: 260 }}
-                                  value={supervisorInput}
-                                  onChange={(e) => setSupervisorInput(e.target.value)}
-                                >
-                                  <option value="">未設定（解除）</option>
-                                  {allEmployees.filter((e) => e.id !== id).map((e) => (
-                                    <option key={e.id} value={String(e.id)}>
-                                      {`${e.displayName ?? e.fullName} (ID: ${e.id})`}
-                                    </option>
-                                  ))}
-                                </select>
-                              )}
-                            </label>
-                            {supervisorError && <p className="error-msg" style={{ margin: 0, alignSelf: 'center' }}>{supervisorError}</p>}
-                            <button type="submit" className="btn-primary" disabled={supervisorSaving} style={{ fontSize: 12, marginBottom: 1 }}>
-                              {supervisorSaving ? '設定中...' : '設定'}
-                            </button>
-                          </form>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      {canAssistEdit && supervisorEditingEmpId === emp.id && (
+                        <TableRow>
+                          <TableCell colSpan={10} style={{ background: '#f8f9ff', padding: 12 }}>
+                            <form onSubmit={(e) => { void handleSaveSupervisor(e, emp.id); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                              <label className={`${labelCls} flex-none`}>
+                                上長（空欄で解除）
+                                {allEmployees === null ? (
+                                  <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
+                                ) : (
+                                  <select
+                                    className={inputCls}
+                                    style={{ width: 260 }}
+                                    value={supervisorInput}
+                                    onChange={(e) => setSupervisorInput(e.target.value)}
+                                  >
+                                    <option value="">未設定（解除）</option>
+                                    {allEmployees.filter((e) => e.id !== id).map((e) => (
+                                      <option key={e.id} value={String(e.id)}>
+                                        {`${e.displayName ?? e.fullName} (ID: ${e.id})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </label>
+                              {supervisorError && <p className="text-sm text-destructive self-center">{supervisorError}</p>}
+                              <Button type="submit" size="sm" disabled={supervisorSaving} style={{ marginBottom: 1 }}>
+                                {supervisorSaving ? '設定中...' : '設定'}
+                              </Button>
+                            </form>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
 
       {!whForbidden && (
-        <div className="card" style={{ marginTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>職歴</h2>
-            {isSelf && (
-              <Link href="/work-histories" style={{ fontSize: 12 }}>
-                自分の職歴を管理する →
-              </Link>
+        <Card style={{ marginTop: 8 }}>
+          <CardHeader className="pb-3">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <CardTitle className="text-sm font-semibold text-muted-foreground">職歴</CardTitle>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {isSelf && (
+                  <Link href="/work-histories" style={{ fontSize: 12 }}>
+                    自分の職歴を管理する →
+                  </Link>
+                )}
+                {canAssistEdit && !assistCreating && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setAssistCreating(true); setAssistCreateForm(EMPTY_FORM); setAssistCreateError(''); }}
+                  >
+                    新規追加
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {canAssistEdit && assistCreating && (
+              <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>職歴を新規追加</p>
+                <AssistWorkHistoryForm
+                  form={assistCreateForm}
+                  onChange={setAssistCreateForm}
+                  onSubmit={handleAssistCreate}
+                  onCancel={() => { setAssistCreating(false); setAssistCreateError(''); }}
+                  error={assistCreateError}
+                  saving={assistCreateSaving}
+                  submitLabel="追加"
+                />
+              </div>
             )}
-            {canAssistEdit && !assistCreating && (
-              <button
-                className="btn-secondary"
-                style={{ fontSize: 12 }}
-                onClick={() => { setAssistCreating(true); setAssistCreateForm(EMPTY_FORM); setAssistCreateError(''); }}
+            {whError ? (
+              <p className="text-sm text-destructive">{whError}</p>
+            ) : workHistories === null ? (
+              <p className="text-muted-foreground">読み込み中...</p>
+            ) : workHistories.length === 0 ? (
+              <p className="text-muted-foreground">
+                {isSelf ? '職歴が登録されていません。「自分の職歴を管理する」から追加できます。' : '職歴がありません'}
+              </p>
+            ) : (
+              workHistories.map((wh) =>
+                canAssistEdit && assistEditingId === wh.id ? (
+                  <div key={wh.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 16, marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>職歴を編集</p>
+                    <AssistWorkHistoryForm
+                      form={assistEditForm}
+                      onChange={setAssistEditForm}
+                      onSubmit={handleAssistEdit}
+                      onCancel={() => setAssistEditingId(null)}
+                      error={assistEditError}
+                      saving={assistEditSaving}
+                    />
+                  </div>
+                ) : (
+                  <WorkHistoryCard
+                    key={wh.id}
+                    wh={wh}
+                    showActions={canAssistEdit}
+                    onEdit={() => { setAssistEditingId(wh.id); setAssistEditForm(toFormState(wh)); setAssistEditError(''); }}
+                    onDelete={() => { void handleAssistDelete(wh.id); }}
+                  />
+                )
+              )
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card style={{ marginTop: 8 }}>
+        <CardHeader className="pb-3">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">資格情報</CardTitle>
+            {canEditSelf && !qualCreating && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setQualCreating(true); setQualCreateForm({ name: '', acquiredDate: '' }); setQualCreateError(''); }}
               >
                 新規追加
-              </button>
+              </Button>
             )}
           </div>
-          {canAssistEdit && assistCreating && (
+        </CardHeader>
+        <CardContent>
+          {canEditSelf && qualCreating && (
             <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>職歴を新規追加</p>
-              <AssistWorkHistoryForm
-                form={assistCreateForm}
-                onChange={setAssistCreateForm}
-                onSubmit={handleAssistCreate}
-                onCancel={() => { setAssistCreating(false); setAssistCreateError(''); }}
-                error={assistCreateError}
-                saving={assistCreateSaving}
+              <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を新規追加</p>
+              <QualificationForm
+                form={qualCreateForm}
+                onChange={setQualCreateForm}
+                onSubmit={handleQualCreate}
+                onCancel={() => { setQualCreating(false); setQualCreateError(''); }}
+                error={qualCreateError}
+                saving={qualCreateSaving}
                 submitLabel="追加"
               />
             </div>
           )}
-          {whError ? (
-            <p className="error-msg" style={{ margin: 0 }}>{whError}</p>
-          ) : workHistories === null ? (
-            <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
-          ) : workHistories.length === 0 ? (
-            <p style={{ color: '#aaa', margin: 0 }}>
-              {isSelf ? '職歴が登録されていません。「自分の職歴を管理する」から追加できます。' : '職歴がありません'}
-            </p>
+          {qualError ? (
+            <p className="text-sm text-destructive">{qualError}</p>
+          ) : qualifications === null ? (
+            <p className="text-muted-foreground">読み込み中...</p>
+          ) : qualifications.length === 0 ? (
+            <p className="text-muted-foreground">資格情報がありません</p>
           ) : (
-            workHistories.map((wh) =>
-              canAssistEdit && assistEditingId === wh.id ? (
-                <div key={wh.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 16, marginBottom: 16 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>職歴を編集</p>
-                  <AssistWorkHistoryForm
-                    form={assistEditForm}
-                    onChange={setAssistEditForm}
-                    onSubmit={handleAssistEdit}
-                    onCancel={() => setAssistEditingId(null)}
-                    error={assistEditError}
-                    saving={assistEditSaving}
+            qualifications.map((q) =>
+              canEditSelf && qualEditingId === q.id ? (
+                <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 16, marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を編集</p>
+                  <QualificationForm
+                    form={qualEditForm}
+                    onChange={setQualEditForm}
+                    onSubmit={handleQualEdit}
+                    onCancel={() => setQualEditingId(null)}
+                    error={qualEditError}
+                    saving={qualEditSaving}
                   />
                 </div>
               ) : (
-                <WorkHistoryCard
-                  key={wh.id}
-                  wh={wh}
-                  showActions={canAssistEdit}
-                  onEdit={() => { setAssistEditingId(wh.id); setAssistEditForm(toFormState(wh)); setAssistEditError(''); }}
-                  onDelete={() => { void handleAssistDelete(wh.id); }}
-                />
+                <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 12, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, marginBottom: 2 }}>{q.name}</div>
+                      <div style={{ fontSize: 13, color: '#555', marginBottom: 2 }}>
+                        取得日: {new Date(q.acquiredDate).toLocaleDateString('ja-JP')}
+                      </div>
+                      {q.note && <div style={{ fontSize: 12, color: '#888' }}>{q.note}</div>}
+                    </div>
+                    {canEditSelf && (
+                      <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setQualEditingId(q.id); setQualEditForm({ name: q.name, acquiredDate: q.acquiredDate.substring(0, 10), note: q.note ?? '' }); setQualEditError(''); }}
+                        >
+                          編集
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => { void handleQualDelete(q.id); }}>
+                          削除
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )
             )
           )}
-        </div>
+        </CardContent>
+      </Card>
+
+      {isHrAdmin && !isSelf && (
+        <Card style={{ marginTop: 8, borderLeft: '3px solid #f59e0b', background: '#fffbeb' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold" style={{ color: '#b45309' }}>二段階認証（2FA）管理</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px' }}>
+              このユーザーの2FA設定をリセットします。次回ログイン時に2FAの再設定が必要になります。
+            </p>
+            {twoFactorResetError && <p className="text-sm text-destructive mb-2">{twoFactorResetError}</p>}
+            {twoFactorResetDone && (
+              <p style={{ color: '#16a34a', fontSize: 13, marginBottom: 8 }}>2FAをリセットしました</p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { void handleTwoFactorReset(); }}
+              disabled={twoFactorResetting}
+            >
+              {twoFactorResetting ? 'リセット中...' : '2FAをリセット'}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="card" style={{ marginTop: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: '#555' }}>資格情報</h2>
-          {canEditSelf && !qualCreating && (
-            <button
-              className="btn-secondary"
-              style={{ fontSize: 12 }}
-              onClick={() => { setQualCreating(true); setQualCreateForm({ name: '', acquiredDate: '' }); setQualCreateError(''); }}
-            >
-              新規追加
-            </button>
-          )}
-        </div>
-        {canEditSelf && qualCreating && (
-          <div style={{ marginBottom: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 16 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を新規追加</p>
-            <QualificationForm
-              form={qualCreateForm}
-              onChange={setQualCreateForm}
-              onSubmit={handleQualCreate}
-              onCancel={() => { setQualCreating(false); setQualCreateError(''); }}
-              error={qualCreateError}
-              saving={qualCreateSaving}
-              submitLabel="追加"
-            />
-          </div>
-        )}
-        {qualError ? (
-          <p className="error-msg" style={{ margin: 0 }}>{qualError}</p>
-        ) : qualifications === null ? (
-          <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
-        ) : qualifications.length === 0 ? (
-          <p style={{ color: '#aaa', margin: 0 }}>資格情報がありません</p>
-        ) : (
-          qualifications.map((q) =>
-            canEditSelf && qualEditingId === q.id ? (
-              <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 16, marginBottom: 16 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 8px', color: '#555' }}>資格を編集</p>
-                <QualificationForm
-                  form={qualEditForm}
-                  onChange={setQualEditForm}
-                  onSubmit={handleQualEdit}
-                  onCancel={() => setQualEditingId(null)}
-                  error={qualEditError}
-                  saving={qualEditSaving}
-                />
-              </div>
+      {isHrAdmin && !isSelf && (
+        <Card style={{ marginTop: 8, borderLeft: '3px solid #ef4444', background: '#fef2f2' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold" style={{ color: '#b91c1c' }}>危険な操作</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!confirmingDelete ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => { setConfirmingDelete(true); setDeleteError(''); }}
+              >
+                この社員を削除
+              </Button>
             ) : (
-              <div key={q.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 12, marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 2 }}>{q.name}</div>
-                    <div style={{ fontSize: 13, color: '#555', marginBottom: 2 }}>
-                      取得日: {new Date(q.acquiredDate).toLocaleDateString('ja-JP')}
-                    </div>
-                    {q.note && <div style={{ fontSize: 12, color: '#888' }}>{q.note}</div>}
-                  </div>
-                  {canEditSelf && (
-                    <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
-                      <button
-                        className="btn-secondary"
-                        style={{ fontSize: 12 }}
-                        onClick={() => { setQualEditingId(q.id); setQualEditForm({ name: q.name, acquiredDate: q.acquiredDate.substring(0, 10), note: q.note ?? '' }); setQualEditError(''); }}
-                      >
-                        編集
-                      </button>
-                      <button className="btn-danger" style={{ fontSize: 12 }} onClick={() => { void handleQualDelete(q.id); }}>
-                        削除
-                      </button>
-                    </div>
-                  )}
+              <div>
+                <p style={{ fontSize: 13, margin: '0 0 8px' }}>
+                  以下の社員を論理削除します。有効な所属も同時に終了されます。
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>
+                  {employee.fullName}
+                  {employee.employeeNumber ? `（${employee.employeeNumber}）` : ''}
+                </p>
+                {deleteError && <p className="text-sm text-destructive mb-2">{deleteError}</p>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="destructive" size="sm" onClick={() => { void handleSoftDelete(); }} disabled={deleting}>
+                    {deleting ? '削除中...' : '削除を実行'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                    キャンセル
+                  </Button>
                 </div>
               </div>
-            )
-          )
-        )}
-      </div>
-
-      {isHrAdmin && !isSelf && (
-        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #f59e0b', background: '#fffbeb' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#b45309' }}>二段階認証（2FA）管理</h2>
-          <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px' }}>
-            このユーザーの2FA設定をリセットします。次回ログイン時に2FAの再設定が必要になります。
-          </p>
-          {twoFactorResetError && <p className="error-msg" style={{ marginBottom: 8 }}>{twoFactorResetError}</p>}
-          {twoFactorResetDone && (
-            <p style={{ color: '#16a34a', fontSize: 13, marginBottom: 8 }}>2FAをリセットしました</p>
-          )}
-          <button
-            className="btn-secondary"
-            style={{ fontSize: 12 }}
-            onClick={() => { void handleTwoFactorReset(); }}
-            disabled={twoFactorResetting}
-          >
-            {twoFactorResetting ? 'リセット中...' : '2FAをリセット'}
-          </button>
-        </div>
-      )}
-
-      {isHrAdmin && !isSelf && (
-        <div className="card" style={{ marginTop: 8, borderLeft: '3px solid #ef4444', background: '#fef2f2' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#b91c1c' }}>危険な操作</h2>
-          {!confirmingDelete ? (
-            <button
-              className="btn-danger"
-              style={{ fontSize: 12 }}
-              onClick={() => { setConfirmingDelete(true); setDeleteError(''); }}
-            >
-              この社員を削除
-            </button>
-          ) : (
-            <div>
-              <p style={{ fontSize: 13, margin: '0 0 8px' }}>
-                以下の社員を論理削除します。有効な所属も同時に終了されます。
-              </p>
-              <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 12px' }}>
-                {employee.fullName}
-                {employee.employeeNumber ? `（${employee.employeeNumber}）` : ''}
-              </p>
-              {deleteError && <p className="error-msg" style={{ marginBottom: 8 }}>{deleteError}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-danger" style={{ fontSize: 12 }} onClick={() => { void handleSoftDelete(); }} disabled={deleting}>
-                  {deleting ? '削除中...' : '削除を実行'}
-                </button>
-                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => setConfirmingDelete(false)} disabled={deleting}>
-                  キャンセル
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </>
   );
@@ -1200,8 +1239,8 @@ function WorkHistoryCard({
         </div>
         {showActions && (
           <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
-            <button className="btn-secondary" onClick={onEdit} style={{ fontSize: 12 }}>編集</button>
-            <button className="btn-danger" onClick={onDelete} style={{ fontSize: 12 }}>削除</button>
+            <Button variant="outline" size="sm" onClick={onEdit}>編集</Button>
+            <Button variant="destructive" size="sm" onClick={onDelete}>削除</Button>
           </div>
         )}
       </div>
@@ -1234,10 +1273,10 @@ function AssistWorkHistoryForm({
   return (
     <form onSubmit={onSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           開始年月 (YYYY-MM) <span style={{ color: 'red' }}>*</span>
           <input
-            style={inputStyle}
+            className={inputCls}
             value={form.yearMonthFrom}
             onChange={field('yearMonthFrom')}
             placeholder="例: 2023-04"
@@ -1245,10 +1284,10 @@ function AssistWorkHistoryForm({
             required
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           終了年月 (YYYY-MM)
           <input
-            style={inputStyle}
+            className={inputCls}
             value={form.yearMonthTo as string}
             onChange={field('yearMonthTo')}
             placeholder="例: 2024-03"
@@ -1257,7 +1296,7 @@ function AssistWorkHistoryForm({
           />
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <label className={`${labelCls} mb-3 flex flex-row items-center gap-2`}>
         <input
           type="checkbox"
           checked={form.isCurrent}
@@ -1265,53 +1304,49 @@ function AssistWorkHistoryForm({
         />
         現在も継続中
       </label>
-      <label style={{ ...labelStyle, marginBottom: 12 }}>
+      <label className={`${labelCls} mb-3`}>
         業務内容 <span style={{ color: 'red' }}>*</span>
         <textarea
-          style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
+          className={inputCls}
+          style={{ minHeight: 80, resize: 'vertical' }}
           value={form.workSummary}
           onChange={field('workSummary')}
           required
         />
       </label>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           役割・職名
-          <input style={inputStyle} value={form.roleName as string} onChange={field('roleName')} />
+          <input className={inputCls} value={form.roleName as string} onChange={field('roleName')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           使用技術・ツール
-          <input style={inputStyle} value={form.toolsUsed as string} onChange={field('toolsUsed')} />
+          <input className={inputCls} value={form.toolsUsed as string} onChange={field('toolsUsed')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           チーム規模（名）
-          <input style={inputStyle} type="number" min={1} value={form.teamSizeStr} onChange={field('teamSizeStr')} />
+          <input className={inputCls} type="number" min={1} value={form.teamSizeStr} onChange={field('teamSizeStr')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           案件コード
-          <input style={inputStyle} value={form.projectCode as string} onChange={field('projectCode')} />
+          <input className={inputCls} value={form.projectCode as string} onChange={field('projectCode')} />
         </label>
       </div>
-      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive mb-2">{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+        <Button type="submit" size="sm" disabled={saving}>
           {saving ? `${submitLabel}中...` : submitLabel}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
           キャンセル
-        </button>
+        </Button>
       </div>
     </form>
   );
 }
 
-const labelStyle: React.CSSProperties = {
-  display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600, color: '#555',
-};
-const inputStyle: React.CSSProperties = {
-  padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4,
-  fontSize: 13, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
-};
+const labelCls = "flex flex-col gap-1 text-xs font-semibold text-muted-foreground";
+const inputCls = "w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm";
 
 // ─── 資格情報フォーム ──────────────────────────────────────────
 
@@ -1335,10 +1370,10 @@ function QualificationForm({
   return (
     <form onSubmit={onSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           資格名 <span style={{ color: 'red' }}>*</span>
           <input
-            style={inputStyle}
+            className={inputCls}
             value={form.name}
             onChange={(e) => onChange({ ...form, name: e.target.value })}
             required
@@ -1346,35 +1381,35 @@ function QualificationForm({
             placeholder="例: 基本情報技術者試験"
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           取得日 <span style={{ color: 'red' }}>*</span>
           <input
             type="date"
-            style={inputStyle}
+            className={inputCls}
             value={form.acquiredDate}
             onChange={(e) => onChange({ ...form, acquiredDate: e.target.value })}
             required
           />
         </label>
       </div>
-      <label style={{ ...labelStyle, marginBottom: 12 }}>
+      <label className={`${labelCls} mb-3`}>
         備考（任意）
         <input
-          style={inputStyle}
+          className={inputCls}
           value={form.note ?? ''}
           onChange={(e) => onChange({ ...form, note: e.target.value })}
           maxLength={500}
           placeholder="認定機関・資格番号・有効期限など"
         />
       </label>
-      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive mb-2">{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+        <Button type="submit" size="sm" disabled={saving}>
           {saving ? `${submitLabel}中...` : submitLabel}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
           キャンセル
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -1431,12 +1466,12 @@ function EmploymentEditForm({
   return (
     <form onSubmit={onSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           組織
           {organizations === null ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+            <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
           ) : (
-            <select style={inputStyle} value={form.organizationId} onChange={field('organizationId')}>
+            <select className={inputCls} value={form.organizationId} onChange={field('organizationId')}>
               <option value="">未変更</option>
               {organizations.map((org) => (
                 <option key={org.id} value={String(org.id)}>
@@ -1446,9 +1481,9 @@ function EmploymentEditForm({
             </select>
           )}
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           雇用区分
-          <select style={inputStyle} value={form.employmentType} onChange={field('employmentType')}>
+          <select className={inputCls} value={form.employmentType} onChange={field('employmentType')}>
             <option value="1">正社員</option>
             <option value="2">契約社員</option>
             <option value="3">パートタイム</option>
@@ -1456,20 +1491,20 @@ function EmploymentEditForm({
             <option value="5">業務委託</option>
           </select>
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           開始日
-          <input type="date" style={inputStyle} value={form.startDate} onChange={field('startDate')} />
+          <input type="date" className={inputCls} value={form.startDate} onChange={field('startDate')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           終了日（退職・異動日）
-          <input type="date" style={inputStyle} value={form.endDate} onChange={field('endDate')} />
+          <input type="date" className={inputCls} value={form.endDate} onChange={field('endDate')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           役職（任意）
           {positionMasters === null ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+            <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
           ) : (
-            <select style={inputStyle} value={form.positionMasterId} onChange={field('positionMasterId')}>
+            <select className={inputCls} value={form.positionMasterId} onChange={field('positionMasterId')}>
               <option value="">未変更</option>
               {positionMasters.filter((p) => p.isActive).map((p) => (
                 <option key={p.id} value={String(p.id)}>
@@ -1480,14 +1515,14 @@ function EmploymentEditForm({
           )}
         </label>
       </div>
-      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive mb-2">{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+        <Button type="submit" size="sm" disabled={saving}>
           {saving ? '更新中...' : '更新'}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
           キャンセル
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -1548,15 +1583,15 @@ function EmploymentAddForm({
   return (
     <form onSubmit={onSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           組織 <span style={{ color: 'red' }}>*</span>
           {organizations === null ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+            <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
           ) : organizations.length === 0 ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>登録された組織がありません</span>
+            <span className="text-xs text-muted-foreground mt-1">登録された組織がありません</span>
           ) : (
             <select
-              style={inputStyle}
+              className={inputCls}
               value={form.organizationId}
               onChange={field('organizationId')}
               required
@@ -1570,9 +1605,9 @@ function EmploymentAddForm({
             </select>
           )}
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           雇用区分 <span style={{ color: 'red' }}>*</span>
-          <select style={inputStyle} value={form.employmentType} onChange={field('employmentType')} required>
+          <select className={inputCls} value={form.employmentType} onChange={field('employmentType')} required>
             <option value="1">正社員</option>
             <option value="2">契約社員</option>
             <option value="3">パートタイム</option>
@@ -1580,32 +1615,32 @@ function EmploymentAddForm({
             <option value="5">業務委託</option>
           </select>
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           開始日 <span style={{ color: 'red' }}>*</span>
           <input
             type="date"
-            style={inputStyle}
+            className={inputCls}
             value={form.startDate}
             onChange={field('startDate')}
             required
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           終了日（過去の所属の場合）
           <input
             type="date"
-            style={inputStyle}
+            className={inputCls}
             value={form.endDate}
             onChange={field('endDate')}
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           役職（任意）
           {positionMasters === null ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+            <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
           ) : (
             <select
-              style={inputStyle}
+              className={inputCls}
               value={form.positionMasterId}
               onChange={field('positionMasterId')}
             >
@@ -1618,13 +1653,13 @@ function EmploymentAddForm({
             </select>
           )}
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           上長（任意）
           {allEmployees === null ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>読み込み中...</span>
+            <span className="text-xs text-muted-foreground mt-1">読み込み中...</span>
           ) : (
             <select
-              style={inputStyle}
+              className={inputCls}
               value={form.supervisorEmployeeId}
               onChange={field('supervisorEmployeeId')}
             >
@@ -1638,14 +1673,14 @@ function EmploymentAddForm({
           )}
         </label>
       </div>
-      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive mb-2">{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" className="btn-primary" disabled={saving} style={{ fontSize: 12 }}>
+        <Button type="submit" size="sm" disabled={saving}>
           {saving ? '追加中...' : '追加'}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving} style={{ fontSize: 12 }}>
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
           キャンセル
-        </button>
+        </Button>
       </div>
     </form>
   );

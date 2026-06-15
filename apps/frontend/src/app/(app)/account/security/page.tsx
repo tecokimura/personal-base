@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export default function SecuritySettingsPage() {
   const [twoFactorStatus, setTwoFactorStatus] = useState<{ enabled: boolean; enabledAt: string | null } | null>(null);
@@ -12,40 +15,42 @@ export default function SecuritySettingsPage() {
   }, []);
 
   return (
-    <div>
-      <h1 className="page-title">セキュリティ設定</h1>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">セキュリティ設定</h1>
 
-      <div className="card" style={{ borderLeft: '3px solid #6b7280' }}>
-        <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: '#374151' }}>
-          二段階認証（2FA）
-        </h2>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            {twoFactorStatus === null ? (
-              <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>読み込み中...</p>
-            ) : twoFactorStatus.enabled ? (
-              <>
-                <p style={{ fontSize: 13, color: '#16a34a', fontWeight: 500, margin: '0 0 4px' }}>設定済み</p>
-                {twoFactorStatus.enabledAt && (
-                  <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
-                    {new Date(twoFactorStatus.enabledAt).toLocaleString('ja-JP')} に設定
+      <Card className="max-w-lg border-l-4 border-l-gray-400">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-gray-700">二段階認証（2FA）</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              {twoFactorStatus === null ? (
+                <p className="text-sm text-muted-foreground">読み込み中...</p>
+              ) : twoFactorStatus.enabled ? (
+                <>
+                  <p className="text-sm font-medium text-green-600">設定済み</p>
+                  {twoFactorStatus.enabledAt && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(twoFactorStatus.enabledAt).toLocaleString('ja-JP')} に設定
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-muted-foreground">未設定</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    認証アプリを使った二段階認証を設定できます
                   </p>
-                )}
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, margin: '0 0 4px' }}>未設定</p>
-                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
-                  認証アプリを使った二段階認証を設定できます
-                </p>
-              </>
-            )}
+                </>
+              )}
+            </div>
+            <Link href="/2fa/setup" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              {twoFactorStatus?.enabled ? '再設定する →' : '設定する →'}
+            </Link>
           </div>
-          <Link href="/2fa/setup" className="btn-secondary" style={{ fontSize: 12 }}>
-            {twoFactorStatus?.enabled ? '再設定する →' : '設定する →'}
-          </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

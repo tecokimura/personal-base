@@ -4,6 +4,10 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function TwoFactorVerifyPage() {
   const router = useRouter();
@@ -37,57 +41,64 @@ export default function TwoFactorVerifyPage() {
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-box">
-        <h1>二段階認証</h1>
-        <p style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>
-          {mode === 'totp'
-            ? '認証アプリに表示されている6桁のコードを入力してください。'
-            : 'バックアップコードを入力してください（例: ABCD-1234）。'}
-        </p>
-        <form onSubmit={(e) => { void handleSubmit(e); }}>
-          <div className="form-group">
-            <label htmlFor="code">
-              {mode === 'totp' ? '認証コード' : 'バックアップコード'}
-            </label>
-            <input
-              id="code"
-              type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={mode === 'totp' ? '000000' : 'ABCD-1234'}
-              autoComplete="one-time-code"
-              required
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl text-center">二段階認証</CardTitle>
+          <p className="text-sm text-muted-foreground text-center">
+            {mode === 'totp'
+              ? '認証アプリに表示されている6桁のコードを入力してください。'
+              : 'バックアップコードを入力してください（例: ABCD-1234）。'}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="code">
+                {mode === 'totp' ? '認証コード' : 'バックアップコード'}
+              </Label>
+              <Input
+                id="code"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={mode === 'totp' ? '000000' : 'ABCD-1234'}
+                autoComplete="one-time-code"
+                required
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? '認証中...' : '認証'}
+            </Button>
+          </form>
+
+          <div className="text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                setMode(mode === 'totp' ? 'backup' : 'totp');
+                setCode('');
+                setError('');
+              }}
+            >
+              {mode === 'totp' ? 'バックアップコードを使う' : '認証アプリを使う'}
+            </Button>
           </div>
-          {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? '認証中...' : '認証'}
-          </button>
-        </form>
-        <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <button
-            className="btn btn-secondary"
-            style={{ fontSize: 13 }}
-            onClick={() => {
-              setMode(mode === 'totp' ? 'backup' : 'totp');
-              setCode('');
-              setError('');
-            }}
-          >
-            {mode === 'totp' ? 'バックアップコードを使う' : '認証アプリを使う'}
-          </button>
-        </div>
-        <div style={{ marginTop: 24, textAlign: 'center', borderTop: '1px solid #eee', paddingTop: 16 }}>
-          <Link
-            href="/login"
-            onClick={() => { void api.auth.logout(); }}
-            style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'underline' }}
-          >
-            別のアカウントでログイン
-          </Link>
-        </div>
-      </div>
+
+          <div className="text-center border-t pt-4">
+            <Link
+              href="/login"
+              onClick={() => { void api.auth.logout(); }}
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              別のアカウントでログイン
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

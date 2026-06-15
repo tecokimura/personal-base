@@ -5,6 +5,28 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePathname } from 'next/navigation';
 
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      style={active ? {
+        display: 'block',
+        padding: '8px 20px',
+        color: '#fff',
+        fontSize: 13,
+        background: 'rgba(255,255,255,0.12)',
+        borderLeft: '3px solid #60a5fa',
+        textDecoration: 'none',
+      } : undefined}
+      className={active ? undefined : 'sidebar-link'}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { me } = useAuth();
   const pathname = usePathname();
@@ -21,7 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="sidebar">
         <div className="sidebar-title">PersonalBase</div>
         <nav>
-          <Link href="/dashboard">ダッシュボード</Link>
+          <NavLink href="/dashboard">ダッシュボード</NavLink>
           <div className="nav-group">
             <button
               className="nav-group-header"
@@ -32,14 +54,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
             {orgOpen && (
               <div className="nav-group-children">
-                <Link href="/organizations">組織一覧</Link>
-                <Link href="/employees">社員一覧</Link>
+                <NavLink href="/org-chart">組織図</NavLink>
+                <NavLink href="/organizations">組織一覧</NavLink>
+                <NavLink href="/employees">社員一覧</NavLink>
               </div>
             )}
           </div>
-          {isHrAdmin && <Link href="/employees/deleted">削除済み社員</Link>}
-          {isHrAdmin && <Link href="/audit">監査ログ</Link>}
-          {isHrAdmin && <Link href="/settings">テナント設定</Link>}
+          {isHrAdmin && <NavLink href="/employees/deleted">削除済み社員</NavLink>}
+          {isHrAdmin && <NavLink href="/audit">監査ログ</NavLink>}
+          {isHrAdmin && <NavLink href="/settings">テナント設定</NavLink>}
           <div className="nav-divider" />
           {me?.employeeId && (
             <div className="nav-group">
@@ -52,8 +75,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
               {accountOpen && (
                 <div className="nav-group-children">
-                  <Link href={`/employees/${me.employeeId}`}>マイプロフィール</Link>
-                  <Link href="/account/security">セキュリティ設定</Link>
+                  <NavLink href={`/employees/${me.employeeId}`}>マイプロフィール</NavLink>
+                  <NavLink href="/account/security">セキュリティ設定</NavLink>
                 </div>
               )}
             </div>

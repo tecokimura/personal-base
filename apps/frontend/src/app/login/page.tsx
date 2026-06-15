@@ -3,6 +3,10 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,53 +47,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-box">
-        <h1>PersonalBase ログイン</h1>
-        {tenantError ? (
-          <p className="error-msg">{tenantError}</p>
-        ) : (
-          tenantName && <p className="tenant-name">{tenantName}</p>
-        )}
-        <form onSubmit={(e) => { void handleSubmit(e); }}>
-          <div className="form-group">
-            <label htmlFor="loginIdentifier">ログイン ID</label>
-            <input
-              id="loginIdentifier"
-              type="text"
-              value={loginIdentifier}
-              onChange={(e) => setLoginIdentifier(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">パスワード</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl text-center">PersonalBase</CardTitle>
+          {tenantError ? (
+            <p className="text-sm text-destructive text-center">{tenantError}</p>
+          ) : (
+            tenantName && <p className="text-sm text-muted-foreground text-center">{tenantName}</p>
+          )}
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="loginIdentifier">ログイン ID</Label>
+              <Input
+                id="loginIdentifier"
+                type="text"
+                value={loginIdentifier}
+                onChange={(e) => setLoginIdentifier(e.target.value)}
+                autoComplete="username"
                 required
-                style={{ paddingRight: 40 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 13 }}
-              >
-                {showPassword ? '非表示' : '表示'}
-              </button>
             </div>
-          </div>
-          {error && <p className="error-msg">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={loading || !!tenantError} style={{ width: '100%' }}>
-            {loading ? 'ログイン中...' : 'ログイン'}
-          </button>
-        </form>
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">パスワード</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className="pr-16"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground px-1"
+                >
+                  {showPassword ? '非表示' : '表示'}
+                </button>
+              </div>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !!tenantError}
+            >
+              {loading ? 'ログイン中...' : 'ログイン'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

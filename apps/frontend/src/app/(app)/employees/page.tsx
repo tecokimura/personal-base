@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type EmployeeListItem, type MeResponse, type OrganizationView } from '@/lib/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function EmployeesPage() {
   const router = useRouter();
@@ -15,7 +20,6 @@ export default function EmployeesPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Form state
   const [addingEmployee, setAddingEmployee] = useState(false);
   const [fullName, setFullName] = useState('');
   const [employeeNumber, setEmployeeNumber] = useState('');
@@ -55,15 +59,8 @@ export default function EmployeesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!fullName.trim()) {
-      setFormError('氏名は必須です');
-      return;
-    }
-    if (organizationId && !startDate) {
-      setFormError('組織を選択した場合は着任日が必須です');
-      return;
-    }
-
+    if (!fullName.trim()) { setFormError('氏名は必須です'); return; }
+    if (organizationId && !startDate) { setFormError('組織を選択した場合は着任日が必須です'); return; }
     setSaving(true);
     setFormError('');
     try {
@@ -71,7 +68,6 @@ export default function EmployeesPage() {
         fullName: fullName.trim(),
         ...(employeeNumber.trim() ? { employeeNumber: employeeNumber.trim() } : {}),
       });
-
       if (organizationId) {
         await api.employees.addEmployment(created.id, {
           organizationId: Number(organizationId),
@@ -79,7 +75,6 @@ export default function EmployeesPage() {
           startDate,
         });
       }
-
       router.push(`/employees/${created.id}`);
     } catch (err: unknown) {
       setFormError(String(err));
@@ -87,27 +82,30 @@ export default function EmployeesPage() {
     }
   }
 
-  if (authLoading || loading) return <p>読み込み中...</p>;
-  if (error) return <p className="error-msg">{error}</p>;
+  if (authLoading || loading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
 
   return (
-    <>
-      <h1 className="page-title">社員一覧</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">社員一覧</h1>
+        {isHrAdmin && !addingEmployee && (
+          <Button size="sm" onClick={() => setAddingEmployee(true)}>社員を追加</Button>
+        )}
+      </div>
 
-      {isHrAdmin && (
-        <div style={{ marginBottom: '1rem' }}>
-          {!addingEmployee ? (
-            <button className="btn-primary" onClick={() => setAddingEmployee(true)}>
-              社員を追加
-            </button>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ border: '1px solid #ddd', borderRadius: 6, padding: '1rem', maxWidth: 480 }}>
-              <h2 style={{ marginTop: 0, fontSize: '1rem' }}>新規社員登録</h2>
-              {formError && <p className="error-msg" style={{ marginBottom: '0.5rem' }}>{formError}</p>}
-
-              <div className="form-row">
-                <label>氏名 <span style={{ color: 'red' }}>*</span></label>
-                <input
+      {isHrAdmin && addingEmployee && (
+        <Card className="max-w-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">新規社員登録</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-3">
+              {formError && <p className="text-sm text-destructive">{formError}</p>}
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">氏名 <span className="text-destructive">*</span></Label>
+                <Input
+                  id="fullName"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="例: 山田 太郎"
@@ -115,23 +113,24 @@ export default function EmployeesPage() {
                   disabled={saving}
                 />
               </div>
-
-              <div className="form-row">
-                <label>社員番号</label>
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="employeeNumber">社員番号</Label>
+                <Input
+                  id="employeeNumber"
                   value={employeeNumber}
                   onChange={(e) => setEmployeeNumber(e.target.value)}
                   placeholder="例: EMP-001"
                   disabled={saving}
                 />
               </div>
-
-              <div className="form-row">
-                <label>所属組織</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="organizationId">所属組織</Label>
                 <select
+                  id="organizationId"
                   value={organizationId}
                   onChange={(e) => setOrganizationId(e.target.value)}
                   disabled={saving}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">— 選択しない —</option>
                   {organizations.filter((o) => o.isActive).map((o) => (
@@ -139,15 +138,16 @@ export default function EmployeesPage() {
                   ))}
                 </select>
               </div>
-
               {organizationId && (
                 <>
-                  <div className="form-row">
-                    <label>雇用区分 <span style={{ color: 'red' }}>*</span></label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="employmentType">雇用区分 <span className="text-destructive">*</span></Label>
                     <select
+                      id="employmentType"
                       value={employmentType}
                       onChange={(e) => setEmploymentType(e.target.value)}
                       disabled={saving}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="1">正社員</option>
                       <option value="2">契約社員</option>
@@ -156,10 +156,10 @@ export default function EmployeesPage() {
                       <option value="5">業務委託</option>
                     </select>
                   </div>
-
-                  <div className="form-row">
-                    <label>着任日 <span style={{ color: 'red' }}>*</span></label>
-                    <input
+                  <div className="space-y-1.5">
+                    <Label htmlFor="startDate">着任日 <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="startDate"
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -169,50 +169,55 @@ export default function EmployeesPage() {
                   </div>
                 </>
               )}
-
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                <button type="submit" className="btn-primary" disabled={saving}>
+              <div className="flex gap-2 pt-1">
+                <Button type="submit" disabled={saving}>
                   {saving ? '登録中...' : '登録'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={resetForm} disabled={saving}>
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>
                   キャンセル
-                </button>
+                </Button>
               </div>
             </form>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>社員番号</th>
-              <th>氏名</th>
-              <th>よみ・英語名</th>
-              <th>メール</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">ID</TableHead>
+              <TableHead className="w-28">社員番号</TableHead>
+              <TableHead>氏名</TableHead>
+              <TableHead>よみ・英語名</TableHead>
+              <TableHead>メール</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {employees.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa' }}>データなし</td></tr>
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  データなし
+                </TableCell>
+              </TableRow>
             ) : (
               employees.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.id}</td>
-                  <td>{e.employeeNumber ?? '—'}</td>
-                  <td>
-                    <Link href={`/employees/${e.id}`}>{e.fullName}</Link>
-                  </td>
-                  <td>{e.displayName ?? '—'}</td>
-                  <td>{e.email ?? '—'}</td>
-                </tr>
+                <TableRow key={e.id}>
+                  <TableCell>{e.id}</TableCell>
+                  <TableCell>{e.employeeNumber ?? '—'}</TableCell>
+                  <TableCell>
+                    <Link href={`/employees/${e.id}`} className="text-primary hover:underline">
+                      {e.fullName}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{e.displayName ?? '—'}</TableCell>
+                  <TableCell>{e.email ?? '—'}</TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
-    </>
+    </div>
   );
 }

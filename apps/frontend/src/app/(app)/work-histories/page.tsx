@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type WorkHistory, type WorkHistoryInput } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const EMPTY_FORM: WorkHistoryInput = {
   yearMonthFrom: '',
@@ -117,65 +119,75 @@ export default function WorkHistoriesPage() {
     }
   }
 
-  if (authLoading || loading) return <p>読み込み中...</p>;
-  if (pageError) return <p className="error-msg">{pageError}</p>;
+  if (authLoading || loading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (pageError) return <p className="text-sm text-destructive">{pageError}</p>;
 
   return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 className="page-title" style={{ margin: 0 }}>職歴管理</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">職歴管理</h1>
         {!showAddForm && (
-          <button className="btn-primary" onClick={() => { setShowAddForm(true); setAddError(''); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setAddError(''); }}>
             ＋ 職歴を追加
-          </button>
+          </Button>
         )}
       </div>
 
       {showAddForm && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#555' }}>新規職歴</h2>
-          <WorkHistoryForm
-            form={addForm}
-            onChange={setAddForm}
-            onSubmit={handleAdd}
-            onCancel={() => { setShowAddForm(false); setAddError(''); }}
-            error={addError}
-            saving={addSaving}
-            submitLabel="追加"
-          />
-        </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-muted-foreground">新規職歴</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WorkHistoryForm
+              form={addForm}
+              onChange={setAddForm}
+              onSubmit={handleAdd}
+              onCancel={() => { setShowAddForm(false); setAddError(''); }}
+              error={addError}
+              saving={addSaving}
+              submitLabel="追加"
+            />
+          </CardContent>
+        </Card>
       )}
 
       {records.length === 0 ? (
-        <div className="card">
-          <p style={{ color: '#aaa', margin: 0 }}>職歴がありません。「職歴を追加」から登録してください。</p>
-        </div>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">職歴がありません。「職歴を追加」から登録してください。</p>
+          </CardContent>
+        </Card>
       ) : (
         records.map((wh) =>
           editingId === wh.id ? (
-            <div key={wh.id} className="card" style={{ marginBottom: 8 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', color: '#555' }}>職歴を編集</h2>
-              <WorkHistoryForm
-                form={editForm}
-                onChange={setEditForm}
-                onSubmit={handleEdit}
-                onCancel={() => setEditingId(null)}
-                error={editError}
-                saving={editSaving}
-                submitLabel="保存"
-              />
-            </div>
+            <Card key={wh.id}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">職歴を編集</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WorkHistoryForm
+                  form={editForm}
+                  onChange={setEditForm}
+                  onSubmit={handleEdit}
+                  onCancel={() => setEditingId(null)}
+                  error={editError}
+                  saving={editSaving}
+                  submitLabel="保存"
+                />
+              </CardContent>
+            </Card>
           ) : (
             <WorkHistoryCard
               key={wh.id}
               wh={wh}
               onEdit={() => startEdit(wh)}
-              onDelete={() => handleDelete(wh.id)}
+              onDelete={() => { void handleDelete(wh.id); }}
             />
           )
         )
       )}
-    </>
+    </div>
   );
 }
 
@@ -195,28 +207,33 @@ function WorkHistoryCard({
     : wh.yearMonthFrom;
 
   return (
-    <div className="card" style={{ marginBottom: 8 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{period}</div>
-          {wh.roleName && (
-            <div style={{ fontSize: 13, color: '#555', marginBottom: 4 }}>{wh.roleName}</div>
-          )}
-          <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 8 }}>{wh.workSummary}</div>
-          <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#888', flexWrap: 'wrap' }}>
-            {wh.toolsUsed && <span>使用技術: {wh.toolsUsed}</span>}
-            {wh.teamSize != null && <span>チーム規模: {wh.teamSize}名</span>}
-            {wh.projectCode && <span>案件コード: {wh.projectCode}</span>}
+    <Card>
+      <CardContent className="pt-4">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold mb-1">{period}</div>
+            {wh.roleName && (
+              <div className="text-sm text-muted-foreground mb-1">{wh.roleName}</div>
+            )}
+            <div className="text-sm whitespace-pre-wrap mb-2">{wh.workSummary}</div>
+            <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
+              {wh.toolsUsed && <span>使用技術: {wh.toolsUsed}</span>}
+              {wh.teamSize != null && <span>チーム規模: {wh.teamSize}名</span>}
+              {wh.projectCode && <span>案件コード: {wh.projectCode}</span>}
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={onEdit}>編集</Button>
+            <Button size="sm" variant="destructive" onClick={onDelete}>削除</Button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
-          <button className="btn-secondary" onClick={onEdit}>編集</button>
-          <button className="btn-danger" onClick={onDelete}>削除</button>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
+
+const labelCls = "flex flex-col gap-1 text-xs font-semibold text-muted-foreground";
+const inputCls = "w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm";
 
 function WorkHistoryForm({
   form,
@@ -241,12 +258,12 @@ function WorkHistoryForm({
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
-          開始年月 (YYYY-MM) <span style={{ color: 'red' }}>*</span>
+    <form onSubmit={onSubmit} className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <label className={labelCls}>
+          開始年月 (YYYY-MM) <span className="text-destructive">*</span>
           <input
-            style={inputStyle}
+            className={inputCls}
             value={form.yearMonthFrom}
             onChange={field('yearMonthFrom')}
             placeholder="例: 2023-04"
@@ -254,10 +271,10 @@ function WorkHistoryForm({
             required
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           終了年月 (YYYY-MM)
           <input
-            style={inputStyle}
+            className={inputCls}
             value={form.yearMonthTo}
             onChange={field('yearMonthTo')}
             placeholder="例: 2024-03"
@@ -267,7 +284,7 @@ function WorkHistoryForm({
         </label>
       </div>
 
-      <label style={{ ...labelStyle, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, gridColumn: 'span 2' }}>
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input
           type="checkbox"
           checked={form.isCurrent}
@@ -276,70 +293,52 @@ function WorkHistoryForm({
         現在も継続中
       </label>
 
-      <label style={{ ...labelStyle, marginBottom: 12 }}>
-        業務内容 <span style={{ color: 'red' }}>*</span>
+      <label className={labelCls}>
+        業務内容 <span className="text-destructive">*</span>
         <textarea
-          style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
+          className={inputCls}
           value={form.workSummary}
           onChange={field('workSummary')}
           required
+          style={{ minHeight: 80, resize: 'vertical' }}
         />
       </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <label style={labelStyle}>
+      <div className="grid grid-cols-2 gap-3">
+        <label className={labelCls}>
           役割・職名
-          <input style={inputStyle} value={form.roleName} onChange={field('roleName')} />
+          <input className={inputCls} value={form.roleName} onChange={field('roleName')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           使用技術・ツール
-          <input style={inputStyle} value={form.toolsUsed} onChange={field('toolsUsed')} />
+          <input className={inputCls} value={form.toolsUsed} onChange={field('toolsUsed')} />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           チーム規模（名）
           <input
-            style={inputStyle}
+            className={inputCls}
             type="number"
             min={1}
             value={form.teamSizeStr}
             onChange={field('teamSizeStr')}
           />
         </label>
-        <label style={labelStyle}>
+        <label className={labelCls}>
           案件コード
-          <input style={inputStyle} value={form.projectCode} onChange={field('projectCode')} />
+          <input className={inputCls} value={form.projectCode} onChange={field('projectCode')} />
         </label>
       </div>
 
-      {error && <p className="error-msg" style={{ marginBottom: 8 }}>{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" className="btn-primary" disabled={saving}>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={saving}>
           {saving ? '保存中...' : submitLabel}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           キャンセル
-        </button>
+        </Button>
       </div>
     </form>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#555',
-};
-
-const inputStyle: React.CSSProperties = {
-  padding: '6px 8px',
-  border: '1px solid #ddd',
-  borderRadius: 4,
-  fontSize: 13,
-  fontFamily: 'inherit',
-  width: '100%',
-  boxSizing: 'border-box',
-};

@@ -3,6 +3,10 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type AuditEvent, type EmployeeListItem, ApiError } from '@/lib/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200] as const;
 
@@ -13,11 +17,11 @@ function nameCell(id: number | null, nameMap: Map<number, string>): React.ReactN
     return (
       <>
         {name}{' '}
-        <span style={{ color: '#aaa', fontSize: 11 }}>(ID: {id})</span>
+        <span className="text-xs text-muted-foreground">(ID: {id})</span>
       </>
     );
   }
-  return <span style={{ color: '#888' }}>ID: {id}</span>;
+  return <span className="text-muted-foreground">ID: {id}</span>;
 }
 
 export default function AuditPage() {
@@ -61,95 +65,102 @@ export default function AuditPage() {
     setPage(0);
   }
 
-  if (authLoading) return <p>読み込み中...</p>;
-  if (!isHrAdmin) return <p className="error-msg">この画面は HR_ADMIN のみ利用できます</p>;
-  if (error) return <p className="error-msg">{error}</p>;
+  if (authLoading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (!isHrAdmin) return <p className="text-sm text-destructive">この画面は HR_ADMIN のみ利用できます</p>;
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
 
   return (
-    <>
-      <h1 className="page-title">監査ログ</h1>
-      <div className="card">
-        {events === null ? (
-          <p style={{ color: '#aaa', margin: 0 }}>読み込み中...</p>
-        ) : events.length === 0 ? (
-          <p style={{ color: '#aaa', margin: 0 }}>監査イベントはありません</p>
-        ) : (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 12, color: '#888' }}>全 {events.length} 件</span>
-              <label style={{ fontSize: 12, color: '#555', display: 'flex', alignItems: 'center', gap: 6 }}>
-                表示件数:
-                <select
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                  style={{ fontSize: 12, padding: '2px 6px', border: '1px solid #ddd', borderRadius: 4 }}
-                >
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <option key={n} value={n}>{n} 件</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>発生日時</th>
-                    <th>種別</th>
-                    <th>実行者</th>
-                    <th>対象者</th>
-                    <th>対象種別</th>
-                    <th>操作種別</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedEvents.map((ev, i) => (
-                    <tr key={i}>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(ev.occurredAt).toLocaleString('ja-JP')}
-                      </td>
-                      <td>
-                        <span className={ev.eventType === 'LOGIN' ? 'badge badge-green' : 'badge badge-gray'}>
-                          {ev.eventType}
-                        </span>
-                      </td>
-                      <td>{nameCell(ev.actorEmployeeId, nameMap)}</td>
-                      <td>{nameCell(ev.targetEmployeeId, nameMap)}</td>
-                      <td>{ev.targetType ?? '—'}</td>
-                      <td>{ev.operationType}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: 12 }}
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 0}
-                >
-                  前へ
-                </button>
-                <span style={{ fontSize: 12, color: '#555' }}>
-                  {page + 1} / {totalPages} ページ
-                </span>
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: 12 }}
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  次へ
-                </button>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">監査ログ</h1>
+      <Card>
+        <CardContent className="pt-4">
+          {events === null ? (
+            <p className="text-sm text-muted-foreground">読み込み中...</p>
+          ) : events.length === 0 ? (
+            <p className="text-sm text-muted-foreground">監査イベントはありません</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">全 {events.length} 件</span>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  表示件数:
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                    className="rounded border border-input bg-background px-2 py-1 text-xs"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n} 件</option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            )}
-          </>
-        )}
-      </div>
-    </>
+
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">発生日時</TableHead>
+                      <TableHead className="w-24">種別</TableHead>
+                      <TableHead>実行者</TableHead>
+                      <TableHead>対象者</TableHead>
+                      <TableHead>対象種別</TableHead>
+                      <TableHead>操作種別</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedEvents.map((ev, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {new Date(ev.occurredAt).toLocaleString('ja-JP')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={ev.eventType === 'LOGIN'
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : 'bg-gray-100 text-gray-500 border-gray-200'}
+                          >
+                            {ev.eventType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{nameCell(ev.actorEmployeeId, nameMap)}</TableCell>
+                        <TableCell>{nameCell(ev.targetEmployeeId, nameMap)}</TableCell>
+                        <TableCell>{ev.targetType ?? '—'}</TableCell>
+                        <TableCell>{ev.operationType}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => p - 1)}
+                    disabled={page === 0}
+                  >
+                    前へ
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {page + 1} / {totalPages} ページ
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page >= totalPages - 1}
+                  >
+                    次へ
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
