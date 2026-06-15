@@ -68,7 +68,12 @@ export default function DashboardPage() {
             <dt className="text-muted-foreground">社員</dt><dd>{me.employeeName} [{me.employeeNumber ?? '—'}]</dd>
             <dt className="text-muted-foreground">アカウント状態</dt>
             <dd>
-              <Badge variant={me.status === 1 ? 'default' : 'secondary'}>
+              <Badge
+                variant="outline"
+                className={me.status === 1
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : 'bg-gray-100 text-gray-500 border-gray-200'}
+              >
                 {me.status === 1 ? '有効' : '無効'}
               </Badge>
             </dd>
