@@ -171,44 +171,22 @@ case "${NEXT_ACTION}" in
     LINK=$(issue_link "${ISSUE_KEY}")
     log "→ 実装セッション起動: ${SHORT} (${ISSUE_SUMMARY})"
 
-    RETRY=0
-    RATE_LIMITED=false
-    SPEC_WAIT=false
-    while [[ "${RETRY}" -lt "${IMPL_RETRY_MAX}" ]]; do
-      run_with_heartbeat "実装 [${SHORT}]" "${SCRIPT_DIR}/impl.sh" "${ISSUE_KEY}" && break
-      EXIT_CODE=$?
-      if [[ "${EXIT_CODE}" -eq 3 ]]; then
-        RATE_LIMITED=true
-        write_backoff "${BACKOFF_DURATION}"
-        REMAINING=$(backoff_remaining_min)
-        log "Claude制限検出 — ${REMAINING}分後に自動再開 (${SHORT})"
-        notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開\n*${LINK}* ${ISSUE_SUMMARY}"
-        break
-      fi
-      if [[ "${EXIT_CODE}" -eq 2 ]]; then
-        SPEC_WAIT=true
-        IMPL_RESULT=$(read_result)
-        log "仕様確認待ちに移行 → ユーザー確認が必要です (${SHORT})"
-        notify ":rotating_light: [claude-auto] *【要対応】仕様確認待ち*\n*${LINK}* ${ISSUE_SUMMARY}\n不明点: ${IMPL_RESULT}"
-        break
-      fi
-      RETRY=$((RETRY + 1))
-      log "WARN: impl.sh 失敗 (exit=${EXIT_CODE}) リトライ ${RETRY}/${IMPL_RETRY_MAX}"
-      if [[ "${RETRY}" -lt "${IMPL_RETRY_MAX}" ]]; then
-        sleep "${IMPL_RETRY_DELAY}"
-      fi
-    done
+    run_with_heartbeat "実装 [${SHORT}]" "${SCRIPT_DIR}/impl.sh" "${ISSUE_KEY}" && IMPL_EXIT=0 || IMPL_EXIT=$?
 
-    if [[ "${RATE_LIMITED}" == true ]]; then
-      : # バックオフ通知済み
-    elif [[ "${SPEC_WAIT}" == true ]]; then
-      : # 仕様確認待ち通知済み
-    elif [[ "${RETRY}" -ge "${IMPL_RETRY_MAX}" ]]; then
-      log "ERROR: リトライ上限到達 (${SHORT})"
-      notify ":rotating_light: [claude-auto] *【要対応】リトライ上限到達* — 手動確認が必要です\n*${LINK}* ${ISSUE_SUMMARY}"
+    if [[ "${IMPL_EXIT}" -eq 3 ]]; then
+      write_backoff "${BACKOFF_DURATION}"
+      REMAINING=$(backoff_remaining_min)
+      log "Claude制限検出 — ${REMAINING}分後に自動再開 (${SHORT})"
+      notify ":hourglass: [claude-auto] Claude制限中 — 約${REMAINING}分後に自動再開\n*${LINK}* ${ISSUE_SUMMARY}"
+    elif [[ "${IMPL_EXIT}" -eq 2 ]]; then
+      IMPL_RESULT=$(read_result)
+      log "仕様確認待ちに移行 → ユーザー確認が必要です (${SHORT})"
+      notify ":rotating_light: [claude-auto] *【要対応】仕様確認待ち*\n*${LINK}* ${ISSUE_SUMMARY}\n不明点: ${IMPL_RESULT}"
+    elif [[ "${IMPL_EXIT}" -ne 0 ]]; then
+      log "WARN: impl.sh 失敗 (exit=${IMPL_EXIT}) — 次回 cron で再試行します (${SHORT})"
+      notify ":warning: [claude-auto] *実装失敗* — 次回 cron で再試行します\n*${LINK}* ${ISSUE_SUMMARY}"
     else
       IMPL_RESULT=$(read_result)
-      # exit=0 でも RESULT が仕様確認待ちを示す場合を検出
       if echo "${IMPL_RESULT}" | grep -q "仕様確認待ち"; then
         log "仕様確認待ちに移行（exit=0）→ ユーザー確認が必要です (${SHORT})"
         notify ":rotating_light: [claude-auto] *【要対応】仕様確認待ち*\n*${LINK}* ${ISSUE_SUMMARY}\n不明点: ${IMPL_RESULT}"
