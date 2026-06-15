@@ -15,6 +15,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "create-tenant": "ts-node src/commands/create-tenant.command.ts",
     "create-hr-admin": "ts-node src/commands/create-hr-admin.command.ts",
+    "create-employee": "ts-node src/commands/create-employee.command.ts",
     "setup-e2e-fixtures": "ts-node src/commands/setup-e2e-fixtures.command.ts"
   },
   "dependencies": {
