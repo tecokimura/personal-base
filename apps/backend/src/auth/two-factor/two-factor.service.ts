@@ -44,14 +44,14 @@ export class TwoFactorService {
     userAccountId: number,
     tenantId: number,
     loginIdentifier: string,
-  ): Promise<{ qrCodeUrl: string }> {
+  ): Promise<{ qrCodeUrl: string; secret: string }> {
     const secret = authenticator.generateSecret();
     const otpAuthUrl = authenticator.keyuri(loginIdentifier, ISSUER, secret);
     const qrCodeUrl = await QRCode.toDataURL(otpAuthUrl);
 
     await this.twoFactorRepository.upsert(userAccountId, tenantId, { totpSecret: secret });
 
-    return { qrCodeUrl };
+    return { qrCodeUrl, secret };
   }
 
   async confirmSetup(

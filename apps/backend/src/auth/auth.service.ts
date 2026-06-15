@@ -50,16 +50,21 @@ export class AuthService {
 
     const policy = await this.twoFactorService.getTenantPolicy(tenantId);
     const twoFactorRequired = policy === 2;
+    const tfa = await this.twoFactorService.getByUserAccountId(userAccount.id);
+    const userHas2FA = tfa?.twoFactorEnabled === true;
 
     let twoFactorVerified = true;
     let twoFactorPending = false;
     let twoFactorSetupRequired = false;
 
-    if (twoFactorRequired) {
-      const tfa = await this.twoFactorService.getByUserAccountId(userAccount.id);
+    if (userHas2FA) {
       twoFactorVerified = false;
       twoFactorPending = true;
-      twoFactorSetupRequired = !tfa?.twoFactorEnabled;
+      twoFactorSetupRequired = false;
+    } else if (twoFactorRequired) {
+      twoFactorVerified = false;
+      twoFactorPending = true;
+      twoFactorSetupRequired = true;
     }
 
     const rawToken = generateToken();

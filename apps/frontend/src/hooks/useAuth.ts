@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api, ApiError, type MeResponse } from '@/lib/api';
 
-const TWO_FACTOR_PATHS = ['/2fa/setup', '/2fa/verify'];
+const TWO_FACTOR_PENDING_ALLOWED = ['/2fa/setup', '/2fa/verify', '/login', '/debug'];
 
 export function useAuth() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export function useAuth() {
       .me()
       .then((data) => {
         setMe(data);
-        if (data.twoFactorPending && !TWO_FACTOR_PATHS.some((p) => pathname?.startsWith(p))) {
+        if (data.twoFactorPending && !TWO_FACTOR_PENDING_ALLOWED.some((p) => pathname?.startsWith(p))) {
           if (data.twoFactorSetupRequired) {
             router.replace('/2fa/setup');
           } else {

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
+import Link from 'next/link';
 
 export default function TwoFactorVerifyPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function TwoFactorVerifyPage() {
         err instanceof ApiError
           ? mode === 'totp'
             ? 'コードが正しくありません'
-            : 'バックアップコードが正しくありません'
+            : 'コードが認識されませんでした。別のバックアップコードをお試しください'
           : '認証に失敗しました',
       );
     } finally {
@@ -76,6 +77,15 @@ export default function TwoFactorVerifyPage() {
           >
             {mode === 'totp' ? 'バックアップコードを使う' : '認証アプリを使う'}
           </button>
+        </div>
+        <div style={{ marginTop: 24, textAlign: 'center', borderTop: '1px solid #eee', paddingTop: 16 }}>
+          <Link
+            href="/login"
+            onClick={() => { void api.auth.logout(); }}
+            style={{ fontSize: 12, color: '#9ca3af', textDecoration: 'underline' }}
+          >
+            別のアカウントでログイン
+          </Link>
         </div>
       </div>
     </div>

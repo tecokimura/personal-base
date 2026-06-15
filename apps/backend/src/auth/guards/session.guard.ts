@@ -8,7 +8,7 @@ import {
 import { AuthService } from '../auth.service';
 import { AuthenticatedRequest } from '../types/authenticated-request';
 
-const TWO_FACTOR_ALLOWED_PATHS = ['/auth/me', '/auth/logout', '/auth/2fa'];
+const TWO_FACTOR_ALLOWED_PATHS = ['/api/auth/me', '/api/auth/logout', '/api/auth/2fa'];
 
 @Injectable()
 export class SessionGuard implements CanActivate {

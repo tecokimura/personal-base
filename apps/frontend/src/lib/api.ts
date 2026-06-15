@@ -262,7 +262,8 @@ export const api = {
     me: () => apiFetch<MeResponse>('/auth/me'),
     logout: () => apiFetch<{ message: string }>('/auth/logout', { method: 'POST' }),
     twoFactor: {
-      initSetup: () => apiFetch<{ qrCodeUrl: string }>('/auth/2fa/setup/init'),
+      status: () => apiFetch<{ enabled: boolean; enabledAt: string | null }>('/auth/2fa/status'),
+      initSetup: () => apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/setup/init'),
       confirmSetup: (code: string) =>
         apiFetch<{ backupCodes: string[] }>('/auth/2fa/setup/confirm', {
           method: 'POST',

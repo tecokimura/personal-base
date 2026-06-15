@@ -140,6 +140,9 @@ export default function EmployeeDetailPage() {
   const [adminSectionSaving, setAdminSectionSaving] = useState(false);
   const [adminSectionSaveError, setAdminSectionSaveError] = useState('');
 
+  // 2FA ステータス（本人のみ）
+  const [twoFactorStatus, setTwoFactorStatus] = useState<{ enabled: boolean; enabledAt: string | null } | null>(null);
+
   // 2FA リセット（HR_ADMIN のみ）
   const [twoFactorResetting, setTwoFactorResetting] = useState(false);
   const [twoFactorResetError, setTwoFactorResetError] = useState('');
@@ -188,6 +191,7 @@ export default function EmployeeDetailPage() {
     setAdminSectionError('');
     setAdminSectionExpanded(false);
     setAdminSectionEditing(false);
+    setTwoFactorStatus(null);
 
     api.employees
       .get(id)
@@ -226,6 +230,9 @@ export default function EmployeeDetailPage() {
     api.organizations.list().then(setOrganizations).catch(() => setOrganizations([]));
     api.positionMasters.list().then(setPositionMasters).catch(() => setPositionMasters([]));
     api.employees.list().then(setAllEmployees).catch(() => setAllEmployees([]));
+    if (me?.employeeId === id) {
+      api.auth.twoFactor.status().then(setTwoFactorStatus).catch(() => {});
+    }
   }, [authLoading, id]);
 
   const isSelf = !!me && me.employeeId === id;
@@ -952,6 +959,7 @@ export default function EmployeeDetailPage() {
           </div>
         )}
       </div>
+
 
       {!whForbidden && (
         <div className="card" style={{ marginTop: 8 }}>

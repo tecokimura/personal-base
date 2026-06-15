@@ -187,6 +187,16 @@ export class AuthController {
 
   // ── 2FA エンドポイント（twoFactorVerified=false のセッションでもアクセス可）──
 
+  @Get('2fa/status')
+  @UseGuards(SessionGuard)
+  async getTwoFactorStatus(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ enabled: boolean; enabledAt: Date | null }> {
+    const tfa = await this.twoFactorService.getByUserAccountId(req.userAccount.id);
+    if (!tfa || !tfa.twoFactorEnabled) return { enabled: false, enabledAt: null };
+    return { enabled: true, enabledAt: tfa.updatedAt };
+  }
+
   @Get('2fa/setup/init')
   @UseGuards(SessionGuard)
   async initTwoFactorSetup(
