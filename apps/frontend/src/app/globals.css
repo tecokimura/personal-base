@@ -43,6 +43,8 @@ a:hover { text-decoration: underline; }
   font-size: 13px;
 }
 .sidebar nav a:hover { background: #16213e; color: #fff; text-decoration: none; }
+.sidebar-link { display: block; padding: 8px 20px; color: #bbb; font-size: 13px; border-left: 3px solid transparent; }
+.sidebar-link:hover { background: #16213e; color: #fff; text-decoration: none; }
 
 .nav-group-header {
   display: flex;
