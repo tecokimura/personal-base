@@ -22,22 +22,29 @@ ISSUE_NUMBER=$(echo "${ISSUE_KEY}" | grep -oE '[0-9]+$')
 
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/review-${ISSUE_KEY}-$(date +%Y%m%d-%H%M%S).log"
+touch "${LOG_FILE}"
+
+# 予期しないエラー時もログを残す
+trap 'echo "[review] 予期しないエラーで終了 (line $LINENO, exit $?)" | tee -a "${LOG_FILE}" >&2' ERR
 
 # impl.sh が書き込んだブランチ名ファイルを読む（なければ旧形式にフォールバック）
 BRANCH_FILE="${LOG_DIR}/branch-${ISSUE_KEY}.txt"
 if [[ -f "${BRANCH_FILE}" ]]; then
   FEATURE_BRANCH=$(cat "${BRANCH_FILE}" | tr -d '[:space:]')
-  echo "[review] ブランチ名をファイルから読み込み: ${FEATURE_BRANCH}"
+  echo "[review] ブランチ名をファイルから読み込み: ${FEATURE_BRANCH}" | tee -a "${LOG_FILE}"
 else
   FEATURE_BRANCH="feat/pmo-${ISSUE_NUMBER}"
-  echo "[review] ブランチ名ファイルなし — フォールバック: ${FEATURE_BRANCH}"
+  echo "[review] ブランチ名ファイルなし — フォールバック: ${FEATURE_BRANCH}" | tee -a "${LOG_FILE}"
 fi
 
 # ── feature ブランチに切り替えてからコンパイルチェック ─────────────
-echo "[review] feature ブランチ ${FEATURE_BRANCH} に切り替え中..."
-git fetch origin
-git checkout "${FEATURE_BRANCH}" 2>/dev/null || { echo "[review] ブランチ ${FEATURE_BRANCH} が見つかりません" >&2; exit 1; }
-git pull origin "${FEATURE_BRANCH}" 2>/dev/null || true
+echo "[review] feature ブランチ ${FEATURE_BRANCH} に切り替え中..." | tee -a "${LOG_FILE}"
+git fetch origin 2>&1 | tee -a "${LOG_FILE}" || true
+if ! git checkout "${FEATURE_BRANCH}" 2>&1 | tee -a "${LOG_FILE}"; then
+  echo "[review] ERROR: ブランチ ${FEATURE_BRANCH} が見つかりません — レビュー不可" | tee -a "${LOG_FILE}" >&2
+  exit 1
+fi
+git pull origin "${FEATURE_BRANCH}" 2>&1 | tee -a "${LOG_FILE}" || true
 
 echo "[review] TypeScript コンパイルチェック実行中..."
 
