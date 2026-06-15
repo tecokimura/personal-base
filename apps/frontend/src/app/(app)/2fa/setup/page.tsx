@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 type Step = 'qr' | 'confirm' | 'backup';
 
@@ -86,168 +90,150 @@ export default function TwoFactorSetupPage() {
 
   if (step === 'backup') {
     return (
-      <div className="login-wrap">
-        <div className="login-box" style={{ maxWidth: 480 }}>
-          <h1>バックアップコード</h1>
-
-          {/* Step 1: 確認 */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8, letterSpacing: '0.05em' }}>
-              STEP 1 — コードを確認する
-            </p>
-            <p style={{ fontSize: 13, color: '#555', marginBottom: 10 }}>
-              認証アプリが使えない場合にこのコードでログインできます。各コードは一度のみ使用できます。
-            </p>
-            <div
-              style={{
-                background: '#f5f5f5',
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                padding: '12px 16px',
-                fontFamily: 'monospace',
-                fontSize: 15,
-                lineHeight: 2,
-              }}
-            >
-              {backupCodes.map((c) => (
-                <div key={c}>{c}</div>
-              ))}
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">バックアップコード</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Step 1 */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground tracking-wider">
+                STEP 1 — コードを確認する
+              </p>
+              <p className="text-sm text-muted-foreground">
+                認証アプリが使えない場合にこのコードでログインできます。各コードは一度のみ使用できます。
+              </p>
+              <div className="bg-muted rounded-md border p-4 font-mono text-sm leading-loose">
+                {backupCodes.map((c) => (
+                  <div key={c}>{c}</div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Step 2: 保存 */}
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8, letterSpacing: '0.05em' }}>
-              STEP 2 — 安全な場所に保存する
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              onClick={downloadBackupCodes}
-            >
-              テキストファイルでダウンロード
-            </button>
-          </div>
+            {/* Step 2 */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground tracking-wider">
+                STEP 2 — 安全な場所に保存する
+              </p>
+              <Button className="w-full" onClick={downloadBackupCodes}>
+                テキストファイルでダウンロード
+              </Button>
+            </div>
 
-          {/* Step 3: 完了 */}
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 20 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 8, letterSpacing: '0.05em' }}>
-              STEP 3 — 保存が完了したら進む
-            </p>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ width: '100%' }}
-              onClick={handleGoToDashboard}
-            >
-              ダッシュボードへ進む
-            </button>
-          </div>
-        </div>
+            {/* Step 3 */}
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-xs font-semibold text-muted-foreground tracking-wider">
+                STEP 3 — 保存が完了したら進む
+              </p>
+              <Button variant="outline" className="w-full" onClick={handleGoToDashboard}>
+                ダッシュボードへ進む
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-box" style={{ maxWidth: 420 }}>
-        {isRequired && (
-          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 6, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#854d0e' }}>
-            このアカウントでは二段階認証の設定が必須です。下記の手順で設定を完了してください。
-          </div>
-        )}
-        <h1>二段階認証の設定</h1>
-
-        {step === 'qr' && (
-          <>
-            <p style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>
-              Google Authenticator などの認証アプリでQRコードをスキャンしてください。
-            </p>
-            {initLoading ? (
-              <p style={{ textAlign: 'center', color: '#aaa' }}>読み込み中...</p>
-            ) : error ? (
-              <p className="error-msg">{error}</p>
-            ) : (
-              <>
-                <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                  <Image src={qrCodeUrl} alt="2FA QR Code" width={200} height={200} unoptimized />
-                </div>
-                <div style={{ marginBottom: 20 }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowSecret((v) => !v)}
-                    style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                  >
-                    {showSecret ? '手動入力欄を閉じる' : 'QRコードが読めない場合はこちら'}
-                  </button>
-                  {showSecret && (
-                    <div style={{ marginTop: 8, background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 4, padding: '8px 12px' }}>
-                      <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px' }}>認証アプリに手動で入力してください</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <code style={{ fontSize: 14, letterSpacing: 2, wordBreak: 'break-all', flex: 1 }}>{secretKey}</code>
-                        <button
-                          type="button"
-                          onClick={copySecret}
-                          style={{ fontSize: 11, flexShrink: 0, padding: '4px 8px', border: '1px solid #ccc', borderRadius: 4, background: copied ? '#f0fdf4' : '#fff', cursor: 'pointer', color: copied ? '#16a34a' : undefined }}
-                        >
-                          {copied ? 'コピーしました' : 'コピー'}
-                        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader className="pb-4">
+          {isRequired && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 mb-2 text-sm text-yellow-800">
+              このアカウントでは二段階認証の設定が必須です。下記の手順で設定を完了してください。
+            </div>
+          )}
+          <CardTitle className="text-xl">二段階認証の設定</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {step === 'qr' && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Google Authenticator などの認証アプリでQRコードをスキャンしてください。
+              </p>
+              {initLoading ? (
+                <p className="text-center text-muted-foreground text-sm">読み込み中...</p>
+              ) : error ? (
+                <p className="text-sm text-destructive">{error}</p>
+              ) : (
+                <>
+                  <div className="flex justify-center">
+                    <Image src={qrCodeUrl} alt="2FA QR Code" width={200} height={200} unoptimized />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSecret((v) => !v)}
+                      className="text-xs text-muted-foreground underline hover:text-foreground"
+                    >
+                      {showSecret ? '手動入力欄を閉じる' : 'QRコードが読めない場合はこちら'}
+                    </button>
+                    {showSecret && (
+                      <div className="mt-2 bg-muted border rounded-md p-3 space-y-2">
+                        <p className="text-xs text-muted-foreground">認証アプリに手動で入力してください</p>
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm tracking-widest break-all flex-1">{secretKey}</code>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={copySecret}
+                            className={copied ? 'text-green-600 border-green-300' : ''}
+                          >
+                            {copied ? 'コピーしました' : 'コピー'}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-              onClick={() => { setStep('confirm'); setError(''); }}
-              disabled={initLoading || !!error}
-            >
-              次へ（コードを入力）
-            </button>
-          </>
-        )}
+                    )}
+                  </div>
+                </>
+              )}
+              <Button
+                className="w-full"
+                onClick={() => { setStep('confirm'); setError(''); }}
+                disabled={initLoading || !!error}
+              >
+                次へ（コードを入力）
+              </Button>
+            </div>
+          )}
 
-        {step === 'confirm' && (
-          <form onSubmit={(e) => { void handleConfirm(e); }}>
-            <p style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>
-              認証アプリに表示された6桁のコードを入力して設定を完了してください。
-            </p>
-            <div className="form-group">
-              <label htmlFor="code">認証コード</label>
-              <input
-                id="code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="000000"
-                autoComplete="one-time-code"
-                required
-              />
-            </div>
-            {error && <p className="error-msg">{error}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => { setStep('qr'); setError(''); }}
-              >
-                戻る
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-                style={{ flex: 1 }}
-              >
-                {loading ? '確認中...' : '設定完了'}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+          {step === 'confirm' && (
+            <form onSubmit={(e) => { void handleConfirm(e); }} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                認証アプリに表示された6桁のコードを入力して設定を完了してください。
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="code">認証コード</Label>
+                <Input
+                  id="code"
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  required
+                />
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { setStep('qr'); setError(''); }}
+                >
+                  戻る
+                </Button>
+                <Button type="submit" className="flex-1" disabled={loading}>
+                  {loading ? '確認中...' : '設定完了'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
