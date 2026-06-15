@@ -17,10 +17,19 @@ if [[ -z "${ISSUE_KEY}" ]]; then
   exit 1
 fi
 
+# 課題番号を抽出して課題専用ブランチ名を生成
+ISSUE_NUMBER=$(echo "${ISSUE_KEY}" | grep -oE '[0-9]+$')
+FEATURE_BRANCH="feat/pmo-${ISSUE_NUMBER}"
+
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/review-${ISSUE_KEY}-$(date +%Y%m%d-%H%M%S).log"
 
-# ── コンパイルチェック ──────────────────────────────────────────────
+# ── feature ブランチに切り替えてからコンパイルチェック ─────────────
+echo "[review] feature ブランチ ${FEATURE_BRANCH} に切り替え中..."
+git fetch origin
+git checkout "${FEATURE_BRANCH}" 2>/dev/null || { echo "[review] ブランチ ${FEATURE_BRANCH} が見つかりません" >&2; exit 1; }
+git pull origin "${FEATURE_BRANCH}" 2>/dev/null || true
+
 echo "[review] TypeScript コンパイルチェック実行中..."
 
 BACKEND_TSC=$(cd "${PROJECT_DIR}/apps/backend" && npx --no-install tsc --noEmit 2>&1 || true)
@@ -64,7 +73,7 @@ ${FRONTEND_RESULT}
 ### 手順
 1. Backlog MCP の get_issue でレビュー対象課題を取得する
 2. 課題の完了条件と実装コメントを確認する
-3. git diff develop...${IMPL_BRANCH} で実装差分を確認する
+3. git diff ${IMPL_BRANCH}...${FEATURE_BRANCH} でこの課題の実装差分のみを確認する
 4. コードレビューを実施する（バグ・設計・テスト・完了条件の充足・上記コンパイルエラーの有無）
 5. レビュー結果を Backlog コメントに記録する（OK/NG・指摘内容）
 6. レビュー OK の場合:
