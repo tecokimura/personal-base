@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, ApiError } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function SettingsPage() {
   const { me, loading: authLoading } = useAuth();
@@ -37,70 +39,64 @@ export default function SettingsPage() {
     }
   }
 
-  if (authLoading) return <div className="page-loading">読み込み中...</div>;
-  if (!isHrAdmin) {
-    return (
-      <div className="page-container">
-        <h1>テナント設定</h1>
-        <p style={{ color: '#888' }}>この画面は HR_ADMIN のみアクセスできます。</p>
-      </div>
-    );
-  }
+  if (authLoading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (!isHrAdmin) return <p className="text-sm text-destructive">この画面は HR_ADMIN のみアクセスできます。</p>;
 
   return (
-    <div className="page-container">
-      <h1>テナント設定</h1>
-      <div className="card" style={{ maxWidth: 480 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px' }}>二段階認証（2FA）ポリシー</h2>
-        {loadError ? (
-          <p className="error-msg">{loadError}</p>
-        ) : policy === null ? (
-          <p style={{ color: '#aaa' }}>読み込み中...</p>
-        ) : (
-          <>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="twoFactorPolicy"
-                  value="1"
-                  checked={policy === 1}
-                  onChange={() => setPolicy(1)}
-                />
-                <div>
-                  <div style={{ fontWeight: 500 }}>任意</div>
-                  <div style={{ fontSize: 12, color: '#666' }}>ユーザーが自由に2FAを設定できます</div>
-                </div>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="twoFactorPolicy"
-                  value="2"
-                  checked={policy === 2}
-                  onChange={() => setPolicy(2)}
-                />
-                <div>
-                  <div style={{ fontWeight: 500 }}>必須</div>
-                  <div style={{ fontSize: 12, color: '#666' }}>
-                    全ユーザーにログイン時の2FA認証を強制します。
-                    未設定ユーザーはログイン後にセットアップが必要です。
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">テナント設定</h1>
+      <Card className="max-w-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">二段階認証（2FA）ポリシー</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadError ? (
+            <p className="text-sm text-destructive">{loadError}</p>
+          ) : policy === null ? (
+            <p className="text-sm text-muted-foreground">読み込み中...</p>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="twoFactorPolicy"
+                    value="1"
+                    checked={policy === 1}
+                    onChange={() => setPolicy(1)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">任意</div>
+                    <div className="text-xs text-muted-foreground">ユーザーが自由に2FAを設定できます</div>
                   </div>
-                </div>
-              </label>
-            </div>
-            {saveError && <p className="error-msg" style={{ marginBottom: 8 }}>{saveError}</p>}
-            {saved && <p style={{ color: '#16a34a', marginBottom: 8, fontSize: 13 }}>保存しました</p>}
-            <button
-              className="btn-primary"
-              onClick={() => { void handleSave(); }}
-              disabled={saving}
-            >
-              {saving ? '保存中...' : '保存'}
-            </button>
-          </>
-        )}
-      </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="twoFactorPolicy"
+                    value="2"
+                    checked={policy === 2}
+                    onChange={() => setPolicy(2)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">必須</div>
+                    <div className="text-xs text-muted-foreground">
+                      全ユーザーにログイン時の2FA認証を強制します。未設定ユーザーはログイン後にセットアップが必要です。
+                    </div>
+                  </div>
+                </label>
+              </div>
+              {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+              {saved && <p className="text-sm text-green-600">保存しました</p>}
+              <Button onClick={() => { void handleSave(); }} disabled={saving}>
+                {saving ? '保存中...' : '保存'}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
