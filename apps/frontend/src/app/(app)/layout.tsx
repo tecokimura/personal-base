@@ -54,6 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
             {orgOpen && (
               <div className="nav-group-children">
+                <NavLink href="/org-chart">組織図</NavLink>
                 <NavLink href="/organizations">組織一覧</NavLink>
                 <NavLink href="/employees">社員一覧</NavLink>
               </div>

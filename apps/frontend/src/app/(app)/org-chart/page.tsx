@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type OrgChartNode, type OrgChartMembers, type EmployeeCard } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LEVEL_COLORS = ['#2563eb', '#0891b2', '#0284c7', '#6366f1', '#7c3aed'];
 
@@ -13,16 +14,15 @@ function levelColor(depth: number): string {
 
 function MemberRow({ member }: { member: EmployeeCard }) {
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', padding: '3px 0', fontSize: 12, flexWrap: 'wrap' }}>
-      <Link href={`/employees/${member.employeeId}`} style={{ fontWeight: 500, color: '#2563eb', textDecoration: 'none' }}
-        onMouseOver={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
-        onMouseOut={(e) => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
-      >{member.displayName}</Link>
+    <div className="flex gap-2 items-baseline py-0.5 text-xs flex-wrap">
+      <Link href={`/employees/${member.employeeId}`} className="font-medium text-blue-600 hover:underline">
+        {member.displayName}
+      </Link>
       {member.positionName && (
-        <span style={{ color: '#64748b', fontSize: 11 }}>{member.positionName}</span>
+        <span className="text-muted-foreground">{member.positionName}</span>
       )}
       {member.supervisorDisplayName && (
-        <span style={{ color: '#94a3b8', fontSize: 11 }}>上長: {member.supervisorDisplayName}</span>
+        <span className="text-muted-foreground/60">上長: {member.supervisorDisplayName}</span>
       )}
     </div>
   );
@@ -30,16 +30,10 @@ function MemberRow({ member }: { member: EmployeeCard }) {
 
 function MemberList({ members }: { members: OrgChartMembers }) {
   if (members.primaryMembers.length === 0) {
-    return <p style={{ fontSize: 12, color: '#aaa', margin: '4px 0 0' }}>所属メンバーなし</p>;
+    return <p className="text-xs text-muted-foreground mt-1">所属メンバーなし</p>;
   }
   return (
-    <div style={{
-      background: '#f8fafc',
-      border: '1px solid #e2e8f0',
-      borderRadius: 6,
-      padding: '8px 12px',
-      marginTop: 4,
-    }}>
+    <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2 mt-1">
       {members.primaryMembers.map((m) => (
         <MemberRow key={m.employeeId} member={m} />
       ))}
@@ -84,14 +78,7 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
         }} />
       )}
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '5px 0',
-        position: 'relative',
-        flexWrap: 'wrap',
-      }}>
+      <div className="flex items-center gap-1.5 py-1 relative flex-wrap">
         {/* 横の接続線 */}
         {depth > 0 && (
           <span style={{
@@ -117,23 +104,13 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
         </span>
 
         {node.organizationCode && (
-          <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
-            {node.organizationCode}
-          </span>
+          <span className="text-xs text-muted-foreground font-mono">{node.organizationCode}</span>
         )}
 
-        <span style={{ fontSize: 11, color: '#94a3b8' }}>
-          {node.memberCount} 名
-        </span>
+        <span className="text-xs text-muted-foreground">{node.memberCount} 名</span>
 
         {node.primaryLeader && (
-          <span style={{
-            fontSize: 11,
-            color: '#0070f3',
-            background: '#eff6ff',
-            borderRadius: 4,
-            padding: '1px 6px',
-          }}>
+          <span className="text-xs text-blue-600 bg-blue-50 rounded px-1.5 py-0.5">
             部門長: {node.primaryLeader.displayName}
           </span>
         )}
@@ -141,15 +118,8 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
         {node.memberCount > 0 && (
           <button
             onClick={toggleMembers}
-            style={{
-              fontSize: 11,
-              border: '1px solid #cbd5e1',
-              background: membersOpen ? '#f1f5f9' : 'transparent',
-              borderRadius: 4,
-              padding: '1px 7px',
-              cursor: 'pointer',
-              color: '#64748b',
-            }}
+            className="text-xs border border-slate-300 rounded px-1.5 py-0.5 text-slate-500 hover:bg-slate-50 cursor-pointer"
+            style={{ background: membersOpen ? '#f1f5f9' : 'transparent' }}
           >
             {membersOpen ? 'メンバーを閉じる' : 'メンバーを表示'}
           </button>
@@ -158,9 +128,9 @@ function OrgNode({ node, depth = 0, isLast = false }: { node: OrgChartNode; dept
 
       {/* メンバー一覧 */}
       {membersOpen && (
-        <div style={{ marginLeft: 24, marginBottom: 6 }}>
+        <div className="ml-6 mb-1.5">
           {membersLoading ? (
-            <p style={{ fontSize: 12, color: '#aaa', margin: '4px 0 0' }}>読み込み中...</p>
+            <p className="text-xs text-muted-foreground mt-1">読み込み中...</p>
           ) : members ? (
             <MemberList members={members} />
           ) : null}
@@ -204,41 +174,48 @@ export default function OrgChartPage() {
       .finally(() => setLoading(false));
   }, [authLoading]);
 
-  if (authLoading || loading) return <p>読み込み中...</p>;
-  if (error) return <p className="error-msg">{error}</p>;
+  if (authLoading || loading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
 
   return (
-    <>
-      <h1 className="page-title">組織図</h1>
-      <div className="card org-tree">
-        {tree.length === 0 ? (
-          <p style={{ color: '#aaa', margin: 0 }}>組織データなし</p>
-        ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {tree.map((node, idx) => (
-              <OrgNode
-                key={node.organizationId}
-                node={node}
-                depth={0}
-                isLast={idx === tree.length - 1}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">組織図</h1>
+
+      <Card>
+        <CardContent className="pt-4">
+          {tree.length === 0 ? (
+            <p className="text-sm text-muted-foreground">組織データなし</p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {tree.map((node, idx) => (
+                <OrgNode
+                  key={node.organizationId}
+                  node={node}
+                  depth={0}
+                  isLast={idx === tree.length - 1}
+                />
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {unassigned.length > 0 && (
-        <div className="card" style={{ marginTop: 12, borderLeft: '3px solid #f59e0b' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 10px', color: '#b45309' }}>
-            所属なし（{unassigned.length}名）
-          </h2>
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px' }}>
-            {unassigned.map((m) => (
-              <MemberRow key={m.employeeId} member={m} />
-            ))}
-          </div>
-        </div>
+        <Card className="border-l-4 border-l-amber-400">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-amber-700">
+              所属なし（{unassigned.length}名）
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              {unassigned.map((m) => (
+                <MemberRow key={m.employeeId} member={m} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
-    </>
+    </div>
   );
 }
