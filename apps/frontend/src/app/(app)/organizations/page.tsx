@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { api, type OrganizationView } from '@/lib/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 export default function OrganizationsPage() {
   const { loading: authLoading } = useAuth();
@@ -20,48 +22,54 @@ export default function OrganizationsPage() {
       .finally(() => setLoading(false));
   }, [authLoading]);
 
-  if (authLoading || loading) return <p>読み込み中...</p>;
-  if (error) return <p className="error-msg">{error}</p>;
+  if (authLoading || loading) return <p className="text-sm text-muted-foreground">読み込み中...</p>;
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
 
   return (
-    <>
-      <h1 className="page-title">組織一覧</h1>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>組織名</th>
-              <th>コード</th>
-              <th>親組織 ID</th>
-              <th>表示順</th>
-              <th>状態</th>
-            </tr>
-          </thead>
-          <tbody>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">組織一覧</h1>
+      <div className="rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">ID</TableHead>
+              <TableHead>組織名</TableHead>
+              <TableHead>コード</TableHead>
+              <TableHead className="w-28">親組織 ID</TableHead>
+              <TableHead className="w-20">表示順</TableHead>
+              <TableHead className="w-20">状態</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {orgs.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', color: '#aaa' }}>データなし</td></tr>
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  データなし
+                </TableCell>
+              </TableRow>
             ) : (
               orgs.map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td>
-                    <Link href={`/org-chart`}>{o.organizationName}</Link>
-                  </td>
-                  <td>{o.organizationCode ?? '—'}</td>
-                  <td>{o.parentOrganizationId ?? '—'}</td>
-                  <td>{o.displayOrder}</td>
-                  <td>
-                    <span className={o.isActive ? 'badge badge-green' : 'badge badge-gray'}>
+                <TableRow key={o.id}>
+                  <TableCell>{o.id}</TableCell>
+                  <TableCell>
+                    <Link href="/org-chart" className="text-primary hover:underline">
+                      {o.organizationName}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{o.organizationCode ?? '—'}</TableCell>
+                  <TableCell>{o.parentOrganizationId ?? '—'}</TableCell>
+                  <TableCell>{o.displayOrder}</TableCell>
+                  <TableCell>
+                    <Badge variant={o.isActive ? 'default' : 'secondary'}>
                       {o.isActive ? '有効' : '無効'}
-                    </span>
-                  </td>
-                </tr>
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
-    </>
+    </div>
   );
 }
