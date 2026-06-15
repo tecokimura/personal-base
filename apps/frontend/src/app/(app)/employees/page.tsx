@@ -90,7 +90,7 @@ export default function EmployeesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">社員一覧</h1>
         {isHrAdmin && !addingEmployee && (
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setAddingEmployee(true)}>社員を追加</Button>
+          <Button size="sm" onClick={() => setAddingEmployee(true)}>社員を追加</Button>
         )}
       </div>
 
@@ -170,7 +170,7 @@ export default function EmployeesPage() {
                 </>
               )}
               <div className="flex gap-2 pt-1">
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={saving}>
+                <Button type="submit" disabled={saving}>
                   {saving ? '登録中...' : '登録'}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>
