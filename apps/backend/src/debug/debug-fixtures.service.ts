@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const DEBUG_TENANT_CODE = 'DEBUG';
 const DEBUG_TENANT_NAME = 'デバッグテナント';
-const DEBUG_PASSWORD = 'DebugPass1!';
+const DEBUG_PASSWORD = 'demo';
 
 interface RoleUserDef {
   roleType: number;
@@ -14,11 +14,11 @@ interface RoleUserDef {
 }
 
 const ROLE_USER_DEFS: RoleUserDef[] = [
-  { roleType: 1, loginIdentifier: 'debug-hr-admin@debug.local', fullName: 'Debug HR Admin', scopeType: 4 },
-  { roleType: 2, loginIdentifier: 'debug-manager@debug.local', fullName: 'Debug Manager', scopeType: 3 },
-  { roleType: 3, loginIdentifier: 'debug-org-admin@debug.local', fullName: 'Debug OrgAdmin', scopeType: 2 },
-  { roleType: 4, loginIdentifier: 'debug-exec-viewer@debug.local', fullName: 'Debug Exec Viewer', scopeType: 4 },
-  { roleType: 5, loginIdentifier: 'debug-employee@debug.local', fullName: 'Debug Employee', scopeType: 1 },
+  { roleType: 1, loginIdentifier: 'admin@example.com', fullName: 'デモ HR Admin', scopeType: 4 },
+  { roleType: 2, loginIdentifier: 'manager@example.com', fullName: 'デモ Manager', scopeType: 3 },
+  { roleType: 3, loginIdentifier: 'org-admin@example.com', fullName: 'デモ Org Admin', scopeType: 2 },
+  { roleType: 4, loginIdentifier: 'exec-viewer@example.com', fullName: 'デモ Exec Viewer', scopeType: 4 },
+  { roleType: 5, loginIdentifier: 'employee@example.com', fullName: 'デモ Employee', scopeType: 1 },
 ];
 
 @Injectable()

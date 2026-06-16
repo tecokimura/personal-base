@@ -182,7 +182,7 @@ cd /home/keith/Documents/projects/personal-base/apps/backend
 pnpm create-hr-admin \
   --tenantId=1 \
   --loginIdentifier=admin@example.com \
-  --password='ChangeMe123!'
+  --password='demo'
 ```
 
 ### 4. ログインして Cookie を保存する
@@ -194,7 +194,7 @@ curl -i -c /tmp/personal-base-cookie.txt \
   -d '{
     "tenantId": 1,
     "loginIdentifier": "admin@example.com",
-    "password": "ChangeMe123!"
+    "password": "demo"
   }'
 ```
 
@@ -273,7 +273,7 @@ set +a
 cd apps/backend
 npx prisma migrate reset --force
 pnpm create-tenant --tenantCode=demo --name="Demo Company"
-pnpm create-hr-admin --tenantId=1 --loginIdentifier=admin@example.com --password='ChangeMe123!'
+pnpm create-hr-admin --tenantId=1 --loginIdentifier=admin@example.com --password='demo'
 ```
 
 その後の組織 / 社員投入は、この文書の `6` から `8` の API 手順を使う。
@@ -397,6 +397,8 @@ pnpm setup-e2e-fixtures
 - `tenantId`: `1` とは限らない。fixture 実行結果の JSON に出る `tenantId` を使う
 - `loginIdentifier`: `e2e-admin@test.local`
 - `password`: `E2ePassword1!`
+
+デモ用アカウント（ワンボタンログイン経由）の認証情報ルールは [demo-credentials.md](./demo-credentials.md) を参照すること。
 
 補足:
 
