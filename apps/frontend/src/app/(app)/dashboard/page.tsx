@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, ApiError } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,59 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+
+function BackupCodeWarningBanner() {
+  const [remainingCount, setRemainingCount] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('backupCodeRemainingCount');
+    if (stored !== null) {
+      setRemainingCount(Number(stored));
+      sessionStorage.removeItem('backupCodeRemainingCount');
+    }
+  }, []);
+
+  if (dismissed || remainingCount === null || remainingCount > 3) return null;
+
+  if (remainingCount === 0) {
+    return (
+      <div className="flex items-start gap-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+        <span className="shrink-0">🔴</span>
+        <p className="flex-1">
+          バックアップコードをすべて使い切りました。
+          <Link href="/account/security" className="ml-1 underline hover:no-underline">セキュリティ設定</Link>
+          から今すぐ2FAを再設定してください。
+        </p>
+        <button
+          aria-label="閉じる"
+          onClick={() => setDismissed(true)}
+          className="shrink-0 text-red-600 hover:text-red-800"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+      <span className="shrink-0">⚠️</span>
+      <p className="flex-1">
+        バックアップコードが残り{remainingCount}枚です。
+        <Link href="/account/security" className="ml-1 underline hover:no-underline">セキュリティ設定</Link>
+        から再発行をお勧めします。
+      </p>
+      <button
+        aria-label="閉じる"
+        onClick={() => setDismissed(true)}
+        className="shrink-0 text-yellow-600 hover:text-yellow-800"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,6 +81,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      <BackupCodeWarningBanner />
       <div className="flex items-center justify-between">
         <h1 className="page-title" style={{ margin: 0 }}>ダッシュボード</h1>
         <Button variant="destructive" size="sm" onClick={() => { void handleLogout(); }}>

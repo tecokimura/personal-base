@@ -241,10 +241,10 @@ export class AuthController {
   async verifyBackupCode(
     @Req() req: AuthenticatedRequest,
     @Body() body: { code: string },
-  ): Promise<{ success: boolean }> {
-    const valid = await this.twoFactorService.verifyBackupCode(req.userAccount.id, body.code);
-    if (!valid) throw new UnauthorizedException('Invalid backup code');
+  ): Promise<{ success: boolean; remainingCount: number }> {
+    const result = await this.twoFactorService.verifyBackupCode(req.userAccount.id, body.code);
+    if (!result.verified) throw new UnauthorizedException('Invalid backup code');
     await this.sessionService.markTwoFactorVerified(hashToken(req.rawSessionToken));
-    return { success: true };
+    return { success: true, remainingCount: result.remainingCount };
   }
 }

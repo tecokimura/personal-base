@@ -84,19 +84,22 @@ export class TwoFactorService {
     return authenticator.verify({ token: code, secret: tfa.totpSecret });
   }
 
-  async verifyBackupCode(userAccountId: number, code: string): Promise<boolean> {
+  async verifyBackupCode(
+    userAccountId: number,
+    code: string,
+  ): Promise<{ verified: boolean; remainingCount: number }> {
     const tfa = await this.twoFactorRepository.findByUserAccountId(userAccountId);
-    if (!tfa || !tfa.twoFactorEnabled) return false;
+    if (!tfa || !tfa.twoFactorEnabled) return { verified: false, remainingCount: 0 };
 
     for (let i = 0; i < tfa.backupCodeHashes.length; i++) {
       const matches = await bcrypt.compare(code, tfa.backupCodeHashes[i]);
       if (matches) {
         const updatedHashes = tfa.backupCodeHashes.filter((_, idx) => idx !== i);
         await this.twoFactorRepository.updateBackupCodes(userAccountId, updatedHashes);
-        return true;
+        return { verified: true, remainingCount: updatedHashes.length };
       }
     }
-    return false;
+    return { verified: false, remainingCount: 0 };
   }
 
   async reset2FA(userAccountId: number): Promise<void> {
