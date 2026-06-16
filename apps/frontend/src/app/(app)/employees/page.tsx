@@ -89,15 +89,8 @@ export default function EmployeesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">社員一覧</h1>
-        {isHrAdmin && (
-          <div className="flex items-center gap-2">
-            <Link href="/employees/deleted" className="text-sm text-muted-foreground hover:underline">
-              削除済み社員を見る
-            </Link>
-            {!addingEmployee && (
-              <Button size="sm" onClick={() => setAddingEmployee(true)}>社員を追加</Button>
-            )}
-          </div>
+        {isHrAdmin && !addingEmployee && (
+          <Button size="sm" onClick={() => setAddingEmployee(true)}>社員を追加</Button>
         )}
       </div>
 
@@ -225,6 +218,14 @@ export default function EmployeesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {isHrAdmin && (
+        <div className="flex justify-end">
+          <Link href="/employees/deleted" className="text-sm text-muted-foreground hover:underline">
+            削除済み社員を見る
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
