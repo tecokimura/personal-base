@@ -28,7 +28,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { me } = useAuth();
+  const { me, loading } = useAuth();
   const pathname = usePathname();
   const isHrAdmin = me?.roleTypes.includes(1) ?? false;
   const [orgOpen, setOrgOpen] = useState(true);
@@ -36,6 +36,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (me?.twoFactorPending || pathname?.startsWith('/2fa')) {
     return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="layout">
+        <aside className="sidebar">
+          <div className="sidebar-title">PersonalBase</div>
+        </aside>
+        <main className="main">{children}</main>
+      </div>
+    );
   }
 
   return (
