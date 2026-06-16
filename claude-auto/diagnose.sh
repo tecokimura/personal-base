@@ -25,7 +25,7 @@ touch "${LOG_FILE}"
 trap 'echo "[diagnose] 予期しないエラーで終了 (line $LINENO, exit $?)" | tee -a "${LOG_FILE}" >&2' ERR
 
 log()    { echo "[diagnose] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${LOG_FILE}"; }
-notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
+notify() { "${SCRIPT_DIR}/notify.sh" "$1" 2>/dev/null || true; }
 
 log "診断フェーズ開始"
 
@@ -51,7 +51,7 @@ while IFS= read -r -d '' log_file; do
   if [[ -n "${errors}" ]]; then
     SESSION_ERRORS+="### $(basename "${log_file}")\n${errors}\n\n"
   fi
-done < <(find "${LOG_DIR}" -name "*.log" -not -name "diagnose-*" -not -name "pipeline-*" -newer "${LOG_DIR}" -mmin -1440 -print0 2>/dev/null || true)
+done < <(find "${LOG_DIR}" -name "*.log" -not -name "diagnose-*" -not -name "pipeline-*" -mmin -1440 -print0 2>/dev/null || true)
 
 # last-result.txt
 LAST_RESULT=""
@@ -161,6 +161,7 @@ RESULT_JSON=$(echo "${OUTPUT}" | grep "^DIAGNOSE_RESULT:" | tail -1 | sed 's/^DI
 
 if [[ -z "${RESULT_JSON}" ]]; then
   log "WARN: DIAGNOSE_RESULT を取得できませんでした"
+  notify ":warning: [diagnose] *診断結果の取得に失敗* — ログを確認してください: $(basename "${LOG_FILE}")"
   exit 0
 fi
 

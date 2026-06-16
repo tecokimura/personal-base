@@ -34,7 +34,7 @@ idle_backoff_remaining_min() {
   local until now
   until=$(cat "${IDLE_BACKOFF_FILE}")
   now=$(date +%s)
-  local r=$(( (until - now) / 60 ))
+  local r; r=$(( (until - now) / 60 ))
   echo $(( r > 0 ? r : 0 ))
 }
 
@@ -73,6 +73,6 @@ backoff_remaining_min() {
   local until now
   until=$(cat "${BACKOFF_FILE}")
   now=$(date +%s)
-  local remaining=$(( (until - now) / 60 ))
+  local remaining; remaining=$(( (until - now) / 60 ))
   echo $(( remaining > 0 ? remaining : 0 ))
 }

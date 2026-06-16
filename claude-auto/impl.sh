@@ -103,7 +103,11 @@ fi
 
 # RESULT: 行を抽出して保存（pipeline.sh が読む）
 RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
-echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+if [[ "${EXIT_CODE}" -ne 0 && -z "${RESULT_LINE}" ]]; then
+  echo "RESULT: エラー終了（詳細不明: exit=${EXIT_CODE}）" > "${RESULT_FILE}"
+else
+  echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+fi
 
 echo "[impl] セッション終了 (exit=${EXIT_CODE})"
 exit "${EXIT_CODE}"

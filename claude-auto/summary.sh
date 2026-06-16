@@ -15,7 +15,7 @@ mkdir -p "${LOG_DIR}"
 SUMMARY_LOG="${LOG_DIR}/summary-$(date +%Y%m%d).log"
 log() { echo "[summary] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${SUMMARY_LOG}"; }
 
-notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
+notify() { "${SCRIPT_DIR}/notify.sh" "$1" 2>/dev/null || true; }
 
 PROMPT=$(cat <<'PROMPT'
 ## 日次サマリー集計
@@ -24,12 +24,13 @@ Backlog MCP を使って PMO_PJPERSONALBASE プロジェクトの課題数を集
 
 ### 手順
 1. get_categories で各カテゴリの ID を確認する
-2. 以下のカテゴリごとに get_issues でステータスを問わず件数を集計する:
-   - 実装待ち
-   - レビュー待ち
-   - 修正待ち
-   - 仕様確認待ち
-   - 動作確認待ち
+2. 以下のカテゴリごとに get_issues で **未完了課題のみ（statusId=1,2,3）** を集計する:
+   - 実装待ち（statusId=1: 未対応）
+   - レビュー待ち（statusId=3: 処理済み）
+   - 修正待ち（statusId=2: 処理中）
+   - 仕様確認待ち（statusId=3: 処理済み）
+   - 動作確認待ち（statusId=3: 処理済み）
+   ※ statusId=4（完了）の課題は除外する
 3. 以下の JSON のみ出力する（他のテキスト不要）:
 
 ```json
@@ -54,6 +55,10 @@ rm -f "${STDERR_FILE}"
 [[ -n "${STDERR_OUT}" ]] && echo "${STDERR_OUT}" >> "${SUMMARY_LOG}"
 
 if [[ "${CLAUDE_EXIT}" -ne 0 ]]; then
+  if is_rate_limited "${RAW}${STDERR_OUT}"; then
+    log "Claude制限検出 — summary をスキップ（次回自動実行まで待機）"
+    exit 0
+  fi
   log "ERROR: Claude 呼び出し失敗"
   exit 1
 fi

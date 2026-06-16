@@ -41,8 +41,11 @@ fi
 echo "[review] feature ブランチ ${FEATURE_BRANCH} に切り替え中..." | tee -a "${LOG_FILE}"
 git fetch origin 2>&1 | tee -a "${LOG_FILE}" || true
 if ! git checkout "${FEATURE_BRANCH}" 2>&1 | tee -a "${LOG_FILE}"; then
-  echo "[review] ERROR: ブランチ ${FEATURE_BRANCH} が見つかりません — レビュー不可" | tee -a "${LOG_FILE}" >&2
-  exit 1
+  echo "[review] ローカルにブランチなし — リモートから追跡ブランチを作成試行..." | tee -a "${LOG_FILE}"
+  if ! git checkout -b "${FEATURE_BRANCH}" "origin/${FEATURE_BRANCH}" 2>&1 | tee -a "${LOG_FILE}"; then
+    echo "[review] ERROR: ブランチ ${FEATURE_BRANCH} がローカル/リモートともに見つかりません — レビュー不可" | tee -a "${LOG_FILE}" >&2
+    exit 1
+  fi
 fi
 git pull origin "${FEATURE_BRANCH}" 2>&1 | tee -a "${LOG_FILE}" || true
 
@@ -140,7 +143,11 @@ if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}"; then
 fi
 
 RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
-echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+if [[ "${EXIT_CODE}" -ne 0 && -z "${RESULT_LINE}" ]]; then
+  echo "RESULT: エラー終了（詳細不明: exit=${EXIT_CODE}）" > "${RESULT_FILE}"
+else
+  echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+fi
 
 echo "[review] セッション終了 (exit=${EXIT_CODE})"
 exit "${EXIT_CODE}"

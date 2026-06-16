@@ -22,7 +22,9 @@ PIPELINE_LOG="${LOG_DIR}/pipeline-$(date +%Y%m%d).log"
 
 log() { echo "[pipeline] $(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "${PIPELINE_LOG}"; }
 
-notify() { "${SCRIPT_DIR}/notify.sh" "$*" 2>/dev/null || true; }
+notify() { "${SCRIPT_DIR}/notify.sh" "$1" 2>/dev/null || true; }
+
+trap 'log "予期しないエラーで終了 (line $LINENO, exit $?)" ; notify ":warning: [claude-auto] *パイプライン予期しないエラー* — ログを確認してください"' ERR
 
 # 二重起動防止（flock でロック取得できなければ即終了）
 LOCK_FILE="${LOG_DIR}/pipeline.lock"
@@ -62,6 +64,7 @@ run_with_heartbeat() {
   shift
   "$@" &
   local PID=$!
+  trap "kill ${PID} 2>/dev/null; exit 130" SIGTERM SIGINT
   local ELAPSED=0
   while kill -0 "${PID}" 2>/dev/null; do
     sleep 60
@@ -90,7 +93,9 @@ ORCHESTRATOR_PROMPT=$(cat <<'PROMPT'
    b. 「レビュー待ち」カテゴリ (statusId=3: 処理済み)
    c. 「実装待ち」カテゴリ (statusId=1: 未対応)
    d. 「動作確認待ち」カテゴリの課題を取得し、get_issue_comments で各課題のコメントを確認する
-      → コメントが 1 件以上あれば verify 対象とする
+      → 最新コメントが人間（ユーザー）によるものかを確認する
+      → 「実装完了」「レビュー完了」「動作確認OK・完了にしました」など AI セッションが書いた定型コメントは除外する
+      → ユーザーからの動作確認コメント（OK、問題なし、修正依頼など）があれば verify 対象とする
 
 3. 上記 a〜d のうち最初に該当した課題を 1 件選ぶ。
 
@@ -302,4 +307,4 @@ case "${NEXT_ACTION}" in
     ;;
 esac
 
-log "パイプライン完了 — 次回: $(date -d '+30 minutes' '+%H:%M') ごろ自動実行"
+log "パイプライン完了 — 次回: $(date -d "+${CRON_INTERVAL_MIN:-30} minutes" '+%H:%M') ごろ自動実行"

@@ -85,7 +85,11 @@ if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}"; then
 fi
 
 RESULT_LINE=$(echo "${OUTPUT}" | grep "^RESULT:" | tail -1 || true)
-echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+if [[ "${EXIT_CODE}" -ne 0 && -z "${RESULT_LINE}" ]]; then
+  echo "RESULT: エラー終了（詳細不明: exit=${EXIT_CODE}）" > "${RESULT_FILE}"
+else
+  echo "${RESULT_LINE:-RESULT: 完了（詳細不明）}" > "${RESULT_FILE}"
+fi
 
 echo "[verify] セッション終了 (exit=${EXIT_CODE})"
 exit "${EXIT_CODE}"
