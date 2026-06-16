@@ -145,7 +145,7 @@ rm -f "${ORCH_STDERR}"
 log "オーケストレーター応答受信 (exit=${ORCH_EXIT})"
 
 # オーケストレーター自体が制限を受けた場合
-if [[ "${ORCH_EXIT}" -ne 0 ]] && is_rate_limited "${RAW_OUTPUT}${ORCH_STDERR_OUTPUT}"; then
+if [[ "${ORCH_EXIT}" -ne 0 ]] && is_rate_limited "${RAW_OUTPUT}${ORCH_STDERR_OUTPUT}" "${ORCH_EXIT}"; then
   write_backoff "${BACKOFF_DURATION}"
   REMAINING=$(backoff_remaining_min)
   log "Claude制限検出（オーケストレーター）— ${REMAINING}分後に自動再開"

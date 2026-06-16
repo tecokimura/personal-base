@@ -5,12 +5,22 @@ BACKOFF_FILE="${LOG_DIR}/backoff.txt"
 IDLE_BACKOFF_FILE="${LOG_DIR}/idle-backoff.txt"
 
 # Claude の出力にレート制限・使用量制限のキーワードが含まれるか判定
-# 引数: 出力テキスト（stdout + stderr を結合して渡す）
+# 引数1: 出力テキスト（stdout + stderr を結合して渡す）
+# 引数2: exit code（省略可。非ゼロかつ出力が短い場合もレート制限と見なす）
 # 戻り値: 0=制限あり, 1=制限なし
 is_rate_limited() {
   local output="${1:-}"
-  echo "${output}" | grep -qiE \
-    "rate.?limit|usage.?limit|too many requests|quota exceeded|overloaded|529|Claude is unable|please try again later|capacity"
+  local exit_code="${2:-0}"
+  # キーワードマッチ
+  if echo "${output}" | grep -qiE \
+    "rate.?limit|usage.?limit|too many requests|quota exceeded|overloaded|529|Claude is unable|please try again later|capacity"; then
+    return 0
+  fi
+  # exit 1 かつ出力がほぼ空（100文字未満）→ 制限中の無言失敗と見なす
+  if [[ "${exit_code}" -ne 0 && ${#output} -lt 100 ]]; then
+    return 0
+  fi
+  return 1
 }
 
 # アイドルバックオフ（処理対象なしのとき Claude 起動を抑制）

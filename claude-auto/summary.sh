@@ -54,7 +54,7 @@ rm -f "${STDERR_FILE}"
 [[ -n "${STDERR_OUT}" ]] && echo "${STDERR_OUT}" >> "${SUMMARY_LOG}"
 
 if [[ "${CLAUDE_EXIT}" -ne 0 ]]; then
-  if is_rate_limited "${RAW}${STDERR_OUT}"; then
+  if is_rate_limited "${RAW}${STDERR_OUT}" "${CLAUDE_EXIT}"; then
     log "Claude制限検出 — summary をスキップ（次回自動実行まで待機）"
     exit 0
   fi

@@ -149,7 +149,7 @@ echo "${OUTPUT}" | tee -a "${LOG_FILE}"
 [[ -n "${STDERR_OUTPUT}" ]] && echo "${STDERR_OUTPUT}" >> "${LOG_FILE}"
 
 # レート制限チェック
-if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${OUTPUT}${STDERR_OUTPUT}"; then
+if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${OUTPUT}${STDERR_OUTPUT}" "${EXIT_CODE}"; then
   log "Claude制限検出（diagnose）"
   exit 3
 fi

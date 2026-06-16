@@ -96,7 +96,7 @@ echo "${OUTPUT}" | tee -a "${LOG_FILE}"
 [[ -n "${STDERR_OUTPUT}" ]] && echo "${STDERR_OUTPUT}" >> "${LOG_FILE}"
 
 COMBINED="${OUTPUT}${STDERR_OUTPUT}"
-if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}"; then
+if [[ "${EXIT_CODE}" -ne 0 ]] && is_rate_limited "${COMBINED}" "${EXIT_CODE}"; then
   echo "RESULT: Claude制限により中断 — バックオフ後に自動再開します" > "${RESULT_FILE}"
   echo "[verify] Claude制限を検出 (exit=3)"
   exit 3
