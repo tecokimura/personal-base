@@ -19,6 +19,7 @@ export default function DashboardPage() {
     } catch (err) {
       if (!(err instanceof ApiError)) console.error(err);
     }
+    localStorage.removeItem('session_hint');
     router.replace('/login');
   }
 
