@@ -88,8 +88,7 @@ echo "[verify] 課題 ${ISSUE_KEY} の動作確認セッションを開始しま
 echo "[verify] ログ: ${LOG_FILE}"
 
 STDERR_FILE="${LOG_DIR}/verify-${ISSUE_KEY}-stderr.tmp"
-OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
-EXIT_CODE=$?
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}") && EXIT_CODE=0 || EXIT_CODE=$?
 STDERR_OUTPUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
 rm -f "${STDERR_FILE}"
 

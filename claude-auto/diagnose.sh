@@ -141,8 +141,7 @@ PROMPT
 )
 
 STDERR_FILE="${LOG_DIR}/diagnose-stderr.tmp"
-OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
-EXIT_CODE=$?
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}") && EXIT_CODE=0 || EXIT_CODE=$?
 STDERR_OUTPUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
 rm -f "${STDERR_FILE}"
 

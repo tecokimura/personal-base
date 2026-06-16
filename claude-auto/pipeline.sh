@@ -138,8 +138,7 @@ log "Backlog を確認中（Claude 応答待ち）..."
 
 # Claude に Backlog を確認させて JSON 結果を取得
 ORCH_STDERR="${LOG_DIR}/orch-stderr.tmp"
-RAW_OUTPUT=$(claude -p "${ORCHESTRATOR_PROMPT}" --model "${CLAUDE_MODEL}" 2>"${ORCH_STDERR}")
-ORCH_EXIT=$?
+RAW_OUTPUT=$(claude -p "${ORCHESTRATOR_PROMPT}" --model "${CLAUDE_MODEL}" 2>"${ORCH_STDERR}") && ORCH_EXIT=0 || ORCH_EXIT=$?
 ORCH_STDERR_OUTPUT=$(cat "${ORCH_STDERR}" 2>/dev/null || true)
 rm -f "${ORCH_STDERR}"
 [[ -n "${ORCH_STDERR_OUTPUT}" ]] && echo "${ORCH_STDERR_OUTPUT}" >> "${PIPELINE_LOG}"

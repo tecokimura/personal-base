@@ -127,8 +127,7 @@ echo "[review] 課題 ${ISSUE_KEY} のレビューセッションを開始しま
 echo "[review] ログ: ${LOG_FILE}"
 
 STDERR_FILE="${LOG_DIR}/review-${ISSUE_KEY}-stderr.tmp"
-OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
-EXIT_CODE=$?
+OUTPUT=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}") && EXIT_CODE=0 || EXIT_CODE=$?
 STDERR_OUTPUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
 rm -f "${STDERR_FILE}"
 

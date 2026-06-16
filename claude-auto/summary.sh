@@ -48,8 +48,7 @@ PROMPT
 log "日次サマリー集計開始"
 
 STDERR_FILE="${LOG_DIR}/summary-stderr.tmp"
-RAW=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}")
-CLAUDE_EXIT=$?
+RAW=$(claude -p "${PROMPT}" --model "${CLAUDE_MODEL}" 2>"${STDERR_FILE}") && CLAUDE_EXIT=0 || CLAUDE_EXIT=$?
 STDERR_OUT=$(cat "${STDERR_FILE}" 2>/dev/null || true)
 rm -f "${STDERR_FILE}"
 [[ -n "${STDERR_OUT}" ]] && echo "${STDERR_OUT}" >> "${SUMMARY_LOG}"
