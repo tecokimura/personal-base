@@ -218,6 +218,14 @@ export default function EmployeesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {isHrAdmin && (
+        <div className="flex justify-end">
+          <Link href="/employees/deleted" className="text-sm text-muted-foreground hover:underline">
+            削除済み社員を見る
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
