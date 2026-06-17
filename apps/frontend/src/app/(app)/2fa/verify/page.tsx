@@ -91,7 +91,10 @@ export default function TwoFactorVerifyPage() {
           <div className="text-center border-t pt-4">
             <Link
               href="/login"
-              onClick={() => { void api.auth.logout(); }}
+              onClick={() => {
+                localStorage.removeItem('session_hint');
+                void api.auth.logout();
+              }}
               className="text-xs text-muted-foreground underline hover:text-foreground"
             >
               別のアカウントでログイン
