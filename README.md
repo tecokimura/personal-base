@@ -70,6 +70,7 @@
 - 初期セットアップ手順: [docs/setup/initial-bootstrap.md](/home/keith/Documents/projects/personal-base/docs/setup/initial-bootstrap.md)
 - デモ環境認証情報ルール: [docs/setup/demo-credentials.md](/home/keith/Documents/projects/personal-base/docs/setup/demo-credentials.md)
 - 再開手順: [docs/prompts/resume-instructions.md](/home/keith/Documents/projects/personal-base/docs/prompts/resume-instructions.md)
+- レビュアー向けブリーフィング（現状共有・方向性すり合わせ用）: [docs/review-briefing.md](/home/keith/Documents/projects/personal-base/docs/review-briefing.md)
 - 会話ルール: [docs/prompts/workshop-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/workshop-rules.md)
 - 事業・プロダクト観点の入口: [docs/product/vision.md](/home/keith/Documents/projects/personal-base/docs/product/vision.md)
 - 技術設計の入口: [docs/architecture/system-context.md](/home/keith/Documents/projects/personal-base/docs/architecture/system-context.md)
@@ -87,33 +88,45 @@
 
 ## 次に着手すべき論点
 
+現在は **フェーズ 3（サービス利用性強化）の後半**にいる。
+
+### 直近の作業（次セッションで最初にやること）
+
+1. `claude-auto` の cron を再開し、Backlog の `実装待ち` 課題を順次実装する
+   - PMO-97（ダッシュボード括弧削除）→ PMO-98（ログイン画面テナント名表示）の順
+   - 実装ブランチ: `feat/phase3`
+2. PMO-105（バックアップコード警告バナー）のレビューが承認されたら動作確認 → マージ
+
+### フェーズ 3 残件サマリ
+
+| 課題 | 内容 | 状態 |
+|---|---|---|
+| PMO-97 | ダッシュボードから `[ID]` 括弧表記を削除 | 実装待ち |
+| PMO-98 | ログイン画面にテナント名を表示 | 実装待ち |
+| PMO-99 | デバッグ用シードに全権限ロールのサンプル社員追加 | 実装待ち |
+| PMO-101 | マネージャー向け「管理メンバー一覧」ページ | 実装待ち |
+| PMO-102 | アカウント設定：パスワード変更機能 | 実装待ち |
+| PMO-103 | dev テナント・動作確認環境の整備 | 実装待ち |
+| PMO-104 | Wiki のセットアップ手順を4テナント体制に更新 | 実装待ち |
+| PMO-105 | バックアップコード残枚数警告バナー | レビュー待ち |
+
+### フェーズ 3 完了済み
+
+MVP・第2フェーズ全課題に加え、PMO-84・87・88・89・90・91・92・93・94・95・96・100・106・107・108・109 が完了済み。
+
+### 方向性すり合わせ中の論点
+
+- フェーズ 3 残件消化後にフェーズ 4（AI拡張）に進むか、PMO-85（写真リスト）・PMO-70（アカウント発行）を先にやるか
+- 「誰かに見せられるデモ状態」の基準をどこに置くか
+
+詳細は [docs/review-briefing.md](/home/keith/Documents/projects/personal-base/docs/review-briefing.md) を参照。
+
+### 不変の確定事項
+
+- `TypeScript` を使う実装では `any` を使わないことを厳守する
+- Backlog の実行管理は `PMO_PJPERSONALBASE` を使い、運用ルールの正本は [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 - 決定待ち課題は [docs/decision-backlog.md](/home/keith/Documents/projects/personal-base/docs/decision-backlog.md) を正本とする
 - 実装順の正本は [docs/implementation-plan.md](/home/keith/Documents/projects/personal-base/docs/implementation-plan.md) とする
-- `第 2 フェーズ` の実装と、その後の整合対応 (`PMO_PJPERSONALBASE-39` から `44`) は完了済みである
-- 次は Phase 3 の着手候補と将来課題の優先順位を整理する
-- `TypeScript` を使う実装では `any` を使わないことを厳守する
-- `NestJS`、`Next.js`、`Prisma`、`1 リポジトリ構成`、`pnpm`、`ESLint + Prettier`、`Vitest + Playwright`、`Tailwind CSS + 最小自前コンポーネント`、`Docker Compose` の初期サービス分割、ディレクトリ構成、`frontend/backend` 間の通信方式とポート方針、認証 `Cookie` と `CORS`、環境変数と secrets、ディレクトリごとの `.env` 配置方針は確定済みである
-- 開発時の DB 起動用にルート `compose.yml` と `.env.example` を置き、`Prisma migrate dev` はホストから `localhost:5432` の `DATABASE_URL` で実行する前提にしている
-- `認証・認可基盤` では、主要テーブル方針、コード表方針、最小 API、最小 DTO、ログイン / ログアウト / 退職休職 / 復帰の状態遷移まで整理済みである
-- 完了済みの着手単位
-  - `認証・認可基盤`
-  - `組織管理`
-  - `社員台帳管理`
-  - `組織図表示`
-  - `閲覧権限制御`
-  - `プロフィール機能`
-  - `論理削除と履歴の最小対応`
-  - `CSV 入出力`
-  - `入力検証とエラー処理`
-  - `更新メタ情報と監査導線`
-  - `テストと初期運用`
-  - `ベータ運用管理機能`
-- `MVP` は完了済み
-- `第 2 フェーズ` の着手単位 `13` から `21` は完了済み
-- 実装を止めない論点整理用として `PMO_PJPERSONALBASE-24` を起票済み
-- `tenantId` の DB レベル外部キー制約追加は将来課題 `PMO_PJPERSONALBASE-36` に記録済み
-- `create-hr-admin` の `--fullName` 追加検討は将来課題 `PMO_PJPERSONALBASE-37` に記録済み
-- Backlog の実行管理は `PMO_PJPERSONALBASE` を使い、運用ルールの正本は [docs/prompts/backlog-operation-rules.md](/home/keith/Documents/projects/personal-base/docs/prompts/backlog-operation-rules.md) とする
 
 ## 運用ルール
 
