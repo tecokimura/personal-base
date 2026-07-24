@@ -24,7 +24,8 @@ export default function TwoFactorVerifyPage() {
       if (mode === 'totp') {
         await api.auth.twoFactor.verify(code);
       } else {
-        await api.auth.twoFactor.backupVerify(code);
+        const result = await api.auth.twoFactor.backupVerify(code);
+        sessionStorage.setItem('backupCodeRemainingCount', String(result.remainingCount));
       }
       router.replace('/dashboard');
     } catch (err) {

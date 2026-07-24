@@ -275,7 +275,7 @@ export const api = {
           body: JSON.stringify({ code }),
         }),
       backupVerify: (code: string) =>
-        apiFetch<{ success: boolean }>('/auth/2fa/backup-verify', {
+        apiFetch<{ success: boolean; remainingCount: number }>('/auth/2fa/backup-verify', {
           method: 'POST',
           body: JSON.stringify({ code }),
         }),
