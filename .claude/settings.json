@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git push * main)",
+      "Bash(git push * feat/phase3)",
+      "Bash(git reset --hard*)",
+      "Read(./.env*)",
+      "Edit(./.env*)",
+      "Edit(./.github/workflows/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": ".claude/hooks/guard-git.sh" }] }
+    ]
+  }
+}
