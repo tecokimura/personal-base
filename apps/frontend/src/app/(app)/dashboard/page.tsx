@@ -96,17 +96,11 @@ export default function DashboardPage() {
           <div className="flex gap-8 flex-wrap items-center">
             <div>
               <p className="text-xs font-semibold text-blue-700 mb-0.5">テナント</p>
-              <p className="text-base font-bold">
-                {me.tenantName}{' '}
-                <span className="text-sm font-normal text-muted-foreground">[{me.tenantId}]</span>
-              </p>
+              <p className="text-base font-bold">{me.tenantName}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-blue-700 mb-0.5">ログイン中の社員</p>
-              <p className="text-base font-bold">
-                {me.employeeName}{' '}
-                <span className="text-sm font-normal text-muted-foreground">[{me.employeeNumber ?? '—'}]</span>
-              </p>
+              <p className="text-base font-bold">{me.employeeName}</p>
             </div>
           </div>
         </CardContent>
@@ -120,8 +114,8 @@ export default function DashboardPage() {
         <CardContent>
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
             <dt className="text-muted-foreground">UserAccount ID</dt><dd>{me.id}</dd>
-            <dt className="text-muted-foreground">テナント</dt><dd>{me.tenantName} [{me.tenantId}]</dd>
-            <dt className="text-muted-foreground">社員</dt><dd>{me.employeeName} [{me.employeeNumber ?? '—'}]</dd>
+            <dt className="text-muted-foreground">テナント</dt><dd>{me.tenantName}</dd>
+            <dt className="text-muted-foreground">社員</dt><dd>{me.employeeName}</dd>
             <dt className="text-muted-foreground">アカウント状態</dt>
             <dd>
               <Badge
