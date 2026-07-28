@@ -54,7 +54,7 @@ export default function LoginPage() {
           {tenantError ? (
             <p className="text-sm text-destructive text-center">{tenantError}</p>
           ) : (
-            tenantName && <p className="text-sm text-muted-foreground text-center">{tenantName}</p>
+            tenantName && <p className="text-sm text-muted-foreground text-center">{tenantName} にログイン</p>
           )}
         </CardHeader>
         <CardContent>
