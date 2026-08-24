@@ -143,12 +143,15 @@ PM セッション: docs 更新 → Backlog タスク登録
 
 ## claude-auto パイプライン
 
-`claude-auto/` に自動化パイプラインのスクリプトと設定を置く。
+`claude-auto/` に自動化の土台となるスクリプトと設定を置く。
+
+- **Status: 再設計中**（2026-08時点）。旧cronオーケストレーター（`pipeline.sh`/`diagnose.sh`/`summary.sh`/`verify.sh`）は、無限リトライ・過剰なClaude呼び出し等の問題が見つかったため削除済み。crontabも無効化済み
+- 現在は `impl.sh` / `review.sh` を土台として、対話セッション内（loopスキル等）で1件ずつ処理する方式に作り直し中
+- 無人稼働（cron）への再導入は、対話セッションでの動作検証が済んでから行う
 
 | ファイル | 内容 |
 |---|---|
 | `claude-auto/config.sh` | リトライ回数・間隔・Slack webhook などの設定 |
-| `claude-auto/pipeline.sh` | cron から呼ぶエントリポイント |
 | `claude-auto/impl.sh` | 実装セッション起動スクリプト |
 | `claude-auto/review.sh` | レビュー（PM）セッション起動スクリプト |
-| `claude-auto/notify.sh` | Slack 通知スクリプト |
+| `claude-auto/notify.sh` | Slack 通知スクリプト（将来の無人稼働再導入時に使用） |
