@@ -21,6 +21,33 @@ const ROLE_USER_DEFS: RoleUserDef[] = [
   { roleType: 5, loginIdentifier: 'employee@example.com', fullName: 'デモ Employee', scopeType: 1 },
 ];
 
+interface ExtraEmployeeDef {
+  number: string;
+  fullName: string;
+  displayName: string;
+  orgCode: string;
+  /** 兼務先組織コード（複数組織所属） */
+  secondOrgCode?: string;
+}
+
+const EXTRA_EMPLOYEE_DEFS: ExtraEmployeeDef[] = [
+  { number: 'DEBUG-EMP-001', fullName: '田中 一郎', displayName: 'Tanaka Ichiro', orgCode: 'DEBUGDEPT' },
+  { number: 'DEBUG-EMP-002', fullName: '鈴木 花子', displayName: 'Suzuki Hanako', orgCode: 'DEBUGDEPT' },
+  { number: 'DEBUG-EMP-003', fullName: '佐藤 次郎', displayName: 'Sato Jiro', orgCode: 'DEBUGDEPT' },
+  { number: 'DEBUG-EMP-004', fullName: '高橋 三郎', displayName: 'Takahashi Saburo', orgCode: 'DEBUGTEAM' },
+  { number: 'DEBUG-EMP-005', fullName: '伊藤 四郎', displayName: 'Ito Shiro', orgCode: 'DEBUGTEAM' },
+  { number: 'DEBUG-EMP-006', fullName: '渡辺 五郎', displayName: 'Watanabe Goro', orgCode: 'DEBUGTEAM' },
+  { number: 'DEBUG-EMP-007', fullName: '山本 六子', displayName: 'Yamamoto Rokuko', orgCode: 'DEBUGDEPT2' },
+  { number: 'DEBUG-EMP-008', fullName: '中村 七海', displayName: 'Nakamura Nanami', orgCode: 'DEBUGDEPT2' },
+  // 兼務社員: DEBUGDEPT と DEBUGDEPT2 の両方に所属
+  { number: 'DEBUG-EMP-009', fullName: '小林 八重', displayName: 'Kobayashi Yae', orgCode: 'DEBUGDEPT', secondOrgCode: 'DEBUGDEPT2' },
+];
+
+interface SeedResult {
+  roleUsersCreated: string[];
+  extraEmployeesCreated: string[];
+}
+
 @Injectable()
 export class DebugFixturesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -29,6 +56,30 @@ export class DebugFixturesService {
     const def = ROLE_USER_DEFS.find((u) => u.roleType === roleType);
     if (!def) throw new Error(`Unknown roleType: ${roleType}`);
 
+    const { tenant, deptOrg } = await this.ensureBaseOrgs();
+    return this.upsertRoleUser(def, tenant.id, deptOrg.id);
+  }
+
+  async seedAllFixtures(): Promise<SeedResult> {
+    const { tenant, orgIdByCode } = await this.ensureAllOrgs();
+    const deptOrgId = orgIdByCode.get('DEBUGDEPT')!;
+
+    const roleUsersCreated: string[] = [];
+    for (const def of ROLE_USER_DEFS) {
+      await this.upsertRoleUser(def, tenant.id, deptOrgId);
+      roleUsersCreated.push(def.loginIdentifier);
+    }
+
+    const extraEmployeesCreated: string[] = [];
+    for (const def of EXTRA_EMPLOYEE_DEFS) {
+      await this.upsertExtraEmployee(def, tenant.id, orgIdByCode);
+      extraEmployeesCreated.push(def.number);
+    }
+
+    return { roleUsersCreated, extraEmployeesCreated };
+  }
+
+  private async ensureBaseOrgs() {
     const tenant = await this.prisma.tenant.upsert({
       where: { tenantCode: DEBUG_TENANT_CODE },
       create: { tenantCode: DEBUG_TENANT_CODE, name: DEBUG_TENANT_NAME },
@@ -59,10 +110,42 @@ export class DebugFixturesService {
       });
     }
 
+    return { tenant, rootOrg, deptOrg };
+  }
+
+  private async ensureAllOrgs() {
+    const { tenant, rootOrg, deptOrg } = await this.ensureBaseOrgs();
+
+    const orgIdByCode = new Map<string, number>();
+    orgIdByCode.set('DEBUGORG', rootOrg.id);
+    orgIdByCode.set('DEBUGDEPT', deptOrg.id);
+
+    // DEBUGTEAM: DEBUGDEPTの配下チーム（MANAGERは見えるがORG_ADMINは見えない）
+    const teamOrg = await this.upsertOrg(tenant.id, 'DEBUGTEAM', 'デバッグチーム', deptOrg.id);
+    orgIdByCode.set('DEBUGTEAM', teamOrg.id);
+
+    // DEBUGDEPT2: DEBUGORGの第2部門（MANAGERもORG_ADMINも管轄外）
+    const dept2Org = await this.upsertOrg(tenant.id, 'DEBUGDEPT2', 'デバッグ第2部門', rootOrg.id);
+    orgIdByCode.set('DEBUGDEPT2', dept2Org.id);
+
+    return { tenant, orgIdByCode };
+  }
+
+  private async upsertOrg(tenantId: number, code: string, name: string, parentId: number) {
+    const existing = await this.prisma.organization.findFirst({
+      where: { tenantId, organizationCode: code },
+    });
+    if (existing) return existing;
+    return this.prisma.organization.create({
+      data: { tenantId, organizationCode: code, organizationName: name, parentOrganizationId: parentId, isActive: true },
+    });
+  }
+
+  private async upsertRoleUser(def: RoleUserDef, tenantId: number, deptOrgId: number): Promise<number> {
     const passwordHash = await bcrypt.hash(DEBUG_PASSWORD, 10);
 
     const existingAccount = await this.prisma.userAccount.findFirst({
-      where: { tenantId: tenant.id, loginIdentifier: def.loginIdentifier },
+      where: { tenantId, loginIdentifier: def.loginIdentifier },
     });
 
     let userAccountId: number;
@@ -81,11 +164,11 @@ export class DebugFixturesService {
       });
     } else {
       const employee = await this.prisma.employee.create({
-        data: { tenantId: tenant.id, fullName: def.fullName },
+        data: { tenantId, fullName: def.fullName },
       });
       const account = await this.prisma.userAccount.create({
         data: {
-          tenantId: tenant.id,
+          tenantId,
           employeeId: employee.id,
           loginIdentifier: def.loginIdentifier,
           passwordHash,
@@ -96,16 +179,16 @@ export class DebugFixturesService {
       employeeId = employee.id;
     }
 
-    // 在籍レコードがなければ作成（MANAGER が EMPLOYEE を管理できるよう全員を deptOrg に配属）
+    // 在籍レコード（DEBUGDEPTに配属）
     const existingEmployment = await this.prisma.employment.findFirst({
-      where: { tenantId: tenant.id, employeeId, status: 1 },
+      where: { tenantId, employeeId, status: 1 },
     });
     if (!existingEmployment) {
       await this.prisma.employment.create({
         data: {
-          tenantId: tenant.id,
+          tenantId,
           employeeId,
-          organizationId: deptOrg.id,
+          organizationId: deptOrgId,
           employmentType: 1,
           startDate: new Date('2020-01-01'),
           status: 1,
@@ -115,11 +198,11 @@ export class DebugFixturesService {
 
     const scopeId =
       def.scopeType === 4 ? 0
-      : def.scopeType === 3 || def.scopeType === 2 ? deptOrg.id
+      : def.scopeType === 3 || def.scopeType === 2 ? deptOrgId
       : employeeId;
 
     const existingRole = await this.prisma.roleAssignment.findFirst({
-      where: { tenantId: tenant.id, userAccountId, roleType: def.roleType, scopeType: def.scopeType, scopeId },
+      where: { tenantId, userAccountId, roleType: def.roleType, scopeType: def.scopeType, scopeId },
     });
 
     if (existingRole) {
@@ -130,10 +213,10 @@ export class DebugFixturesService {
         });
       }
     } else {
-      await this.prisma.roleAssignment.deleteMany({ where: { tenantId: tenant.id, userAccountId } });
+      await this.prisma.roleAssignment.deleteMany({ where: { tenantId, userAccountId } });
       await this.prisma.roleAssignment.create({
         data: {
-          tenantId: tenant.id,
+          tenantId,
           userAccountId,
           roleType: def.roleType,
           scopeType: def.scopeType,
@@ -144,5 +227,71 @@ export class DebugFixturesService {
     }
 
     return userAccountId;
+  }
+
+  private async upsertExtraEmployee(
+    def: ExtraEmployeeDef,
+    tenantId: number,
+    orgIdByCode: Map<string, number>,
+  ): Promise<void> {
+    const existing = await this.prisma.employee.findFirst({
+      where: { tenantId, employeeNumber: def.number, isDeleted: false },
+    });
+
+    let employeeId: number;
+    if (existing) {
+      employeeId = existing.id;
+      await this.prisma.employee.update({
+        where: { id: existing.id },
+        data: { fullName: def.fullName, displayName: def.displayName },
+      });
+    } else {
+      const created = await this.prisma.employee.create({
+        data: { tenantId, employeeNumber: def.number, fullName: def.fullName, displayName: def.displayName },
+      });
+      employeeId = created.id;
+    }
+
+    // 主所属組織
+    const primaryOrgId = orgIdByCode.get(def.orgCode);
+    if (primaryOrgId !== undefined) {
+      const hasEmployment = await this.prisma.employment.findFirst({
+        where: { tenantId, employeeId, organizationId: primaryOrgId, endDate: null },
+      });
+      if (!hasEmployment) {
+        await this.prisma.employment.create({
+          data: {
+            tenantId,
+            employeeId,
+            organizationId: primaryOrgId,
+            employmentType: 1,
+            startDate: new Date('2022-04-01'),
+            status: 1,
+          },
+        });
+      }
+    }
+
+    // 兼務組織
+    if (def.secondOrgCode) {
+      const secondOrgId = orgIdByCode.get(def.secondOrgCode);
+      if (secondOrgId !== undefined) {
+        const hasSecondEmployment = await this.prisma.employment.findFirst({
+          where: { tenantId, employeeId, organizationId: secondOrgId, endDate: null },
+        });
+        if (!hasSecondEmployment) {
+          await this.prisma.employment.create({
+            data: {
+              tenantId,
+              employeeId,
+              organizationId: secondOrgId,
+              employmentType: 1,
+              startDate: new Date('2022-04-01'),
+              status: 1,
+            },
+          });
+        }
+      }
+    }
   }
 }

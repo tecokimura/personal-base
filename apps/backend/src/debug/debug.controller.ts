@@ -47,6 +47,16 @@ export class DebugController {
     return { enabled: this.isEnabled() };
   }
 
+  @Post('seed')
+  @HttpCode(HttpStatus.OK)
+  async seedFixtures(): Promise<{ roleUsers: string[]; extraEmployees: string[] }> {
+    if (!this.isEnabled()) {
+      throw new NotFoundException();
+    }
+    const result = await this.debugFixturesService.seedAllFixtures();
+    return { roleUsers: result.roleUsersCreated, extraEmployees: result.extraEmployeesCreated };
+  }
+
   @Post('login/:roleType')
   @HttpCode(HttpStatus.OK)
   async debugLogin(
