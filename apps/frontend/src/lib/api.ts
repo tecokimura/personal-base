@@ -268,6 +268,11 @@ export const api = {
       }),
     me: () => apiFetch<MeResponse>('/auth/me'),
     logout: () => apiFetch<{ message: string }>('/auth/logout', { method: 'POST' }),
+    changePassword: (body: { currentPassword: string; newPassword: string }) =>
+      apiFetch<{ message: string }>('/auth/password', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
     twoFactor: {
       status: () => apiFetch<{ enabled: boolean; enabledAt: string | null }>('/auth/2fa/status'),
       initSetup: () => apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/setup/init'),

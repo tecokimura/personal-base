@@ -25,4 +25,11 @@ export class UserAccountRepository {
       data: { lastLoggedInAt },
     });
   }
+
+  async updatePasswordHash(id: number, passwordHash: string): Promise<void> {
+    await this.prisma.userAccount.update({
+      where: { id },
+      data: { passwordHash },
+    });
+  }
 }

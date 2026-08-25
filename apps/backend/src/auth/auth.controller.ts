@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Get,
   Body,
   Req,
@@ -14,6 +15,7 @@ import {
 import { Request, Response } from 'express';
 import { AuthService, COOKIE_NAME } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { SessionGuard } from './guards/session.guard';
 import { AuthenticatedRequest } from './types/authenticated-request';
 import { AuditService } from '../audit/audit.service';
@@ -183,6 +185,21 @@ export class AuthController {
       twoFactorPending: false,
       twoFactorSetupRequired: false,
     };
+  }
+
+  @Patch('password')
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.changePassword(
+      req.userAccount.id,
+      body.currentPassword,
+      body.newPassword,
+    );
+    return { message: 'パスワードを変更しました' };
   }
 
   // ── 2FA エンドポイント（twoFactorVerified=false のセッションでもアクセス可）──
