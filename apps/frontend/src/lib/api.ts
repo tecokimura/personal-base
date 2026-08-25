@@ -407,5 +407,7 @@ export const api = {
     status: () => apiFetch<{ enabled: boolean }>('/debug/status'),
     login: (roleType: number) =>
       apiFetch<MeResponse>(`/debug/login/${roleType}`, { method: 'POST' }),
+    seed: () =>
+      apiFetch<{ roleUsers: string[]; extraEmployees: string[] }>('/debug/seed', { method: 'POST' }),
   },
 };
