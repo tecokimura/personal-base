@@ -13,9 +13,10 @@ import { AuditModule } from './audit/audit.module';
 import { WorkHistoryModule } from './work-history/work-history.module';
 import { QualificationModule } from './qualification/qualification.module';
 import { AdminSectionModule } from './admin-section/admin-section.module';
+import { ManagerModule } from './manager/manager.module';
 import { DebugModule } from './debug/debug.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuthorizationModule, AdminModule, OrganizationModule, EmployeeModule, OrgChartModule, MediaModule, CsvModule, PositionMasterModule, AuditModule, WorkHistoryModule, QualificationModule, AdminSectionModule, DebugModule],
+  imports: [PrismaModule, AuthModule, AuthorizationModule, AdminModule, OrganizationModule, EmployeeModule, OrgChartModule, MediaModule, CsvModule, PositionMasterModule, AuditModule, WorkHistoryModule, QualificationModule, AdminSectionModule, ManagerModule, DebugModule],
 })
 export class AppModule {}

@@ -240,6 +240,13 @@ export interface AdminSectionInput {
   specialNotes?: string | null;
 }
 
+export interface ManagerMember {
+  id: number;
+  fullName: string;
+  employeeNumber: string | null;
+  organizationName: string;
+}
+
 export interface AuditEvent {
   eventType: 'LOGIN' | 'EDIT';
   occurredAt: string;
@@ -386,6 +393,10 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(body),
       }),
+  },
+
+  manager: {
+    myMembers: () => apiFetch<ManagerMember[]>('/manager/my-members'),
   },
 
   audit: {
