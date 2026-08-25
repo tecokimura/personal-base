@@ -31,6 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { me, loading } = useAuth();
   const pathname = usePathname();
   const isHrAdmin = me?.roleTypes.includes(1) ?? false;
+  const isManager = me?.roleTypes.includes(2) ?? false;
   const [orgOpen, setOrgOpen] = useState(true);
   const [accountOpen, setAccountOpen] = useState(true);
 
@@ -68,6 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavLink href="/org-chart">組織図</NavLink>
                 <NavLink href="/organizations">組織一覧</NavLink>
                 <NavLink href="/employees">社員一覧</NavLink>
+                {isManager && <NavLink href="/manager/members">管理メンバー一覧</NavLink>}
               </div>
             )}
           </div>
