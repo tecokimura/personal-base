@@ -60,13 +60,28 @@ fi
 log "typecheck OK"
 
 log "backend test 実行中..."
-if ! (cd "${PROJECT_DIR}/apps/backend" && npx vitest run >> "${LOG_FILE}" 2>&1); then
-  TAIL=$(tail -60 "${LOG_FILE}")
-  record_failure "backend test 失敗:
-${TAIL}"
+TEST_OUTPUT=$(cd "${PROJECT_DIR}/apps/backend" && npx vitest run 2>&1)
+echo "${TEST_OUTPUT}" >> "${LOG_FILE}"
+
+# 「失敗ゼロ」ではなく「バッチ開始時点のベースライン失敗集合に含まれない、新規の失敗が無いか」で判定する
+# （既存の失敗はPMO-110で別途管理されており、このチケットの完了条件ではないため）
+BASELINE_FILE="${LOG_DIR}/batch-baseline-failures.txt"
+CURRENT_FAILURES=$(echo "${TEST_OUTPUT}" | grep "^ FAIL " | sort || true)
+if [[ -f "${BASELINE_FILE}" ]]; then
+  NEW_FAILURES=$(comm -23 <(echo "${CURRENT_FAILURES}") <(sort "${BASELINE_FILE}") || true)
+else
+  # ベースラインが無い場合は安全側に倒し、失敗があれば全て新規扱いにする
+  NEW_FAILURES="${CURRENT_FAILURES}"
+fi
+
+if [[ -n "${NEW_FAILURES}" ]]; then
+  record_failure "backend test で新規の失敗を検出:
+${NEW_FAILURES}
+
+(ベースラインの既存失敗は許容。全文は ${LOG_FILE} を参照)"
   exit 1
 fi
-log "backend test OK"
+log "backend test OK（新規の失敗なし。既存失敗 $(echo "${CURRENT_FAILURES}" | grep -c FAIL || echo 0) 件は許容範囲）"
 
 log "全ヘルスチェックOK — ${BATCH_BRANCH} へ統合します"
 
