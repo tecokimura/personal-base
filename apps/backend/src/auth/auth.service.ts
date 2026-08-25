@@ -87,6 +87,14 @@ export class AuthService {
     await this.sessionService.revokeByTokenHash(hashToken(rawToken));
   }
 
+  async changePassword(
+    userAccountId: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    await this.userAccountService.changePassword(userAccountId, currentPassword, newPassword);
+  }
+
   async verifySession(rawToken: string): Promise<SessionVerifyResult | null> {
     const session = await this.sessionService.findValidByTokenHash(hashToken(rawToken));
     if (session === null) {
