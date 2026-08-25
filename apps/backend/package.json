@@ -2,6 +2,7 @@
   "name": "@personal-base/backend",
   "private": true,
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "sh -c 'set -a && . ../../.env && set +a && nest start --watch'",
