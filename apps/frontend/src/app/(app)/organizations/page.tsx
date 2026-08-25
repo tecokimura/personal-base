@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type OrganizationView } from '@/lib/api';
+import { api, ApiError, type OrganizationView } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
@@ -18,7 +18,7 @@ export default function OrganizationsPage() {
     api.organizations
       .list()
       .then(setOrgs)
-      .catch((err: unknown) => setError(String(err)))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading]);
 

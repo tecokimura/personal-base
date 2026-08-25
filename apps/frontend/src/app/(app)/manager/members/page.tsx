@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type ManagerMember } from '@/lib/api';
+import { api, ApiError, type ManagerMember } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ManagerMembersPage() {
@@ -27,7 +27,7 @@ export default function ManagerMembersPage() {
     api.manager
       .myMembers()
       .then(setMembers)
-      .catch((err: unknown) => setError(String(err)))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading, me, isManager, router]);
 

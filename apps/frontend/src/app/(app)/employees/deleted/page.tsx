@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type DeletedEmployeeItem } from '@/lib/api';
+import { api, ApiError, type DeletedEmployeeItem } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 
@@ -24,7 +24,7 @@ export default function DeletedEmployeesPage() {
     api.employees
       .listDeleted()
       .then(setEmployees)
-      .catch((err: unknown) => setError(String(err)))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading]);
 
@@ -36,7 +36,7 @@ export default function DeletedEmployeesPage() {
       setEmployees((prev) => prev.filter((e) => e.id !== id));
       setConfirmingRestoreId(null);
     } catch (err) {
-      setRestoreError(String(err));
+      setRestoreError(err instanceof ApiError ? err.message : '復元に失敗しました');
     } finally {
       setRestoring(false);
     }

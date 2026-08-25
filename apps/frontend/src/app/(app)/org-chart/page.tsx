@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type OrgChartNode, type OrgChartMembers, type EmployeeCard } from '@/lib/api';
+import { api, ApiError, type OrgChartNode, type OrgChartMembers, type EmployeeCard } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LEVEL_COLORS = ['#2563eb', '#0891b2', '#0284c7', '#6366f1', '#7c3aed'];
@@ -170,7 +170,7 @@ export default function OrgChartPage() {
         setTree(treeData);
         setUnassigned(unassignedData);
       })
-      .catch((err: unknown) => setError(String(err)))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading]);
 

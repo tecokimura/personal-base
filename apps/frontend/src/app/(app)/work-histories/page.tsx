@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type WorkHistory, type WorkHistoryInput } from '@/lib/api';
+import { api, ApiError, type WorkHistory, type WorkHistoryInput } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -66,7 +66,7 @@ export default function WorkHistoriesPage() {
     api.workHistories
       .list(me.employeeId)
       .then(setRecords)
-      .catch((err: unknown) => setPageError(String(err)))
+      .catch((err: unknown) => setPageError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading, me]);
 
@@ -81,7 +81,7 @@ export default function WorkHistoriesPage() {
       setShowAddForm(false);
       setAddForm({ ...EMPTY_FORM, teamSizeStr: '' });
     } catch (err) {
-      setAddError(String(err));
+      setAddError(err instanceof ApiError ? err.message : '追加に失敗しました');
     } finally {
       setAddSaving(false);
     }
@@ -103,7 +103,7 @@ export default function WorkHistoriesPage() {
       setRecords((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
       setEditingId(null);
     } catch (err) {
-      setEditError(String(err));
+      setEditError(err instanceof ApiError ? err.message : '更新に失敗しました');
     } finally {
       setEditSaving(false);
     }
@@ -115,7 +115,7 @@ export default function WorkHistoriesPage() {
       await api.workHistories.remove(id);
       setRecords((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      alert(String(err));
+      alert(err instanceof ApiError ? err.message : '削除に失敗しました');
     }
   }
 

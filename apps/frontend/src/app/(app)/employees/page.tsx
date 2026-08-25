@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { api, type EmployeeListItem, type MeResponse, type OrganizationView } from '@/lib/api';
+import { api, ApiError, type EmployeeListItem, type MeResponse, type OrganizationView } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ export default function EmployeesPage() {
         setMe(meData);
         setOrganizations(orgs);
       })
-      .catch((err: unknown) => setError(String(err)))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, [authLoading]);
 
