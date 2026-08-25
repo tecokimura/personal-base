@@ -94,7 +94,7 @@ describe('CsvService', () => {
 
       const empCalls = (prisma.employment as Record<string, ReturnType<typeof vi.fn>>).create.mock.calls;
       const secondEmpCall = empCalls[1][0];
-      expect(secondEmpCall.data.managerEmployeeId).toBe(1);
+      expect(secondEmpCall.data.supervisorEmployeeId).toBe(1);
     });
 
     it('auto-generates TEMP placeholder when employee_number is empty', async () => {
@@ -235,7 +235,7 @@ describe('CsvService', () => {
             email: null,
             birthDate: null,
             profileFreeText: null,
-            employments: [{ organizationId: 5, employmentType: 1, startDate: new Date('2026-01-01'), positionMasterId: null, managerEmployeeId: 1 }],
+            employments: [{ organizationId: 5, employmentType: 1, startDate: new Date('2026-01-01'), positionMasterId: null, supervisorEmployeeId: 1 }],
           },
         ])
         .mockResolvedValueOnce([{ id: 1, employeeNumber: 'EMP001' }]); // manager lookup
