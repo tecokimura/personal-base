@@ -403,7 +403,7 @@ describe('EmployeeDirectoryService', () => {
 
       await service.softDelete(ctx, 1);
 
-      expect(employmentRepo.markAllActiveDeleted).toHaveBeenCalledWith(1, 1, 99);
+      expect(employmentRepo.markAllActiveDeleted).toHaveBeenCalledWith(1, 1, expect.any(Date), 99);
       expect(employeeRepo.softDelete).toHaveBeenCalledWith(1, 1, expect.any(Date), 99);
     });
 

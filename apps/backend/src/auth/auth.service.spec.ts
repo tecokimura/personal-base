@@ -63,6 +63,7 @@ describe('AuthService', () => {
 
     const twoFactorService = {
       getTenantPolicy: mockGetTenantPolicy,
+      getByUserAccountId: vi.fn().mockResolvedValue(null),
     } as unknown as TwoFactorService;
 
     service = new AuthService(userAccountService, sessionService, twoFactorService);
