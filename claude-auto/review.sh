@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # レビュー（PM）セッション起動スクリプト
-# 使い方: review.sh <ISSUE_KEY>
+# 使い方: review.sh <ISSUE_KEY> [BASE_BRANCH]
 #   例:   review.sh PMO_PJPERSONALBASE-70
+#   例:   review.sh PMO_PJPERSONALBASE-70 feat/batch-20260824   ← バッチ実行時、バッチブランチとの差分でレビューする
 
 set -euo pipefail
 
@@ -16,6 +17,9 @@ if [[ -z "${ISSUE_KEY}" ]]; then
   echo "[review] 課題キーが指定されていません" >&2
   exit 1
 fi
+
+# 第2引数が指定されればそれをベースブランチとして使う（バッチ実行時はバッチブランチを渡す）
+BASE_BRANCH="${2:-${IMPL_BRANCH}}"
 
 # 課題番号を抽出
 ISSUE_NUMBER=$(echo "${ISSUE_KEY}" | grep -oE '[0-9]+$')
@@ -54,22 +58,24 @@ echo "[review] TypeScript コンパイルチェック実行中..."
 BACKEND_TSC=$(cd "${PROJECT_DIR}/apps/backend" && npx --no-install tsc --noEmit 2>&1 || true)
 FRONTEND_TSC=$(cd "${PROJECT_DIR}/apps/frontend" && npx --no-install tsc --noEmit 2>&1 || true)
 
-if [[ -z "${BACKEND_TSC}" ]]; then
+# 「出力が空でない」ではなく「error TS」パターンの有無で判定する
+# （非エラーの警告・deprecation出力を誤ってエラー扱いする問題が実際に発生したため）
+if ! echo "${BACKEND_TSC}" | grep -q "error TS"; then
   BACKEND_RESULT="エラーなし（クリーン）"
 else
   BACKEND_RESULT="エラーあり:
 ${BACKEND_TSC}"
 fi
 
-if [[ -z "${FRONTEND_TSC}" ]]; then
+if ! echo "${FRONTEND_TSC}" | grep -q "error TS"; then
   FRONTEND_RESULT="エラーなし（クリーン）"
 else
   FRONTEND_RESULT="エラーあり:
 ${FRONTEND_TSC}"
 fi
 
-echo "[review] バックエンド TSC: $([ -z "${BACKEND_TSC}" ] && echo 'クリーン' || echo 'エラーあり')"
-echo "[review] フロントエンド TSC: $([ -z "${FRONTEND_TSC}" ] && echo 'クリーン' || echo 'エラーあり')"
+echo "[review] バックエンド TSC: $(echo "${BACKEND_TSC}" | grep -q 'error TS' && echo 'エラーあり' || echo 'クリーン')"
+echo "[review] フロントエンド TSC: $(echo "${FRONTEND_TSC}" | grep -q 'error TS' && echo 'エラーあり' || echo 'クリーン')"
 
 PROMPT=$(cat <<PROMPT
 ## セッション引き継ぎ: PM セッション（コードレビュー）
@@ -92,7 +98,7 @@ ${FRONTEND_RESULT}
 ### 手順
 1. Backlog MCP の get_issue でレビュー対象課題を取得する
 2. 課題の完了条件と実装コメントを確認する
-3. git diff ${IMPL_BRANCH}...${FEATURE_BRANCH} でこの課題の実装差分のみを確認する
+3. git diff ${BASE_BRANCH}...${FEATURE_BRANCH} でこの課題の実装差分のみを確認する
 4. コードレビューを実施する（バグ・設計・テスト・完了条件の充足・上記コンパイルエラーの有無）
 5. レビュー結果を Backlog コメントに記録する（OK/NG・指摘内容）
 6. レビュー OK の場合:

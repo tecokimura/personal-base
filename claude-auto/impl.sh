@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 実装セッション起動スクリプト
-# 使い方: impl.sh <ISSUE_KEY>
+# 使い方: impl.sh <ISSUE_KEY> [BASE_BRANCH]
 #   例:   impl.sh PMO_PJPERSONALBASE-70
+#   例:   impl.sh PMO_PJPERSONALBASE-70 feat/batch-20260824   ← バッチ実行時、バッチブランチから分岐する
 
 set -euo pipefail
 
@@ -15,6 +16,16 @@ ISSUE_KEY="${1:-}"
 if [[ -z "${ISSUE_KEY}" ]]; then
   echo "[impl] 課題キーが指定されていません" >&2
   exit 1
+fi
+
+# 第2引数が指定されればそれをベースブランチとして使う（バッチ実行時はバッチブランチを渡す）
+BASE_BRANCH="${2:-${IMPL_BRANCH}}"
+if [[ "${BASE_BRANCH}" != "${IMPL_BRANCH}" ]]; then
+  BATCH_MODE_NOTE="### バッチ実行モード
+このセッションはバッチ自動実行の一部です。**PRは作成しないでください**（バッチ終了時にバッチブランチからまとめて1本作成されます）。
+実装完了後は {ブランチ名} へのコミット・pushのみ行い、PR作成はスキップしてください。"
+else
+  BATCH_MODE_NOTE=""
 fi
 
 # 課題番号を抽出（ブランチ名のプレフィックスに使用）
@@ -40,8 +51,8 @@ Backlog 課題キー: ${ISSUE_KEY}
    - 例: "dev テナント seed スクリプト作成" → "setup-dev-fixtures"
    - ブランチ名: feat/pmo-${ISSUE_NUMBER}-{スラグ}（例: feat/pmo-103-setup-dev-fixtures）
 3. git fetch origin でリモートを最新化する
-4. ベースブランチ ${IMPL_BRANCH} を最新化する:
-   git checkout ${IMPL_BRANCH} && git pull origin ${IMPL_BRANCH}
+4. ベースブランチ ${BASE_BRANCH} を最新化する:
+   git checkout ${BASE_BRANCH} && git pull origin ${BASE_BRANCH}
 5. 決定したブランチ名で課題専用ブランチを用意する:
    - リモートに既に存在する場合:
      git checkout {ブランチ名} && git pull origin {ブランチ名}
@@ -51,11 +62,14 @@ Backlog 課題キー: ${ISSUE_KEY}
 7. 使用したブランチ名を以下のファイルに書き込む（review.sh が参照する）:
    echo "{ブランチ名}" > ${BRANCH_FILE}
 
+${BATCH_MODE_NOTE}
+
 ### 実装手順
 8. 課題の説明・完了条件を把握し、docs/ の関連設計を参照する
 9. 実装を行う（スコープを独断で広げない）
 10. 実装完了したら:
    - 変更を {ブランチ名} にコミット・push する
+   - バッチ実行モードでなければ、ベースブランチ（${BASE_BRANCH}）向けのPRを作成する。バッチ実行モードの場合はPRを作成しない
    - Backlog 課題を「処理済み」ステータス + カテゴリ「レビュー待ち」に更新する
    - 実装内容のサマリを Backlog コメントに残す（push した commit hash も記載）
 11. 仕様が不明確で進められない場合:
