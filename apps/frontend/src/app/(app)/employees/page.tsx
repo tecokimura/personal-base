@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+type SortKey = 'fullName' | 'employeeNumber' | 'email';
+type SortDir = 'asc' | 'desc';
+
 export default function EmployeesPage() {
   const router = useRouter();
   const { loading: authLoading } = useAuth();
@@ -19,6 +22,32 @@ export default function EmployeesPage() {
   const [organizations, setOrganizations] = useState<OrganizationView[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [sortKey, setSortKey] = useState<SortKey>('fullName');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const sortedEmployees = useMemo(() => {
+    return [...employees].sort((a, b) => {
+      const av = a[sortKey] ?? '';
+      const bv = b[sortKey] ?? '';
+      const cmp = av.localeCompare(bv, 'ja');
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [employees, sortKey, sortDir]);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
+
+  function sortIcon(key: SortKey) {
+    if (sortKey !== key) return <span className="ml-1 text-muted-foreground/40">⇅</span>;
+    return <span className="ml-1">{sortDir === 'asc' ? '▲' : '▼'}</span>;
+  }
 
   const [addingEmployee, setAddingEmployee] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -187,21 +216,36 @@ export default function EmployeesPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">ID</TableHead>
-              <TableHead className="w-28">社員番号</TableHead>
-              <TableHead>氏名</TableHead>
+              <TableHead
+                className="w-28 cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('employeeNumber')}
+              >
+                社員番号{sortIcon('employeeNumber')}
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('fullName')}
+              >
+                氏名{sortIcon('fullName')}
+              </TableHead>
               <TableHead>よみ・英語名</TableHead>
-              <TableHead>メール</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('email')}
+              >
+                メール{sortIcon('email')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.length === 0 ? (
+            {sortedEmployees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground">
                   データなし
                 </TableCell>
               </TableRow>
             ) : (
-              employees.map((e) => (
+              sortedEmployees.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell>{e.id}</TableCell>
                   <TableCell>{e.employeeNumber ?? '—'}</TableCell>
