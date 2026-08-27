@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 200] as const;
+const EVENT_TYPE_OPTIONS = ['ALL', 'LOGIN', 'EDIT'] as const;
+type EventTypeFilter = (typeof EVENT_TYPE_OPTIONS)[number];
 
 function nameCell(id: number | null, nameMap: Map<number, string>): React.ReactNode {
   if (id == null) return '—';
@@ -31,6 +33,7 @@ export default function AuditPage() {
   const [error, setError] = useState('');
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(50);
   const [page, setPage] = useState(0);
+  const [eventTypeFilter, setEventTypeFilter] = useState<EventTypeFilter>('ALL');
 
   const isHrAdmin = !!me && me.roleTypes.includes(1);
 
@@ -54,14 +57,23 @@ export default function AuditPage() {
     }).catch(() => {});
   }, [authLoading, isHrAdmin]);
 
-  const totalPages = events ? Math.ceil(events.length / pageSize) : 0;
+  const filteredEvents = useMemo(
+    () => events?.filter((ev) => eventTypeFilter === 'ALL' || ev.eventType === eventTypeFilter) ?? null,
+    [events, eventTypeFilter],
+  );
+  const totalPages = filteredEvents ? Math.ceil(filteredEvents.length / pageSize) : 0;
   const pagedEvents = useMemo(
-    () => events?.slice(page * pageSize, (page + 1) * pageSize) ?? [],
-    [events, page, pageSize],
+    () => filteredEvents?.slice(page * pageSize, (page + 1) * pageSize) ?? [],
+    [filteredEvents, page, pageSize],
   );
 
   function handlePageSizeChange(newSize: (typeof PAGE_SIZE_OPTIONS)[number]) {
     setPageSize(newSize);
+    setPage(0);
+  }
+
+  function handleEventTypeFilterChange(value: EventTypeFilter) {
+    setEventTypeFilter(value);
     setPage(0);
   }
 
@@ -74,26 +86,40 @@ export default function AuditPage() {
       <h1 className="text-xl font-semibold">監査ログ</h1>
       <Card>
         <CardContent className="pt-4">
-          {events === null ? (
+          {filteredEvents === null ? (
             <p className="text-sm text-muted-foreground">読み込み中...</p>
-          ) : events.length === 0 ? (
+          ) : filteredEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground">監査イベントはありません</p>
           ) : (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">全 {events.length} 件</span>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  表示件数:
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                    className="rounded border border-input bg-background px-2 py-1 text-xs"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((n) => (
-                      <option key={n} value={n}>{n} 件</option>
-                    ))}
-                  </select>
-                </label>
+                <span className="text-xs text-muted-foreground">全 {filteredEvents.length} 件</span>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    種別:
+                    <select
+                      value={eventTypeFilter}
+                      onChange={(e) => handleEventTypeFilterChange(e.target.value as EventTypeFilter)}
+                      className="rounded border border-input bg-background px-2 py-1 text-xs"
+                    >
+                      <option value="ALL">すべて</option>
+                      <option value="LOGIN">ログイン</option>
+                      <option value="EDIT">編集</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    表示件数:
+                    <select
+                      value={pageSize}
+                      onChange={(e) => handlePageSizeChange(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                      className="rounded border border-input bg-background px-2 py-1 text-xs"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((n) => (
+                        <option key={n} value={n}>{n} 件</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
 
               <div className="rounded-md border overflow-hidden">
